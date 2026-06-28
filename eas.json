@@ -6,7 +6,7 @@
   "build": {
     "production": {
       "autoIncrement": true,
-      "ios": { "credentialsSource": "local" }
+      "ios": { "credentialsSource": "remote" }
     }
   },
   "submit": {
