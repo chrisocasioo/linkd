@@ -6,6 +6,7 @@ import { eq } from 'drizzle-orm';
 import { Webhook } from 'svix';
 import { db } from './db';
 import { savedQrs, users } from './db/schema';
+import { runMigrations } from './db/migrate';
 import qrsRouter from './routes/qrs';
 import usersRouter from './routes/users';
 
@@ -79,6 +80,13 @@ const requireAuth = async (req: Request, res: Response, next: NextFunction) => {
 app.use('/api/users', requireAuth, usersRouter);
 app.use('/api/qrs', requireAuth, qrsRouter);
 
-app.listen(PORT, () => {
-  console.log(`Linkd server running on port ${PORT}`);
-});
+runMigrations()
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`Linkd server running on port ${PORT}`);
+    });
+  })
+  .catch((err) => {
+    console.error('Migration failed:', err);
+    process.exit(1);
+  });
