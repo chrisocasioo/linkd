@@ -27,7 +27,19 @@
     "android": {
       "package": "com.santrico.linkd",
       "versionCode": 1,
-      "permissions": ["CAMERA", "READ_EXTERNAL_STORAGE", "WRITE_EXTERNAL_STORAGE"]
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.READ_MEDIA_VISUAL_USER_SELECTED",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.READ_MEDIA_VIDEO",
+        "android.permission.READ_MEDIA_AUDIO"
+      ]
     },
     "plugins": [
       "expo-router",
@@ -47,8 +59,12 @@
       ]
     ],
     "extra": {
-      "eas": { "projectId": "YOUR-EAS-PROJECT-UUID" },
-      "router": { "origin": false }
+      "eas": {
+        "projectId": "87c8d6f5-b81d-462c-9127-fb801b45f501"
+      },
+      "router": {
+        "origin": false
+      }
     }
   }
 }
