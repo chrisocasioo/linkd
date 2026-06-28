@@ -13,6 +13,9 @@ import usersRouter from './routes/users';
 const app = express();
 const PORT = process.env.PORT ?? 3000;
 
+console.log('ENV check — DATABASE_URL:', process.env.DATABASE_URL ? 'set' : 'NOT SET');
+console.log('ENV check — PGHOST:', process.env.PGHOST ?? 'NOT SET');
+
 app.use(cors());
 
 app.get('/health', (_req, res) => res.json({ status: 'ok' }));
