@@ -1,4 +1,4 @@
-import { createClerkClient } from '@clerk/backend';
+import { verifyToken } from '@clerk/backend';
 import cors from 'cors';
 import 'dotenv/config';
 import express, { NextFunction, Request, Response } from 'express';
@@ -11,8 +11,6 @@ import usersRouter from './routes/users';
 
 const app = express();
 const PORT = process.env.PORT ?? 3000;
-
-const clerk = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY ?? '' });
 
 app.use(cors());
 
@@ -70,7 +68,7 @@ const requireAuth = async (req: Request, res: Response, next: NextFunction) => {
   }
   const token = authHeader.replace('Bearer ', '');
   try {
-    const payload = await clerk.verifyToken(token);
+    const payload = await verifyToken(token, { secretKey: process.env.CLERK_SECRET_KEY ?? '' });
     (req as any).userId = payload.sub;
     next();
   } catch {
