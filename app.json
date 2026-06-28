@@ -1,0 +1,54 @@
+{
+  "expo": {
+    "name": "Linkd",
+    "slug": "linkd",
+    "owner": "chrisocasio.pr",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "linkd",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0D0D0F"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.santrico.linkd",
+      "minimumOsVersion": "15.0",
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Linkd uses your camera to scan QR codes.",
+        "NSPhotoLibraryAddUsageDescription": "Linkd saves generated QR codes to your photo library.",
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "com.santrico.linkd",
+      "versionCode": 1,
+      "permissions": ["CAMERA", "READ_EXTERNAL_STORAGE", "WRITE_EXTERNAL_STORAGE"]
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Linkd uses your camera to scan QR codes."
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Linkd saves generated QR codes to your photo library.",
+          "savePhotosPermission": "Linkd saves generated QR codes to your photo library."
+        }
+      ]
+    ],
+    "extra": {
+      "eas": { "projectId": "YOUR-EAS-PROJECT-UUID" },
+      "router": { "origin": false }
+    }
+  }
+}

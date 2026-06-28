@@ -1,0 +1,12 @@
+node_modules/
+.expo/
+dist/
+web-build/
+.env
+credentials.json
+*.p12
+*.mobileprovision
+*.p8
+/tmp/apple-creds/
+/tmp/apple-keys/
+.DS_Store

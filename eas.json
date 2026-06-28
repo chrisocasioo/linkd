@@ -1,0 +1,23 @@
+{
+  "cli": {
+    "version": ">= 20.0.0",
+    "appVersionSource": "local"
+  },
+  "build": {
+    "production": {
+      "autoIncrement": true,
+      "ios": { "credentialsSource": "local" }
+    }
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "appleId": "your@appleid.com",
+        "ascAppId": "YOUR_10_DIGIT_APP_ID",
+        "ascApiKeyPath": "/tmp/apple-keys/AuthKey_KEYID.p8",
+        "ascApiKeyId": "YOUR_KEY_ID",
+        "ascApiKeyIssuerId": "YOUR-ISSUER-UUID"
+      }
+    }
+  }
+}

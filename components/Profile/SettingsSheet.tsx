@@ -1,0 +1,193 @@
+import { useAuth, useClerk } from '@clerk/clerk-expo';
+import { useRouter } from 'expo-router';
+import React, { useEffect, useRef } from 'react';
+import {
+  Alert,
+  Animated,
+  Easing,
+  Modal,
+  Pressable,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { COLORS, FONTS } from '../../constants/colors';
+import { useApi } from '../../lib/api';
+
+interface Props {
+  visible: boolean;
+  onClose: () => void;
+}
+
+interface RowProps {
+  icon: string;
+  label: string;
+  onPress: () => void;
+  danger?: boolean;
+}
+
+function SettingsRow({ icon, label, onPress, danger }: RowProps) {
+  return (
+    <Pressable style={styles.row} onPress={onPress}>
+      <View style={styles.rowLeft}>
+        <View style={styles.rowIcon}>
+          <Text>{icon}</Text>
+        </View>
+        <Text style={[styles.rowLabel, danger && styles.rowLabelDanger]}>{label}</Text>
+      </View>
+      <Text style={styles.chevron}>›</Text>
+    </Pressable>
+  );
+}
+
+export function SettingsSheet({ visible, onClose }: Props) {
+  const { signOut } = useAuth();
+  const { user } = useClerk();
+  const api = useApi();
+  const router = useRouter();
+  const translateY = useRef(new Animated.Value(500)).current;
+
+  useEffect(() => {
+    if (visible) {
+      Animated.spring(translateY, {
+        toValue: 0,
+        tension: 80,
+        friction: 10,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      Animated.timing(translateY, {
+        toValue: 500,
+        duration: 220,
+        easing: Easing.in(Easing.ease),
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [visible, translateY]);
+
+  const handleSignOut = async () => {
+    onClose();
+    try {
+      await signOut();
+      router.replace('/(auth)/sign-in');
+    } catch {}
+  };
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      'Delete Account',
+      'This will permanently delete your account and all saved QR codes. This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete Account',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await api.deleteMe().catch(() => {});
+              await user?.delete();
+              await signOut();
+              router.replace('/(auth)/sign-in');
+            } catch {
+              Alert.alert('Error', 'Could not delete account. Try again later.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  return (
+    <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
+      <View style={styles.flex}>
+        <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={onClose} />
+        <Animated.View style={[styles.sheet, { transform: [{ translateY }] }]}>
+          <View style={styles.handle} />
+          <Text style={styles.title}>Settings</Text>
+
+          <View style={styles.list}>
+            <SettingsRow icon="↩" label="Sign Out" onPress={handleSignOut} />
+            <View style={styles.separator} />
+            <SettingsRow
+              icon="⚠"
+              label="Delete Account"
+              onPress={handleDeleteAccount}
+              danger
+            />
+          </View>
+
+          <Pressable style={styles.cancelBtn} onPress={onClose}>
+            <Text style={styles.cancelBtnText}>Cancel</Text>
+          </Pressable>
+        </Animated.View>
+      </View>
+    </Modal>
+  );
+}
+
+const styles = StyleSheet.create({
+  flex: { flex: 1 },
+  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)' },
+  sheet: {
+    backgroundColor: COLORS.surface,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    paddingBottom: 40,
+    gap: 16,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  handle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: COLORS.border,
+    alignSelf: 'center',
+    marginBottom: 4,
+  },
+  title: {
+    fontSize: 18,
+    fontFamily: FONTS.semiBold,
+    color: COLORS.text,
+    letterSpacing: -0.3,
+  },
+  list: {
+    backgroundColor: COLORS.surface2,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    overflow: 'hidden',
+  },
+  row: {
+    height: 56,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  rowLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  rowIcon: {
+    width: 30,
+    height: 30,
+    borderRadius: 8,
+    backgroundColor: COLORS.bg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rowLabel: { fontSize: 15, fontFamily: FONTS.regular, color: COLORS.text },
+  rowLabelDanger: { color: COLORS.danger },
+  chevron: { fontSize: 18, color: COLORS.textTertiary },
+  separator: { height: 1, backgroundColor: COLORS.border, marginLeft: 58 },
+  cancelBtn: {
+    height: 52,
+    backgroundColor: COLORS.surface2,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cancelBtnText: { fontSize: 15, fontFamily: FONTS.medium, color: COLORS.textSecondary },
+});
