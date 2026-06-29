@@ -2,7 +2,7 @@
   "expo": {
     "name": "Linkd",
     "slug": "linkd",
-    "owner": "chrisocasio.pr",
+    "owner": "chrisocasio.sm",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -61,7 +61,7 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "87c8d6f5-b81d-462c-9127-fb801b45f501"
+        "projectId": "d5f0d286-559f-46cb-9558-04f35e782297"
       },
       "router": {
         "origin": false
