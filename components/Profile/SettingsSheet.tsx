@@ -1,4 +1,5 @@
 import { useAuth, useClerk } from '@clerk/clerk-expo';
+import * as WebBrowser from 'expo-web-browser';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useRef } from 'react';
 import {
@@ -21,21 +22,15 @@ interface Props {
 }
 
 interface RowProps {
-  icon: string;
   label: string;
   onPress: () => void;
   danger?: boolean;
 }
 
-function SettingsRow({ icon, label, onPress, danger }: RowProps) {
+function SettingsRow({ label, onPress, danger }: RowProps) {
   return (
     <Pressable style={styles.row} onPress={onPress}>
-      <View style={styles.rowLeft}>
-        <View style={styles.rowIcon}>
-          <Text>{icon}</Text>
-        </View>
-        <Text style={[styles.rowLabel, danger && styles.rowLabelDanger]}>{label}</Text>
-      </View>
+      <Text style={[styles.rowLabel, danger && styles.rowLabelDanger]}>{label}</Text>
       <Text style={styles.chevron}>›</Text>
     </Pressable>
   );
@@ -107,14 +102,21 @@ export function SettingsSheet({ visible, onClose }: Props) {
           <Text style={styles.title}>Settings</Text>
 
           <View style={styles.list}>
-            <SettingsRow icon="↩" label="Sign Out" onPress={handleSignOut} />
+            <SettingsRow
+              label="Privacy Policy"
+              onPress={() => WebBrowser.openBrowserAsync('https://chrisocasioo.github.io/Linkd-Legal/privacy.html')}
+            />
             <View style={styles.separator} />
             <SettingsRow
-              icon="⚠"
-              label="Delete Account"
-              onPress={handleDeleteAccount}
-              danger
+              label="Support"
+              onPress={() => WebBrowser.openBrowserAsync('https://chrisocasioo.github.io/Linkd-Legal/support.html')}
             />
+          </View>
+
+          <View style={styles.list}>
+            <SettingsRow label="Sign Out" onPress={handleSignOut} />
+            <View style={styles.separator} />
+            <SettingsRow label="Delete Account" onPress={handleDeleteAccount} danger />
           </View>
 
           <Pressable style={styles.cancelBtn} onPress={onClose}>
@@ -167,19 +169,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  rowLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  rowIcon: {
-    width: 30,
-    height: 30,
-    borderRadius: 8,
-    backgroundColor: COLORS.bg,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   rowLabel: { fontSize: 15, fontFamily: FONTS.regular, color: COLORS.text },
   rowLabelDanger: { color: COLORS.danger },
   chevron: { fontSize: 18, color: COLORS.textTertiary },
-  separator: { height: 1, backgroundColor: COLORS.border, marginLeft: 58 },
+  separator: { height: 1, backgroundColor: COLORS.border },
   cancelBtn: {
     height: 52,
     backgroundColor: COLORS.surface2,
