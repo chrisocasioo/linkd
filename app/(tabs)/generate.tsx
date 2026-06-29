@@ -12,6 +12,7 @@ interface GeneratedQR {
   type: QRType;
   value: string;
   label: string;
+  key: string;
 }
 
 export default function GenerateScreen() {
@@ -24,7 +25,7 @@ export default function GenerateScreen() {
   };
 
   const handleGenerate = (value: string, label: string) => {
-    setGenerated({ type: activeType, value, label });
+    setGenerated({ type: activeType, value, label, key: Date.now().toString() });
   };
 
   return (
@@ -50,6 +51,7 @@ export default function GenerateScreen() {
 
         {generated && (
           <QROutput
+            key={generated.key}
             type={generated.type}
             value={generated.value}
             label={generated.label}
