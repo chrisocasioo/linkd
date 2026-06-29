@@ -74,12 +74,14 @@ const requireAuth = async (req: Request, res: Response, next: NextFunction) => {
     const userId = payload.sub;
     (req as any).userId = userId;
 
-    // Auto-upsert user so API works even if the Clerk webhook hasn't fired yet
+    // Ensure user row exists so FK constraints are satisfied.
+    // Insert with placeholder values first (always works), then enrich from Clerk API.
+    await db.insert(users).values({ id: userId, email: '', displayName: null }).onConflictDoNothing();
     try {
       const clerkUser = await clerk.users.getUser(userId);
       const email = clerkUser.emailAddresses[0]?.emailAddress ?? '';
       const displayName = [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(' ') || null;
-      await db.insert(users).values({ id: userId, email, displayName }).onConflictDoNothing();
+      if (email) await db.update(users).set({ email, displayName }).where(eq(users.id, userId));
     } catch {}
 
     next();
