@@ -131,10 +131,9 @@ export function ScannerCameraView({ onScanned, isScanned }: Props) {
       >
         <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
           <Path
-            d="M13 2L4.5 13.5H11L10 22L20.5 10H13.5L13 2Z"
-            fill={torchOn ? COLORS.accent : 'rgba(255,255,255,0.85)'}
+            d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z"
             stroke={torchOn ? COLORS.accent : 'rgba(255,255,255,0.85)'}
-            strokeWidth={1.2}
+            strokeWidth={1.5}
             strokeLinejoin="round"
             strokeLinecap="round"
           />
