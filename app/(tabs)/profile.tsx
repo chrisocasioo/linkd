@@ -14,7 +14,8 @@ import { QRDetail } from '../../components/Profile/QRDetail';
 import { QRLibrary } from '../../components/Profile/QRLibrary';
 import { SettingsSheet } from '../../components/Profile/SettingsSheet';
 import { COLORS, FONTS } from '../../constants/colors';
-import { SavedQR, useApi } from '../../lib/api';
+import { SavedQR } from '../../lib/api';
+import { deleteLocalQR, getLocalQRs } from '../../lib/localLibrary';
 
 function GearIcon() {
   return (
@@ -39,7 +40,6 @@ function GearIcon() {
 
 export default function ProfileScreen() {
   const { user } = useUser();
-  const api = useApi();
 
   const [qrs, setQRs] = useState<SavedQR[]>([]);
   const [loadingQRs, setLoadingQRs] = useState(true);
@@ -54,14 +54,13 @@ export default function ProfileScreen() {
 
   const loadQRs = useCallback(async () => {
     try {
-      const data = await api.getQRs();
+      const data = await getLocalQRs();
       setQRs(data);
     } catch {
-      // API may not be configured yet
     } finally {
       setLoadingQRs(false);
     }
-  }, [api]);
+  }, []);
 
   useEffect(() => {
     loadQRs();
@@ -69,7 +68,7 @@ export default function ProfileScreen() {
 
   const handleDeleteQR = async (id: string) => {
     try {
-      await api.deleteQR(id);
+      await deleteLocalQR(id);
       setQRs((prev) => prev.filter((q) => q.id !== id));
       setSelectedQR(null);
     } catch {}

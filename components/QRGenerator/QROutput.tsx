@@ -6,7 +6,7 @@ import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import { COLORS, FONTS } from '../../constants/colors';
 import { QRType, getQRLabel } from '../../lib/qr';
-import { useApi } from '../../lib/api';
+import { saveLocalQR } from '../../lib/localLibrary';
 
 interface Props {
   type: QRType;
@@ -35,7 +35,6 @@ async function captureQR(svgRef: React.MutableRefObject<any>): Promise<string> {
 
 export function QROutput({ type, value, label }: Props) {
   const svgRef = useRef<any>(null);
-  const api = useApi();
   const [mediaStatus, requestMediaPermission] = MediaLibrary.usePermissions();
   const [savingLib, setSavingLib] = useState(false);
 
@@ -68,7 +67,7 @@ export function QROutput({ type, value, label }: Props) {
   const handleAddToLibrary = async () => {
     setSavingLib(true);
     try {
-      await api.saveQR({ type, label, data: value });
+      await saveLocalQR({ type, label, data: value });
       Alert.alert('Added!', 'QR code saved to your library.');
     } catch (e: any) {
       Alert.alert('Library Error', e?.message ?? String(e));
