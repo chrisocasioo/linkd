@@ -12,11 +12,11 @@
   "submit": {
     "production": {
       "ios": {
-        "appleId": "your@appleid.com",
-        "ascAppId": "YOUR_10_DIGIT_APP_ID",
-        "ascApiKeyPath": "/tmp/apple-keys/AuthKey_KEYID.p8",
-        "ascApiKeyId": "YOUR_KEY_ID",
-        "ascApiKeyIssuerId": "YOUR-ISSUER-UUID"
+        "appleId": "Chris.ocasio0424@gmail.com",
+        "ascAppId": "6785300260",
+        "ascApiKeyPath": "/tmp/apple-creds/AuthKey_H5WUFG44T6.p8",
+        "ascApiKeyId": "H5WUFG44T6",
+        "ascApiKeyIssuerId": "4d263dc3-d7e7-45cd-8aec-49bfc7ab0bd3"
       }
     }
   }
