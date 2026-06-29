@@ -10,6 +10,11 @@ import { runMigrations } from './db/migrate';
 import qrsRouter from './routes/qrs';
 import usersRouter from './routes/users';
 
+// Prevent unhandled rejections from crashing the process
+process.on('unhandledRejection', (reason: any) => {
+  console.error('Unhandled rejection:', reason?.message ?? reason);
+});
+
 const app = express();
 const PORT = process.env.PORT ?? 3000;
 const clerk = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY ?? '' });
@@ -76,7 +81,7 @@ const requireAuth = async (req: Request, res: Response, next: NextFunction) => {
 
     // Ensure user row exists so FK constraints are satisfied.
     // Insert with placeholder values first (always works), then enrich from Clerk API.
-    await db.insert(users).values({ id: userId, email: '', displayName: null }).onConflictDoNothing();
+    await db.insert(users).values({ id: userId, email: `${userId}@placeholder.local`, displayName: null }).onConflictDoNothing();
     try {
       const clerkUser = await clerk.users.getUser(userId);
       const email = clerkUser.emailAddresses[0]?.emailAddress ?? '';
@@ -92,6 +97,14 @@ const requireAuth = async (req: Request, res: Response, next: NextFunction) => {
 
 app.use('/api/users', requireAuth, usersRouter);
 app.use('/api/qrs', requireAuth, qrsRouter);
+
+// Catch-all error handler — must have 4 params for Express to recognise it as error middleware
+app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+  console.error('Express error:', err?.message ?? err);
+  if (!res.headersSent) {
+    res.status(500).json({ error: err?.message ?? 'Internal server error' });
+  }
+});
 
 runMigrations()
   .then(() => {
