@@ -56,7 +56,8 @@
           "photosPermission": "Linkd saves generated QR codes to your photo library.",
           "savePhotosPermission": "Linkd saves generated QR codes to your photo library."
         }
-      ]
+      ],
+      "expo-web-browser"
     ],
     "extra": {
       "eas": {
