@@ -49,8 +49,8 @@ export function QROutput({ type, value, label }: Props) {
       const path = await captureQR(svgRef);
       await MediaLibrary.saveToLibraryAsync(path);
       Alert.alert('Saved!', 'QR code saved to your photo library.');
-    } catch {
-      Alert.alert('Error', 'Could not save QR code.');
+    } catch (e: any) {
+      Alert.alert('Save Error', e?.message ?? String(e));
     }
   };
 
@@ -58,8 +58,8 @@ export function QROutput({ type, value, label }: Props) {
     try {
       const path = await captureQR(svgRef);
       await Sharing.shareAsync(path, { mimeType: 'image/png', dialogTitle: 'Share QR Code' });
-    } catch {
-      Alert.alert('Error', 'Could not share QR code.');
+    } catch (e: any) {
+      Alert.alert('Share Error', e?.message ?? String(e));
     }
   };
 
@@ -68,8 +68,8 @@ export function QROutput({ type, value, label }: Props) {
     try {
       await api.saveQR({ type, label, data: value });
       Alert.alert('Added!', 'QR code saved to your library.');
-    } catch {
-      Alert.alert('Error', 'Could not save to library. Check your connection.');
+    } catch (e: any) {
+      Alert.alert('Library Error', e?.message ?? String(e));
     } finally {
       setSavingLib(false);
     }
