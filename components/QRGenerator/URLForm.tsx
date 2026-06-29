@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Keyboard, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { COLORS, FONTS } from '../../constants/colors';
 
 interface Props {
@@ -12,6 +12,7 @@ export function URLForm({ onGenerate }: Props) {
   const handleGenerate = () => {
     const trimmed = url.trim();
     if (!trimmed) return;
+    Keyboard.dismiss();
     const value =
       trimmed.startsWith('http://') || trimmed.startsWith('https://')
         ? trimmed

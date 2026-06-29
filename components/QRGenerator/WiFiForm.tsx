@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Keyboard, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { COLORS, FONTS } from '../../constants/colors';
 import { SecurityType, encodeWiFiQR } from '../../lib/qr';
 
@@ -21,6 +21,7 @@ export function WiFiForm({ onGenerate }: Props) {
 
   const handleGenerate = () => {
     if (!ssid.trim()) return;
+    Keyboard.dismiss();
     const value = encodeWiFiQR(ssid.trim(), password, security);
     onGenerate(value, ssid.trim());
   };
