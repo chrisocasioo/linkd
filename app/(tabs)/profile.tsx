@@ -1,5 +1,6 @@
 import { useAuth, useUser } from '@clerk/clerk-expo';
-import React, { useCallback, useEffect, useState } from 'react';
+import { useFocusEffect } from 'expo-router';
+import React, { useCallback, useState } from 'react';
 import {
   Pressable,
   ScrollView,
@@ -62,9 +63,11 @@ export default function ProfileScreen() {
     }
   }, []);
 
-  useEffect(() => {
-    loadQRs();
-  }, [loadQRs]);
+  useFocusEffect(
+    useCallback(() => {
+      loadQRs();
+    }, [loadQRs])
+  );
 
   const handleDeleteQR = async (id: string) => {
     try {
