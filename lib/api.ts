@@ -35,7 +35,7 @@ async function request<T>(
     let body: any = {};
     let raw = '';
     try { raw = await res.text(); body = JSON.parse(raw); } catch {}
-    const msg = body.error ?? body.message ?? raw.slice(0, 120) || res.statusText;
+    const msg = body.error ?? body.message ?? (raw.slice(0, 120) || res.statusText);
     throw new Error(`[${res.status}] ${msg}`);
   }
   return res.json();
