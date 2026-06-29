@@ -8,6 +8,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
 import { COLORS, FONTS } from '../../constants/colors';
 
 interface Props {
@@ -128,7 +129,16 @@ export function ScannerCameraView({ onScanned, isScanned }: Props) {
         style={styles.torchBtn}
         onPress={() => setTorchOn((v) => !v)}
       >
-        <Text style={styles.torchIcon}>🔦</Text>
+        <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+          <Path
+            d="M13 2L4.5 13.5H11L10 22L20.5 10H13.5L13 2Z"
+            fill={torchOn ? COLORS.accent : 'rgba(255,255,255,0.85)'}
+            stroke={torchOn ? COLORS.accent : 'rgba(255,255,255,0.85)'}
+            strokeWidth={1.2}
+            strokeLinejoin="round"
+            strokeLinecap="round"
+          />
+        </Svg>
       </Pressable>
     </View>
   );
@@ -196,5 +206,4 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  torchIcon: { fontSize: 22 },
 });
