@@ -1,4 +1,4 @@
-import { verifyToken } from '@clerk/backend';
+import { createClerkClient, verifyToken } from '@clerk/backend';
 import cors from 'cors';
 import 'dotenv/config';
 import express, { NextFunction, Request, Response } from 'express';
@@ -12,6 +12,7 @@ import usersRouter from './routes/users';
 
 const app = express();
 const PORT = process.env.PORT ?? 3000;
+const clerk = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY ?? '' });
 
 app.use(cors());
 
@@ -70,7 +71,17 @@ const requireAuth = async (req: Request, res: Response, next: NextFunction) => {
   const token = authHeader.replace('Bearer ', '');
   try {
     const payload = await verifyToken(token, { secretKey: process.env.CLERK_SECRET_KEY ?? '' });
-    (req as any).userId = payload.sub;
+    const userId = payload.sub;
+    (req as any).userId = userId;
+
+    // Auto-upsert user so API works even if the Clerk webhook hasn't fired yet
+    try {
+      const clerkUser = await clerk.users.getUser(userId);
+      const email = clerkUser.emailAddresses[0]?.emailAddress ?? '';
+      const displayName = [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(' ') || null;
+      await db.insert(users).values({ id: userId, email, displayName }).onConflictDoNothing();
+    } catch {}
+
     next();
   } catch {
     res.status(401).json({ error: 'Invalid token' });

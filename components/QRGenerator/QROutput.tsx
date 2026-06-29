@@ -22,7 +22,9 @@ async function captureQR(svgRef: React.MutableRefObject<any>): Promise<string> {
     }
     svgRef.current.toDataURL((data: string) => {
       const path = `${FileSystem.cacheDirectory}qr_${Date.now()}.png`;
-      FileSystem.writeAsStringAsync(path, data, {
+      // Strip data URI prefix if present (react-native-svg adds it in some versions)
+      const base64 = data.replace(/^data:image\/\w+;base64,/, '');
+      FileSystem.writeAsStringAsync(path, base64, {
         encoding: FileSystem.EncodingType.Base64,
       })
         .then(() => resolve(path))
