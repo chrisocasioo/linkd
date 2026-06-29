@@ -25,6 +25,7 @@ export default function GenerateScreen() {
   };
 
   const handleGenerate = (value: string, label: string) => {
+    if (generated && generated.type === activeType && generated.value === value) return;
     setGenerated({ type: activeType, value, label, key: Date.now().toString() });
   };
 
