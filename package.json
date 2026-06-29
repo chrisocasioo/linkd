@@ -12,7 +12,6 @@
     "@clerk/clerk-expo": "^2.7.0",
     "@expo-google-fonts/dm-sans": "^0.2.3",
     "expo": "~56.0.0",
-    "expo-auth-session": "~56.0.14",
     "expo-camera": "~56.0.0",
     "expo-clipboard": "~56.0.0",
     "expo-constants": "~56.0.0",

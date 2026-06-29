@@ -12,6 +12,12 @@ config.resolver = {
         type: 'sourceFile',
       };
     }
+    if (moduleName === 'expo-auth-session') {
+      return {
+        filePath: path.resolve(__dirname, 'stubs/expo-auth-session.js'),
+        type: 'sourceFile',
+      };
+    }
     return context.resolveRequest(context, moduleName, platform);
   },
 };
