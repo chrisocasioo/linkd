@@ -13,6 +13,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { SocialAuthButtons } from '../../components/SocialAuthButtons';
 import { COLORS, FONTS } from '../../constants/colors';
 
 export default function SignUpScreen() {
@@ -70,6 +71,13 @@ export default function SignUpScreen() {
           {!pendingVerification ? (
             <>
               <Text style={styles.heading}>Create account</Text>
+
+              <SocialAuthButtons
+                onSuccess={async (sessionId, setActive) => {
+                  await setActive({ session: sessionId });
+                  router.replace('/(tabs)/generate');
+                }}
+              />
 
               <View style={styles.field}>
                 <Text style={styles.label}>EMAIL</Text>
