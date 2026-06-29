@@ -17,7 +17,7 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.santrico.linkd",
       "minimumOsVersion": "16.0",
-      "buildNumber": "17",
+      "buildNumber": "18",
       "infoPlist": {
         "NSCameraUsageDescription": "Linkd uses your camera to scan QR codes.",
         "NSPhotoLibraryAddUsageDescription": "Linkd saves generated QR codes to your photo library.",
