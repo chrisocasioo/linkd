@@ -24,15 +24,18 @@ router.post('/', upload.single('photo'), async (req, res) => {
     const userId = (req as any).userId as string;
     if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
 
+    const bucket = process.env.BUCKET_NAME ?? process.env.BUCKET ?? '';
     const key = `profiles/${userId}.jpg`;
+    console.log(`[photo] uploading to bucket="${bucket}" key="${key}" endpoint="${process.env.AWS_ENDPOINT_URL_S3 ?? process.env.ENDPOINT}"`);
     await s3.send(
       new PutObjectCommand({
-        Bucket: process.env.BUCKET_NAME ?? process.env.BUCKET ?? '',
+        Bucket: bucket,
         Key: key,
         Body: req.file.buffer,
         ContentType: req.file.mimetype,
       })
     );
+    console.log(`[photo] upload success for ${userId}`);
 
     const base = process.env.RAILWAY_PUBLIC_DOMAIN
       ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
