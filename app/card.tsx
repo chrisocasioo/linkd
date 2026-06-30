@@ -49,6 +49,8 @@ export default function CardScreen() {
   const [nameValue, setNameValue] = useState('');
   const [editingUsername, setEditingUsername] = useState(false);
   const [usernameValue, setUsernameValue] = useState('');
+  const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
+  const usernameCheckTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [editingBio, setEditingBio] = useState(false);
   const [bioValue, setBioValue] = useState('');
 
@@ -81,6 +83,21 @@ export default function CardScreen() {
       const updated = await api.updateMe({ displayName: name, bio });
       setUser(updated);
     } catch {}
+  };
+
+  const handleUsernameChange = (v: string) => {
+    const cleaned = v.toLowerCase().replace(/[^a-z0-9_-]/g, '');
+    setUsernameValue(cleaned);
+    setUsernameAvailable(null);
+    if (usernameCheckTimer.current) clearTimeout(usernameCheckTimer.current);
+    if (!cleaned || cleaned === user?.username) return;
+    if (!/^[a-z0-9_-]{3,30}$/.test(cleaned)) { setUsernameAvailable(false); return; }
+    usernameCheckTimer.current = setTimeout(async () => {
+      try {
+        const { available } = await api.checkUsername(cleaned);
+        setUsernameAvailable(available);
+      } catch {}
+    }, 500);
   };
 
   const saveUsername = async (value: string) => {
@@ -262,12 +279,17 @@ export default function CardScreen() {
                 ref={usernameInputRef}
                 style={styles.usernameInput}
                 value={usernameValue}
-                onChangeText={(v) => setUsernameValue(v.toLowerCase().replace(/[^a-z0-9_-]/g, ''))}
-                onBlur={() => { setEditingUsername(false); saveUsername(usernameValue); }}
+                onChangeText={handleUsernameChange}
+                onBlur={() => { setEditingUsername(false); setUsernameAvailable(null); saveUsername(usernameValue); }}
                 autoCapitalize="none"
                 autoCorrect={false}
                 textAlign="left"
               />
+              {usernameValue.length >= 3 && usernameValue !== user?.username && (
+                <Text style={usernameAvailable === true ? styles.usernameCheck : usernameAvailable === false ? styles.usernameX : styles.usernameChecking}>
+                  {usernameAvailable === true ? '✓' : usernameAvailable === false ? '✗' : '…'}
+                </Text>
+              )}
             </View>
           ) : (
             <Pressable
@@ -387,6 +409,9 @@ const styles = StyleSheet.create({
   usernameInputRow: { flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: COLORS.border },
   usernameAt: { fontSize: 12, fontFamily: FONTS.regular, color: COLORS.textSecondary },
   usernameInput: { fontSize: 12, fontFamily: FONTS.regular, color: COLORS.textSecondary, minWidth: 100, paddingVertical: 2 },
+  usernameCheck: { fontSize: 13, color: '#22c55e', marginLeft: 6 },
+  usernameX: { fontSize: 13, color: '#ef4444', marginLeft: 6 },
+  usernameChecking: { fontSize: 13, color: COLORS.textTertiary, marginLeft: 6 },
   bioInput: { fontSize: 11, fontFamily: FONTS.regular, color: COLORS.textSecondary, textAlign: 'center', maxWidth: 280, minWidth: 160, minHeight: 40, borderBottomWidth: 1, borderBottomColor: COLORS.border },
   bio: { fontSize: 11, fontFamily: FONTS.regular, color: COLORS.textSecondary, textAlign: 'center', maxWidth: 280, lineHeight: 16 },
   bioPlaceholder: { color: COLORS.textTertiary },
