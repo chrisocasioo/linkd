@@ -244,14 +244,16 @@ export default function CardScreen() {
               value={bioValue}
               onChangeText={setBioValue}
               onBlur={() => { setEditingBio(false); saveNameBio(nameValue, bioValue); }}
-              autoFocus
               multiline
               textAlign="center"
               placeholder="Add a bio…"
               placeholderTextColor={COLORS.textTertiary}
             />
           ) : (
-            <Pressable onPress={() => { setEditingBio(true); setTimeout(() => bioInputRef.current?.focus(), 50); }}>
+            <Pressable
+              onPress={() => { setEditingBio(true); setTimeout(() => bioInputRef.current?.focus(), 100); }}
+              hitSlop={{ top: 8, bottom: 8, left: 16, right: 16 }}
+            >
               <Text style={[styles.bio, !bioValue && styles.bioPlaceholder]}>
                 {bioValue || 'Tap to add a bio'}
               </Text>
@@ -341,7 +343,7 @@ const styles = StyleSheet.create({
   nameInput: { fontSize: 20, fontFamily: FONTS.semiBold, color: COLORS.text, textAlign: 'center', borderBottomWidth: 1, borderBottomColor: COLORS.accent, minWidth: 160 },
   name: { fontSize: 20, fontFamily: FONTS.semiBold, color: COLORS.text, letterSpacing: -0.025 * 20 },
   username: { fontSize: 12, fontFamily: FONTS.regular, color: COLORS.textSecondary },
-  bioInput: { fontSize: 11, fontFamily: FONTS.regular, color: COLORS.textSecondary, textAlign: 'center', maxWidth: 280, borderBottomWidth: 1, borderBottomColor: COLORS.border, minWidth: 160 },
+  bioInput: { fontSize: 11, fontFamily: FONTS.regular, color: COLORS.textSecondary, textAlign: 'center', maxWidth: 280, minWidth: 160, minHeight: 40, borderBottomWidth: 1, borderBottomColor: COLORS.border },
   bio: { fontSize: 11, fontFamily: FONTS.regular, color: COLORS.textSecondary, textAlign: 'center', maxWidth: 280, lineHeight: 16 },
   bioPlaceholder: { color: COLORS.textTertiary },
   links: { gap: 8, paddingHorizontal: 18 },
