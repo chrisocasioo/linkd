@@ -124,9 +124,7 @@ export default function CardScreen() {
     if (!user) return;
     const { status } = await Contacts.requestPermissionsAsync();
     if (status !== 'granted') return Alert.alert('Permission denied');
-    const contact: Contacts.Contact = {
-      contactType: Contacts.ContactTypes.Person,
-      name: user.displayName ?? user.username ?? '',
+    const contact = {
       firstName: user.displayName?.split(' ')[0] ?? '',
       lastName: user.displayName?.split(' ').slice(1).join(' ') ?? '',
       emails: [{ email: user.email, label: 'work', id: '' }],
@@ -134,7 +132,7 @@ export default function CardScreen() {
       imageAvailable: false,
       urls: user.username ? [{ url: `https://linkd.tattoo/${user.username}`, label: 'Linkd', id: '' }] : [],
     };
-    await Contacts.addContactAsync(contact);
+    await Contacts.addContactAsync(contact as any);
     Alert.alert('Saved', 'Contact added to your address book.');
   };
 

@@ -102,7 +102,7 @@ export function PaywallSheet({ visible, onClose }: Props) {
 }
 
 const styles = StyleSheet.create({
-  backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.7)' },
+  backdrop: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(0,0,0,0.7)' },
   sheet: {
     position: 'absolute',
     bottom: 0,

@@ -1,9 +1,8 @@
 import { ClerkProvider, useAuth } from '@clerk/clerk-expo';
 import {
-  DMSans_300Light,
   DMSans_400Regular,
   DMSans_500Medium,
-  DMSans_600SemiBold,
+  DMSans_700Bold,
   useFonts,
 } from '@expo-google-fonts/dm-sans';
 import { Stack } from 'expo-router';
@@ -18,9 +17,10 @@ import { initRevenueCat } from '../lib/revenuecat';
 
 SplashScreen.preventAutoHideAsync();
 
-if (global.ErrorUtils) {
-  const prev = global.ErrorUtils.getGlobalHandler();
-  global.ErrorUtils.setGlobalHandler((error, isFatal) => {
+const g = global as any;
+if (g.ErrorUtils) {
+  const prev = g.ErrorUtils.getGlobalHandler();
+  g.ErrorUtils.setGlobalHandler((error: any, isFatal: any) => {
     Alert.alert('Startup Error', error?.message ?? String(error));
     prev?.(error, isFatal);
   });
@@ -36,10 +36,10 @@ function AppInitializer() {
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
-    'DMSans-Light': DMSans_300Light,
+    'DMSans-Light': DMSans_400Regular,
     'DMSans-Regular': DMSans_400Regular,
     'DMSans-Medium': DMSans_500Medium,
-    'DMSans-SemiBold': DMSans_600SemiBold,
+    'DMSans-SemiBold': DMSans_700Bold,
   });
 
   useEffect(() => {
