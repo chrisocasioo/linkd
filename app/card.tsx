@@ -1,11 +1,12 @@
-import * as Contacts from 'expo-contacts';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import React, { useCallback, useRef, useState } from 'react';
 import {
+  ActionSheetIOS,
   ActivityIndicator,
   Alert,
   Image,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -16,11 +17,12 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinkRow } from '../components/Card/LinkRow';
 import { LinkEditSheet } from '../components/Card/LinkEditSheet';
+import { ContactCardSheet } from '../components/Card/ContactCardSheet';
 import { ShareSheet } from '../components/Card/ShareSheet';
 import { PaywallSheet } from '../components/Card/PaywallSheet';
 import { EditProfileSheet } from '../components/Profile/EditProfileSheet';
 import { SettingsSheet } from '../components/Profile/SettingsSheet';
-import { useApi, User, Link } from '../lib/api';
+import { useApi, User, Link, ContactMeta } from '../lib/api';
 import { usePhotoUpload } from '../lib/usePhotoUpload';
 import { COLORS, FONTS } from '../constants/colors';
 
@@ -41,6 +43,7 @@ export default function CardScreen() {
   const [showLinkEdit, setShowLinkEdit] = useState(false);
   const [editingLink, setEditingLink] = useState<Link | null>(null);
   const [showPaywall, setShowPaywall] = useState(false);
+  const [showContactCard, setShowContactCard] = useState(false);
 
   const [editingName, setEditingName] = useState(false);
   const [nameValue, setNameValue] = useState('');
@@ -121,20 +124,44 @@ export default function CardScreen() {
     await api.reorderLinks(items).catch(() => {});
   };
 
-  const handleAddToContacts = async () => {
-    if (!user) return;
-    const { status } = await Contacts.requestPermissionsAsync();
-    if (status !== 'granted') return Alert.alert('Permission denied');
-    const contact = {
-      firstName: user.displayName?.split(' ')[0] ?? '',
-      lastName: user.displayName?.split(' ').slice(1).join(' ') ?? '',
-      emails: [{ email: user.email, label: 'work', id: '' }],
-      note: user.bio ?? '',
-      imageAvailable: false,
-      urls: user.username ? [{ url: `https://linkd.tattoo/${user.username}`, label: 'Linkd', id: '' }] : [],
-    };
-    await Contacts.addContactAsync(contact as any);
-    Alert.alert('Saved', 'Contact added to your address book.');
+  const existingContactCard = links.find((l) => l.type === 'contact_card') ?? null;
+
+  const handlePressAdd = () => {
+    if (existingContactCard) {
+      openLinkEdit(null);
+      return;
+    }
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        { options: ['Cancel', 'Add Link', 'Add Contact Card'], cancelButtonIndex: 0 },
+        (idx) => {
+          if (idx === 1) openLinkEdit(null);
+          if (idx === 2) setShowContactCard(true);
+        }
+      );
+    } else {
+      Alert.alert('Add to card', undefined, [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Add Link', onPress: () => openLinkEdit(null) },
+        { text: 'Add Contact Card', onPress: () => setShowContactCard(true) },
+      ]);
+    }
+  };
+
+  const handleSaveContactCard = async (meta: ContactMeta) => {
+    const payload = JSON.stringify(meta);
+    if (existingContactCard) {
+      const updated = await api.updateLink(existingContactCard.id, { metadata: payload });
+      setLinks((ls) => ls.map((l) => l.id === updated.id ? updated : l));
+    } else {
+      const created = await api.addLink({
+        title: 'Contact Card',
+        url: 'contact://card',
+        type: 'contact_card',
+        metadata: payload,
+      });
+      setLinks((ls) => [...ls, created]);
+    }
   };
 
   const displayList = isReordering ? pendingOrder : links;
@@ -253,19 +280,9 @@ export default function CardScreen() {
           ))}
 
           {!isReordering && (
-            <>
-              <Pressable style={({ pressed }) => [styles.contactsRow, pressed && { opacity: 0.7 }]} onPress={handleAddToContacts}>
-                <View style={styles.contactsContent}>
-                  <Text style={styles.contactsTitle}>Add to Contacts</Text>
-                  <Text style={styles.contactsSub}>Save my info to your phone</Text>
-                </View>
-                <Text style={styles.contactsChevron}>›</Text>
-              </Pressable>
-
-              <Pressable style={styles.addLinkBtn} onPress={() => openLinkEdit(null)}>
-                <Text style={styles.addLinkText}>+</Text>
-              </Pressable>
-            </>
+            <Pressable style={styles.addLinkBtn} onPress={handlePressAdd}>
+              <Text style={styles.addLinkText}>+</Text>
+            </Pressable>
           )}
         </View>
       </ScrollView>
@@ -292,6 +309,12 @@ export default function CardScreen() {
         onDelete={editingLink ? handleDeleteLink : undefined}
       />
       <PaywallSheet visible={showPaywall} onClose={() => setShowPaywall(false)} />
+      <ContactCardSheet
+        visible={showContactCard}
+        existing={existingContactCard ? (() => { try { return JSON.parse(existingContactCard.metadata ?? '{}'); } catch { return null; } })() : null}
+        onClose={() => setShowContactCard(false)}
+        onSave={handleSaveContactCard}
+      />
     </SafeAreaView>
   );
 }
@@ -323,14 +346,6 @@ const styles = StyleSheet.create({
   bio: { fontSize: 11, fontFamily: FONTS.regular, color: COLORS.textSecondary, textAlign: 'center', maxWidth: 280, lineHeight: 16 },
   bioPlaceholder: { color: COLORS.textTertiary },
   links: { gap: 8, paddingHorizontal: 18 },
-  contactsRow: {
-    height: 56, backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border,
-    borderRadius: 14, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center',
-  },
-  contactsContent: { flex: 1, gap: 2 },
-  contactsTitle: { fontSize: 13, fontFamily: FONTS.medium, color: COLORS.text },
-  contactsSub: { fontSize: 10, fontFamily: FONTS.regular, color: COLORS.textSecondary },
-  contactsChevron: { fontSize: 18, color: COLORS.textTertiary },
   addLinkBtn: {
     width: 48, height: 48, borderRadius: 24,
     borderWidth: 1.5, borderColor: 'rgba(201,151,58,0.4)', borderStyle: 'dashed',

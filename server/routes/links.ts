@@ -22,7 +22,9 @@ router.get('/', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const userId = (req as any).userId as string;
-    const { title, url } = req.body as { title?: string; url?: string };
+    const { title, url, type, metadata } = req.body as {
+      title?: string; url?: string; type?: string; metadata?: string;
+    };
     if (!title || !url) return res.status(400).json({ error: 'title and url required' });
 
     const existing = await db
@@ -34,7 +36,7 @@ router.post('/', async (req, res) => {
 
     const [created] = await db
       .insert(links)
-      .values({ userId, title, url, order: nextOrder })
+      .values({ userId, title, url, type: type ?? 'link', metadata: metadata ?? null, order: nextOrder })
       .returning();
     res.status(201).json(created);
   } catch (err: any) {
@@ -67,11 +69,12 @@ router.patch('/:id', async (req, res) => {
   try {
     const userId = (req as any).userId as string;
     const { id } = req.params;
-    const { title, url, goLiveAt, expiresAt } = req.body as {
+    const { title, url, goLiveAt, expiresAt, metadata } = req.body as {
       title?: string;
       url?: string;
       goLiveAt?: string | null;
       expiresAt?: string | null;
+      metadata?: string | null;
     };
 
     const update: Partial<typeof links.$inferInsert> = {};
@@ -79,6 +82,7 @@ router.patch('/:id', async (req, res) => {
     if (url !== undefined) update.url = url;
     if (goLiveAt !== undefined) update.goLiveAt = goLiveAt ? new Date(goLiveAt) : null;
     if (expiresAt !== undefined) update.expiresAt = expiresAt ? new Date(expiresAt) : null;
+    if (metadata !== undefined) update.metadata = metadata;
 
     const [updated] = await db
       .update(links)

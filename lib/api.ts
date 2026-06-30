@@ -21,11 +21,19 @@ export interface User {
   updatedAt: string;
 }
 
+export interface ContactMeta {
+  phone?: string;
+  company?: string;
+  jobTitle?: string;
+}
+
 export interface Link {
   id: string;
   userId: string;
   title: string;
   url: string;
+  type: string;
+  metadata: string | null;
   order: number;
   goLiveAt: string | null;
   expiresAt: string | null;
@@ -93,11 +101,11 @@ export function useApi() {
       }),
 
     getMyLinks: () => withToken((t) => request<Link[]>('/api/links', t)),
-    addLink: (body: { title: string; url: string }) =>
+    addLink: (body: { title: string; url: string; type?: string; metadata?: string }) =>
       withToken((t) =>
         request<Link>('/api/links', t, { method: 'POST', body: JSON.stringify(body) })
       ),
-    updateLink: (id: string, body: Partial<Pick<Link, 'title' | 'url' | 'goLiveAt' | 'expiresAt'>>) =>
+    updateLink: (id: string, body: Partial<Pick<Link, 'title' | 'url' | 'goLiveAt' | 'expiresAt' | 'metadata'>>) =>
       withToken((t) =>
         request<Link>(`/api/links/${id}`, t, { method: 'PATCH', body: JSON.stringify(body) })
       ),

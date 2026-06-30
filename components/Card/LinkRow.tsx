@@ -26,7 +26,8 @@ interface Props {
 }
 
 export function LinkRow({ link, isReordering, isFirst, isLast, onEdit, onDelete, onMoveUp, onMoveDown, onLongPress }: Props) {
-  const isScheduled = link.goLiveAt && new Date(link.goLiveAt) > new Date();
+  const isContactCard = link.type === 'contact_card';
+  const isScheduled = !isContactCard && link.goLiveAt && new Date(link.goLiveAt) > new Date();
   const swipeX = useRef(new Animated.Value(0)).current;
   const offsetRef = useRef(0);
 
@@ -59,6 +60,7 @@ export function LinkRow({ link, isReordering, isFirst, isLast, onEdit, onDelete,
   const handlePress = () => {
     if (isReordering) return;
     if (offsetRef.current !== 0) { snapClose(); return; }
+    if (isContactCard) return;
     Linking.openURL(link.url).catch(() => {});
   };
 
@@ -83,16 +85,33 @@ export function LinkRow({ link, isReordering, isFirst, isLast, onEdit, onDelete,
           onLongPress={isReordering ? undefined : onLongPress}
           delayLongPress={400}
         >
-          <View style={styles.content}>
-            <Text style={styles.title} numberOfLines={1}>{link.title}</Text>
-            <Text style={styles.url} numberOfLines={1}>{link.url}</Text>
-          </View>
-
-          {isScheduled && !isReordering && (
-            <Text style={styles.scheduledBadge}>Scheduled</Text>
+          {isContactCard ? (
+            <View style={styles.contactCardContent}>
+              <Text style={styles.contactCardIcon}>📇</Text>
+              <View style={styles.content}>
+                <Text style={styles.title} numberOfLines={1}>Contact Card</Text>
+                {link.metadata ? (() => {
+                  try {
+                    const m = JSON.parse(link.metadata);
+                    const sub = [m.jobTitle, m.company].filter(Boolean).join(' · ');
+                    return sub ? <Text style={styles.url} numberOfLines={1}>{sub}</Text> : null;
+                  } catch { return null; }
+                })() : null}
+              </View>
+              {!isReordering && <Text style={[styles.contactCardBadge]}>📲 Save</Text>}
+            </View>
+          ) : (
+            <>
+              <View style={styles.content}>
+                <Text style={styles.title} numberOfLines={1}>{link.title}</Text>
+                <Text style={styles.url} numberOfLines={1}>{link.url}</Text>
+              </View>
+              {isScheduled && !isReordering && (
+                <Text style={styles.scheduledBadge}>Scheduled</Text>
+              )}
+              {!isReordering && <Text style={styles.chevron}>›</Text>}
+            </>
           )}
-
-          {!isReordering && <Text style={styles.chevron}>›</Text>}
 
           {isReordering && (
             <View style={styles.arrows}>
@@ -157,6 +176,9 @@ const styles = StyleSheet.create({
   content: { flex: 1, gap: 2 },
   title: { fontSize: 15, fontFamily: FONTS.medium, color: COLORS.text },
   url: { fontSize: 12, fontFamily: FONTS.regular, color: COLORS.textSecondary },
+  contactCardContent: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  contactCardIcon: { fontSize: 22 },
+  contactCardBadge: { fontSize: 11, fontFamily: FONTS.medium, color: COLORS.accent },
   scheduledBadge: {
     fontSize: 11,
     fontFamily: FONTS.medium,

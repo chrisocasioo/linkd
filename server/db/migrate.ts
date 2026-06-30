@@ -42,6 +42,9 @@ export async function runMigrations() {
       created_at TIMESTAMP DEFAULT NOW()
     );
 
+    ALTER TABLE links ADD COLUMN IF NOT EXISTS type TEXT NOT NULL DEFAULT 'link';
+    ALTER TABLE links ADD COLUMN IF NOT EXISTS metadata TEXT;
+
     CREATE TABLE IF NOT EXISTS card_views (
       id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
       user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,

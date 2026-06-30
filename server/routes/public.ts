@@ -37,16 +37,34 @@ router.get('/:username/vcard', async (req, res) => {
     const { username } = req.params;
     const user = await db.query.users.findFirst({ where: eq(users.username, username) });
     if (!user) return res.status(404).send('Not found');
+
+    // Pull extra contact data from a contact_card link if one exists
+    const contactLink = await db.query.links.findFirst({
+      where: and(eq(links.userId, user.id), eq(links.type, 'contact_card')),
+    });
+    const contact: { phone?: string; company?: string; jobTitle?: string } =
+      contactLink?.metadata ? JSON.parse(contactLink.metadata) : {};
+
     const name = user.displayName ?? username;
+    const nameParts = name.split(' ');
+    const fn = name;
+    const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
+    const firstName = nameParts[0];
+
     const lines = [
       'BEGIN:VCARD',
       'VERSION:3.0',
-      `FN:${name}`,
-      `NICKNAME:${username}`,
+      `FN:${fn}`,
+      `N:${lastName};${firstName};;;`,
+      contact.company || contact.jobTitle
+        ? `ORG:${(contact.company ?? '').replace(/[;:]/g, '\\$&')}`
+        : null,
+      contact.jobTitle ? `TITLE:${contact.jobTitle.replace(/[;:]/g, '\\$&')}` : null,
+      contact.phone ? `TEL;TYPE=CELL:${contact.phone}` : null,
+      `EMAIL;TYPE=WORK:${user.email}`,
       user.bio ? `NOTE:${user.bio.replace(/\n/g, '\\n')}` : null,
       user.profilePhoto ? `PHOTO;VALUE=URI:${user.profilePhoto}` : null,
       `URL:https://linkd.tattoo/${username}`,
-      `EMAIL:${user.email}`,
       'END:VCARD',
     ];
     const vcard = lines.filter(Boolean).join('\r\n');
@@ -79,16 +97,18 @@ router.get('/:username', async (req, res) => {
       purple: { bg: '#1A0A2E', text: '#FFFFFF', card: '#2A1A3E', accent: '#A855F7' },
     };
 
+    const esc = (s: string) => s.replace(/[<>&"]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c] ?? c));
     const t = themeMap[user.theme ?? 'dark'] ?? themeMap.dark;
     const accent = user.accentColor ?? t.accent;
-    const name = (user.displayName ?? username).replace(/[<>&"]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c] ?? c));
-    const bio = user.bio ? user.bio.replace(/[<>&"]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c] ?? c)) : '';
-
+    const name = esc(user.displayName ?? username);
+    const bio = user.bio ? esc(user.bio) : '';
     const linkItems = activeLinks
-      .map(
-        (l) =>
-          `<a href="${l.url.replace(/"/g, '&quot;')}" class="link-btn" onclick="logClick('${l.id}');return true;">${l.title.replace(/[<>&]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c] ?? c))}</a>`
-      )
+      .map((l) => {
+        if (l.type === 'contact_card') {
+          return `<a href="/${username}/vcard" class="link-btn contact-btn" onclick="logClick('${l.id}');return true;">📇 Save to Contacts</a>`;
+        }
+        return `<a href="${esc(l.url)}" class="link-btn" onclick="logClick('${l.id}');return true;">${esc(l.title)}</a>`;
+      })
       .join('\n');
 
     const html = `<!DOCTYPE html>

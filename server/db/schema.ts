@@ -36,6 +36,8 @@ export const links = pgTable('links', {
     .references(() => users.id, { onDelete: 'cascade' }),
   title: text('title').notNull(),
   url: text('url').notNull(),
+  type: text('type').default('link').notNull(),
+  metadata: text('metadata'),
   order: integer('order').default(0),
   goLiveAt: timestamp('go_live_at'),
   expiresAt: timestamp('expires_at'),
