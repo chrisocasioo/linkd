@@ -1,4 +1,5 @@
-import { useAuth, useClerk } from '@clerk/clerk-expo';
+import { useAuth } from '@clerk/clerk-expo';
+import { useClerk } from '@clerk/clerk-expo';
 import * as WebBrowser from 'expo-web-browser';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useRef } from 'react';
@@ -13,12 +14,16 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { COLORS, FONTS } from '../../constants/colors';
+import { useRevenueCat } from '../../lib/RevenueCatContext';
 import { useApi } from '../../lib/api';
+import { COLORS, FONTS } from '../../constants/colors';
 
 interface Props {
   visible: boolean;
   onClose: () => void;
+  onEditProfile: () => void;
+  onReorderLinks: () => void;
+  onShowPaywall: () => void;
 }
 
 interface RowProps {
@@ -36,28 +41,19 @@ function SettingsRow({ label, onPress, danger }: RowProps) {
   );
 }
 
-export function SettingsSheet({ visible, onClose }: Props) {
+export function SettingsSheet({ visible, onClose, onEditProfile, onReorderLinks, onShowPaywall }: Props) {
   const { signOut } = useAuth();
   const { user } = useClerk();
   const api = useApi();
   const router = useRouter();
+  const { isPro } = useRevenueCat();
   const translateY = useRef(new Animated.Value(500)).current;
 
   useEffect(() => {
     if (visible) {
-      Animated.spring(translateY, {
-        toValue: 0,
-        tension: 80,
-        friction: 10,
-        useNativeDriver: true,
-      }).start();
+      Animated.spring(translateY, { toValue: 0, tension: 80, friction: 10, useNativeDriver: true }).start();
     } else {
-      Animated.timing(translateY, {
-        toValue: 500,
-        duration: 220,
-        easing: Easing.in(Easing.ease),
-        useNativeDriver: true,
-      }).start();
+      Animated.timing(translateY, { toValue: 500, duration: 220, easing: Easing.in(Easing.ease), useNativeDriver: true }).start();
     }
   }, [visible, translateY]);
 
@@ -72,7 +68,7 @@ export function SettingsSheet({ visible, onClose }: Props) {
   const handleDeleteAccount = () => {
     Alert.alert(
       'Delete Account',
-      'This will permanently delete your account and all saved QR codes. This cannot be undone.',
+      'This will permanently delete your account and all data. This cannot be undone.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -100,6 +96,24 @@ export function SettingsSheet({ visible, onClose }: Props) {
         <Animated.View style={[styles.sheet, { transform: [{ translateY }] }]}>
           <View style={styles.handle} />
           <Text style={styles.title}>Settings</Text>
+
+          <View style={styles.list}>
+            <SettingsRow label="Edit Profile" onPress={() => { onClose(); setTimeout(onEditProfile, 300); }} />
+            <View style={styles.separator} />
+            <SettingsRow label="Reorder Links" onPress={() => { onClose(); setTimeout(onReorderLinks, 300); }} />
+            <View style={styles.separator} />
+            <SettingsRow
+              label={isPro ? 'Analytics' : 'Analytics  🔒'}
+              onPress={() => {
+                onClose();
+                if (isPro) {
+                  setTimeout(() => router.push('/analytics'), 300);
+                } else {
+                  setTimeout(onShowPaywall, 300);
+                }
+              }}
+            />
+          </View>
 
           <View style={styles.list}>
             <SettingsRow
@@ -141,46 +155,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.border,
   },
-  handle: {
-    width: 36,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: COLORS.border,
-    alignSelf: 'center',
-    marginBottom: 4,
-  },
-  title: {
-    fontSize: 18,
-    fontFamily: FONTS.semiBold,
-    color: COLORS.text,
-    letterSpacing: -0.3,
-  },
-  list: {
-    backgroundColor: COLORS.surface2,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    overflow: 'hidden',
-  },
-  row: {
-    height: 56,
-    paddingHorizontal: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
+  handle: { width: 36, height: 4, borderRadius: 2, backgroundColor: COLORS.border, alignSelf: 'center', marginBottom: 4 },
+  title: { fontSize: 18, fontFamily: FONTS.semiBold, color: COLORS.text, letterSpacing: -0.3 },
+  list: { backgroundColor: COLORS.surface2, borderRadius: 18, borderWidth: 1, borderColor: COLORS.border, overflow: 'hidden' },
+  row: { height: 56, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   rowLabel: { fontSize: 15, fontFamily: FONTS.regular, color: COLORS.text },
   rowLabelDanger: { color: COLORS.danger },
   chevron: { fontSize: 18, color: COLORS.textTertiary },
   separator: { height: 1, backgroundColor: COLORS.border },
-  cancelBtn: {
-    height: 52,
-    backgroundColor: COLORS.surface2,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  cancelBtn: { height: 52, backgroundColor: COLORS.surface2, borderWidth: 1, borderColor: COLORS.border, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   cancelBtnText: { fontSize: 15, fontFamily: FONTS.medium, color: COLORS.textSecondary },
 });

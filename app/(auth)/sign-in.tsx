@@ -31,7 +31,7 @@ export default function SignInScreen() {
       const result = await signIn.create({ identifier: email, password });
       if (result.status === 'complete') {
         await setActive({ session: result.createdSessionId });
-        router.replace('/(tabs)/generate');
+        router.replace('/');
       }
     } catch (err: any) {
       Alert.alert('Sign in failed', err.errors?.[0]?.message ?? err.message);
@@ -49,7 +49,7 @@ export default function SignInScreen() {
         <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
           <View style={styles.logo}>
             <Text style={styles.logoText}>Linkd</Text>
-            <Text style={styles.logoSub}>QR Generator & Scanner</Text>
+            <Text style={styles.logoSub}>Digital Business Cards</Text>
           </View>
 
           <Text style={styles.heading}>Welcome back</Text>
@@ -57,7 +57,7 @@ export default function SignInScreen() {
           <SocialAuthButtons
             onSuccess={async (sessionId, setActive) => {
               await setActive({ session: sessionId });
-              router.replace('/(tabs)/generate');
+              router.replace('/');
             }}
           />
 

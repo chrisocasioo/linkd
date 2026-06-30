@@ -1,29 +1,31 @@
-import { createClerkClient, verifyToken } from '@clerk/backend';
+import { eq } from 'drizzle-orm';
 import cors from 'cors';
 import 'dotenv/config';
 import express, { NextFunction, Request, Response } from 'express';
-import { eq } from 'drizzle-orm';
 import { Webhook } from 'svix';
 import { db } from './db';
-import { savedQrs, users } from './db/schema';
+import { users } from './db/schema';
 import { runMigrations } from './db/migrate';
-import qrsRouter from './routes/qrs';
+import { clerk, requireAuth } from './middleware/auth';
+import analyticsRouter from './routes/analytics';
+import linksRouter from './routes/links';
+import photoRouter from './routes/photo';
+import publicRouter from './routes/public';
+import revenuecatRouter from './routes/revenuecat';
 import usersRouter from './routes/users';
 
-// Prevent unhandled rejections from crashing the process
 process.on('unhandledRejection', (reason: any) => {
   console.error('Unhandled rejection:', reason?.message ?? reason);
 });
 
 const app = express();
 const PORT = process.env.PORT ?? 3000;
-const clerk = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY ?? '' });
 
 app.use(cors());
 
 app.get('/health', (_req, res) => res.json({ status: 'ok' }));
 
-// Clerk webhook — raw body needed for signature verification, no auth required
+// 1. Clerk webhook — raw body, no auth
 app.post(
   '/api/users/sync',
   express.raw({ type: 'application/json' }),
@@ -65,40 +67,27 @@ app.post(
   }
 );
 
+// 2. RevenueCat webhook — raw body, no auth (signature verified inside router)
+app.use('/api/revenuecat/webhook', express.raw({ type: 'application/json' }), revenuecatRouter);
+
+// 3. JSON body parser for all other routes
 app.use(express.json());
 
-// JWT auth middleware for all other /api/* routes
-const requireAuth = async (req: Request, res: Response, next: NextFunction) => {
-  const authHeader = req.headers.authorization;
-  if (!authHeader?.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
-  const token = authHeader.replace('Bearer ', '');
-  try {
-    const payload = await verifyToken(token, { secretKey: process.env.CLERK_SECRET_KEY ?? '' });
-    const userId = payload.sub;
-    (req as any).userId = userId;
+// 4. Photo upload — must be before generic /api/users mount (multer handles its own body parsing)
+app.use('/api/users/me/photo', requireAuth, photoRouter);
 
-    // Ensure user row exists so FK constraints are satisfied.
-    // Insert with placeholder values first (always works), then enrich from Clerk API.
-    await db.insert(users).values({ id: userId, email: `${userId}@placeholder.local`, displayName: null }).onConflictDoNothing();
-    try {
-      const clerkUser = await clerk.users.getUser(userId);
-      const email = clerkUser.emailAddresses[0]?.emailAddress ?? '';
-      const displayName = [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(' ') || null;
-      if (email) await db.update(users).set({ email, displayName }).where(eq(users.id, userId));
-    } catch {}
-
-    next();
-  } catch {
-    res.status(401).json({ error: 'Invalid token' });
-  }
-};
-
+// 5. User routes
 app.use('/api/users', requireAuth, usersRouter);
-app.use('/api/qrs', requireAuth, qrsRouter);
 
-// Catch-all error handler — must have 4 params for Express to recognise it as error middleware
+// 6. Link routes
+app.use('/api/links', requireAuth, linksRouter);
+
+// 7. Analytics routes (POST /view is public; GET /me applies requireAuth internally)
+app.use('/api/analytics', analyticsRouter);
+
+// 8. Public card pages — catch-all, must be last
+app.use('/', publicRouter);
+
 app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
   console.error('Express error:', err?.message ?? err);
   if (!res.headersSent) {

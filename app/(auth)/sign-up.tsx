@@ -47,7 +47,7 @@ export default function SignUpScreen() {
       const result = await signUp.attemptEmailAddressVerification({ code });
       if (result.status === 'complete') {
         await setActive({ session: result.createdSessionId });
-        router.replace('/(tabs)/generate');
+        router.replace('/');
       }
     } catch (err: any) {
       Alert.alert('Verification failed', err.errors?.[0]?.message ?? err.message);
@@ -65,7 +65,7 @@ export default function SignUpScreen() {
         <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
           <View style={styles.logo}>
             <Text style={styles.logoText}>Linkd</Text>
-            <Text style={styles.logoSub}>QR Generator & Scanner</Text>
+            <Text style={styles.logoSub}>Digital Business Cards</Text>
           </View>
 
           {!pendingVerification ? (
@@ -75,7 +75,7 @@ export default function SignUpScreen() {
               <SocialAuthButtons
                 onSuccess={async (sessionId, setActive) => {
                   await setActive({ session: sessionId });
-                  router.replace('/(tabs)/generate');
+                  router.replace('/');
                 }}
               />
 

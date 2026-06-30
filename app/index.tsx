@@ -1,12 +1,26 @@
 import { useAuth } from '@clerk/clerk-expo';
 import { Redirect } from 'expo-router';
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { useApi } from '../lib/api';
 import { COLORS } from '../constants/colors';
 
 export default function Index() {
   const { isSignedIn, isLoaded } = useAuth();
+  const api = useApi();
+  const [checking, setChecking] = useState(true);
+  const [hasUsername, setHasUsername] = useState<boolean | null>(null);
 
-  if (!isLoaded) {
+  useEffect(() => {
+    if (!isLoaded) return;
+    if (!isSignedIn) { setChecking(false); return; }
+    api.getMe()
+      .then((user) => setHasUsername(!!user.username))
+      .catch(() => setHasUsername(false))
+      .finally(() => setChecking(false));
+  }, [isLoaded, isSignedIn]);
+
+  if (!isLoaded || checking) {
     return (
       <View style={styles.loading}>
         <ActivityIndicator color={COLORS.accent} size="large" />
@@ -14,8 +28,9 @@ export default function Index() {
     );
   }
 
-  if (isSignedIn) return <Redirect href="/(tabs)/generate" />;
-  return <Redirect href="/(auth)/sign-up" />;
+  if (!isSignedIn) return <Redirect href="/(auth)/sign-up" />;
+  if (!hasUsername) return <Redirect href="/onboarding" />;
+  return <Redirect href="/card" />;
 }
 
 const styles = StyleSheet.create({

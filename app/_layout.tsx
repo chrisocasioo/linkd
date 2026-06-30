@@ -1,4 +1,4 @@
-import { ClerkProvider } from '@clerk/clerk-expo';
+import { ClerkProvider, useAuth } from '@clerk/clerk-expo';
 import {
   DMSans_300Light,
   DMSans_400Regular,
@@ -13,16 +13,25 @@ import { useEffect } from 'react';
 import { Alert } from 'react-native';
 import { tokenCache } from '../lib/clerk';
 import { ErrorBoundary } from '../components/ErrorBoundary';
+import { RevenueCatProvider } from '../lib/RevenueCatContext';
+import { initRevenueCat } from '../lib/revenuecat';
 
 SplashScreen.preventAutoHideAsync();
 
-// Catch errors that happen before React mounts
 if (global.ErrorUtils) {
   const prev = global.ErrorUtils.getGlobalHandler();
   global.ErrorUtils.setGlobalHandler((error, isFatal) => {
     Alert.alert('Startup Error', error?.message ?? String(error));
     prev?.(error, isFatal);
   });
+}
+
+function AppInitializer() {
+  const { userId } = useAuth();
+  useEffect(() => {
+    if (userId) initRevenueCat(userId).catch(() => {});
+  }, [userId]);
+  return null;
 }
 
 export default function RootLayout() {
@@ -45,12 +54,18 @@ export default function RootLayout() {
         publishableKey={process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY!}
         tokenCache={tokenCache}
       >
-        <StatusBar style="light" />
-        <Stack screenOptions={{ headerShown: false, animation: 'fade' }}>
-          <Stack.Screen name="index" />
-          <Stack.Screen name="(auth)" />
-          <Stack.Screen name="(tabs)" />
-        </Stack>
+        <RevenueCatProvider>
+          <AppInitializer />
+          <StatusBar style="light" />
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="index" options={{ animation: 'fade' }} />
+            <Stack.Screen name="(auth)" options={{ animation: 'fade' }} />
+            <Stack.Screen name="onboarding" options={{ animation: 'fade' }} />
+            <Stack.Screen name="card" options={{ animation: 'fade', gestureEnabled: false }} />
+            <Stack.Screen name="theme" options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="analytics" options={{ animation: 'slide_from_right' }} />
+          </Stack>
+        </RevenueCatProvider>
       </ClerkProvider>
     </ErrorBoundary>
   );
