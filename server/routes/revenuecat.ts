@@ -9,15 +9,15 @@ const router = Router();
 router.post('/', async (req, res) => {
   try {
     const secret = process.env.REVENUECAT_WEBHOOK_SECRET ?? '';
-    const signature = req.headers['x-revenuecat-signature'] as string | undefined;
+    const authHeader = req.headers['authorization'] as string | undefined;
 
-    if (secret && signature) {
-      const expected = crypto
-        .createHmac('sha256', secret)
-        .update(req.body as Buffer)
-        .digest('hex');
-      if (signature !== expected) {
-        return res.status(401).json({ error: 'Invalid signature' });
+    if (secret) {
+      const expected = Buffer.from(secret);
+      const received = Buffer.from(authHeader ?? '');
+      const valid =
+        expected.length === received.length && crypto.timingSafeEqual(expected, received);
+      if (!valid) {
+        return res.status(401).json({ error: 'Invalid authorization header' });
       }
     }
 
