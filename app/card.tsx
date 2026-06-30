@@ -263,7 +263,7 @@ export default function CardScreen() {
               </Pressable>
 
               <Pressable style={styles.addLinkBtn} onPress={() => openLinkEdit(null)}>
-                <Text style={styles.addLinkText}>＋  Add Link</Text>
+                <Text style={styles.addLinkText}>+</Text>
               </Pressable>
             </>
           )}
@@ -332,9 +332,11 @@ const styles = StyleSheet.create({
   contactsSub: { fontSize: 10, fontFamily: FONTS.regular, color: COLORS.textSecondary },
   contactsChevron: { fontSize: 18, color: COLORS.textTertiary },
   addLinkBtn: {
-    height: 46, borderWidth: 1, borderColor: 'rgba(201,151,58,0.3)', borderStyle: 'dashed',
-    borderRadius: 14, alignItems: 'center', justifyContent: 'center',
+    width: 48, height: 48, borderRadius: 24,
+    borderWidth: 1.5, borderColor: 'rgba(201,151,58,0.4)', borderStyle: 'dashed',
     backgroundColor: COLORS.accentDim,
+    alignItems: 'center', justifyContent: 'center',
+    alignSelf: 'center',
   },
-  addLinkText: { fontSize: 12, fontFamily: FONTS.medium, color: COLORS.accent },
+  addLinkText: { fontSize: 22, fontFamily: FONTS.light, color: COLORS.accent, lineHeight: 26 },
 });
