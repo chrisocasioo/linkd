@@ -2,7 +2,7 @@
   "expo": {
     "name": "Linkd",
     "slug": "linkd",
-    "owner": "chrisocasio.sm",
+    "owner": "santricobackups-team",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -17,7 +17,7 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.santrico.linkd",
       "minimumOsVersion": "16.0",
-      "buildNumber": "27",
+      "buildNumber": "28",
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "Linkd needs access to your photos to set your profile picture.",
         "NSPhotoLibraryAddUsageDescription": "Linkd saves content to your photo library.",
@@ -64,7 +64,7 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "d5f0d286-559f-46cb-9558-04f35e782297"
+        "projectId": "cf67efb6-9e6a-4df2-8d02-5d05a203bddd"
       },
       "router": {
         "origin": false
