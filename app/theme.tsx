@@ -74,17 +74,17 @@ export default function ThemeScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.topBar}>
-        <Pressable onPress={() => router.back()}>
-          <Text style={styles.backText}>← Back</Text>
-        </Pressable>
         <Text style={styles.heading}>Theme</Text>
         <Pressable style={[styles.saveBtn, saving && styles.saveBtnDisabled]} onPress={handleSave} disabled={saving}>
           <Text style={styles.saveBtnText}>{saving ? '…' : 'Save'}</Text>
         </Pressable>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.sectionLabel}>CARD THEME</Text>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Theme chips */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionLabel}>Theme</Text>
+        </View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.themeRow}>
           {THEMES.map((t) => (
             <Pressable
@@ -93,62 +93,71 @@ export default function ThemeScreen() {
               onPress={() => handleThemeSelect(t.id, t.pro)}
             >
               <View style={[styles.themeAccentDot, { backgroundColor: t.accent }]} />
-              <Text style={[styles.themeLabel, { color: t.bg === '#FFF' || t.bg === '#F5E6D3' ? '#1A1A1A' : '#FFF' }]}>
+              <Text style={[styles.themeLabel, { color: t.bg === '#FFF' || t.bg === '#F5E6D3' ? '#888' : 'rgba(245,245,245,0.4)' }, selectedTheme === t.id && { color: COLORS.accent }]}>
                 {t.label}
               </Text>
-              {t.pro && !isPro && <Text style={styles.lockIcon}>🔒</Text>}
+              {t.pro && !isPro && <Text style={styles.lockBadge}>Pro</Text>}
             </Pressable>
           ))}
         </ScrollView>
 
-        {isPro && (
-          <>
-            <Text style={styles.sectionLabel}>ACCENT COLOR</Text>
-            <View style={styles.accentRow}>
-              {ACCENT_COLORS.map((c) => (
-                <Pressable
-                  key={c}
-                  style={[styles.accentDot, { backgroundColor: c }, selectedAccent === c && styles.accentDotActive]}
-                  onPress={() => setSelectedAccent(c)}
-                />
+        {/* Customization */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionLabel}>Customization</Text>
+        </View>
+
+        <Pressable style={styles.customizeRow} onPress={() => !isPro ? setShowPaywall(true) : undefined}>
+          <Text style={styles.customizeLabel}>Accent Color</Text>
+          {isPro ? (
+            <View style={styles.accentMini}>
+              {ACCENT_COLORS.slice(0, 5).map((c) => (
+                <Pressable key={c} onPress={() => setSelectedAccent(c)} style={[styles.accentDot, { backgroundColor: c }, selectedAccent === c && styles.accentDotActive]} />
               ))}
             </View>
+          ) : (
+            <Text style={styles.proLock}>🔒  Pro</Text>
+          )}
+        </Pressable>
 
-            <Text style={styles.sectionLabel}>BUTTON STYLE</Text>
+        <Pressable style={styles.customizeRow} onPress={() => !isPro ? setShowPaywall(true) : undefined}>
+          <Text style={styles.customizeLabel}>Button Style</Text>
+          {isPro ? (
             <View style={styles.chipRow}>
               {BUTTON_STYLES.map((b) => (
-                <Pressable
-                  key={b}
-                  style={[styles.chip, selectedButton === b && styles.chipActive]}
-                  onPress={() => setSelectedButton(b)}
-                >
-                  <Text style={[styles.chipText, selectedButton === b && styles.chipTextActive]}>
-                    {b.charAt(0).toUpperCase() + b.slice(1)}
-                  </Text>
+                <Pressable key={b} style={[styles.chip, selectedButton === b && styles.chipActive]} onPress={() => setSelectedButton(b)}>
+                  <Text style={[styles.chipText, selectedButton === b && styles.chipTextActive]}>{b.charAt(0).toUpperCase() + b.slice(1)}</Text>
                 </Pressable>
               ))}
             </View>
+          ) : (
+            <Text style={styles.proLock}>🔒  Pro</Text>
+          )}
+        </Pressable>
 
-            <Text style={styles.sectionLabel}>FONT</Text>
+        <Pressable style={styles.customizeRow} onPress={() => !isPro ? setShowPaywall(true) : undefined}>
+          <Text style={styles.customizeLabel}>Font</Text>
+          {isPro ? (
             <View style={styles.chipRow}>
               {FONTS_LIST.map((f) => (
-                <Pressable
-                  key={f.id}
-                  style={[styles.chip, selectedFont === f.id && styles.chipActive]}
-                  onPress={() => setSelectedFont(f.id)}
-                >
+                <Pressable key={f.id} style={[styles.chip, selectedFont === f.id && styles.chipActive]} onPress={() => setSelectedFont(f.id)}>
                   <Text style={[styles.chipText, selectedFont === f.id && styles.chipTextActive]}>{f.label}</Text>
                 </Pressable>
               ))}
             </View>
-          </>
-        )}
+          ) : (
+            <Text style={styles.proLock}>🔒  Pro</Text>
+          )}
+        </Pressable>
 
         {!isPro && (
           <Pressable style={styles.upgradeCard} onPress={() => setShowPaywall(true)}>
-            <Text style={styles.upgradeTitle}>Unlock Pro Customization</Text>
-            <Text style={styles.upgradeSub}>Accent colors, button styles, fonts, and more</Text>
-            <Text style={styles.upgradeAction}>Upgrade →</Text>
+            <View style={styles.upgradeLeft}>
+              <Text style={styles.upgradeTitle}>✦  Unlock everything</Text>
+              <Text style={styles.upgradeSub}>Colors, styles, fonts and more</Text>
+            </View>
+            <View style={styles.upgradeBtn}>
+              <Text style={styles.upgradeBtnText}>Go Pro</Text>
+            </View>
           </Pressable>
         )}
       </ScrollView>
@@ -160,30 +169,44 @@ export default function ThemeScreen() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: COLORS.bg },
-  topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 14 },
-  backText: { fontSize: 15, fontFamily: FONTS.medium, color: COLORS.accent },
-  heading: { fontSize: 17, fontFamily: FONTS.semiBold, color: COLORS.text },
-  saveBtn: { paddingHorizontal: 16, paddingVertical: 8, backgroundColor: COLORS.accent, borderRadius: 10 },
-  saveBtnDisabled: { opacity: 0.6 },
-  saveBtnText: { fontSize: 14, fontFamily: FONTS.semiBold, color: '#fff' },
-  content: { padding: 20, gap: 12, paddingBottom: 60 },
-  sectionLabel: { fontSize: 11, fontFamily: FONTS.medium, color: COLORS.textSecondary, letterSpacing: 1.5, marginTop: 8 },
-  themeRow: { gap: 10, paddingVertical: 4 },
-  themeChip: { width: 80, height: 100, borderRadius: 14, alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 2, borderColor: 'transparent' },
+  topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 18, paddingVertical: 14 },
+  heading: { fontSize: 18, fontFamily: FONTS.semiBold, color: COLORS.text, letterSpacing: -0.3 },
+  saveBtn: { opacity: 1 },
+  saveBtnDisabled: { opacity: 0.4 },
+  saveBtnText: { fontSize: 12, fontFamily: FONTS.medium, color: COLORS.accent },
+  content: { paddingBottom: 60, gap: 0 },
+  sectionHeader: { paddingHorizontal: 18, paddingTop: 14, paddingBottom: 8 },
+  sectionLabel: { fontSize: 10, fontFamily: FONTS.medium, color: COLORS.textSecondary, letterSpacing: 0.08 * 10, textTransform: 'uppercase', paddingLeft: 2 },
+  themeRow: { gap: 8, paddingHorizontal: 18, paddingBottom: 4 },
+  themeChip: { width: 76, height: 52, borderRadius: 12, alignItems: 'center', justifyContent: 'center', gap: 5, borderWidth: 2, borderColor: COLORS.border, position: 'relative' },
   themeChipActive: { borderColor: COLORS.accent },
-  themeAccentDot: { width: 20, height: 20, borderRadius: 10 },
-  themeLabel: { fontSize: 11, fontFamily: FONTS.medium },
-  lockIcon: { fontSize: 10, position: 'absolute', top: 6, right: 6 },
-  accentRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-  accentDot: { width: 36, height: 36, borderRadius: 18, borderWidth: 2, borderColor: 'transparent' },
-  accentDotActive: { borderColor: '#fff', transform: [{ scale: 1.15 }] },
-  chipRow: { flexDirection: 'row', gap: 10 },
-  chip: { paddingHorizontal: 16, paddingVertical: 10, backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border, borderRadius: 10 },
+  themeAccentDot: { width: 14, height: 14, borderRadius: 7 },
+  themeLabel: { fontSize: 9, fontFamily: FONTS.medium },
+  lockBadge: { position: 'absolute', top: 4, right: 4, fontSize: 7, fontFamily: FONTS.medium, color: COLORS.textTertiary, backgroundColor: COLORS.surface2, borderRadius: 3, paddingHorizontal: 3, paddingVertical: 1 },
+  customizeRow: {
+    height: 48, marginHorizontal: 18, marginBottom: 8,
+    backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border,
+    borderRadius: 13, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+  },
+  customizeLabel: { fontSize: 13, fontFamily: FONTS.medium, color: COLORS.text },
+  proLock: { fontSize: 11, fontFamily: FONTS.regular, color: COLORS.textTertiary },
+  accentMini: { flexDirection: 'row', gap: 6 },
+  accentDot: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: 'transparent' },
+  accentDotActive: { borderColor: '#fff' },
+  chipRow: { flexDirection: 'row', gap: 6 },
+  chip: { paddingHorizontal: 10, paddingVertical: 6, backgroundColor: COLORS.surface2, borderWidth: 1, borderColor: COLORS.border, borderRadius: 8 },
   chipActive: { borderColor: COLORS.accent, backgroundColor: COLORS.accentDim },
-  chipText: { fontSize: 14, fontFamily: FONTS.medium, color: COLORS.textSecondary },
+  chipText: { fontSize: 11, fontFamily: FONTS.medium, color: COLORS.textSecondary },
   chipTextActive: { color: COLORS.accent },
-  upgradeCard: { marginTop: 16, padding: 20, backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.accent, borderRadius: 16, gap: 6 },
-  upgradeTitle: { fontSize: 16, fontFamily: FONTS.semiBold, color: COLORS.accent },
-  upgradeSub: { fontSize: 13, fontFamily: FONTS.regular, color: COLORS.textSecondary },
-  upgradeAction: { fontSize: 14, fontFamily: FONTS.medium, color: COLORS.accent, marginTop: 4 },
+  upgradeCard: {
+    marginHorizontal: 18, marginTop: 4,
+    borderWidth: 1, borderColor: 'rgba(201,151,58,0.3)', borderRadius: 13,
+    padding: 12, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    backgroundColor: '#131008',
+  },
+  upgradeLeft: { flex: 1 },
+  upgradeTitle: { fontSize: 12, fontFamily: FONTS.semiBold, color: COLORS.text },
+  upgradeSub: { fontSize: 10, fontFamily: FONTS.regular, color: COLORS.textSecondary, marginTop: 2 },
+  upgradeBtn: { height: 30, paddingHorizontal: 12, borderRadius: 8, backgroundColor: COLORS.accent, alignItems: 'center', justifyContent: 'center' },
+  upgradeBtnText: { fontSize: 11, fontFamily: FONTS.semiBold, color: '#0C0C0E' },
 });

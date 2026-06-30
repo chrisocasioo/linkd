@@ -40,21 +40,23 @@ export function ShareSheet({ visible, username, onClose }: Props) {
       <Animated.View style={[styles.sheet, { transform: [{ translateY: slideAnim }] }]}>
         <View style={styles.handle} />
         <View style={styles.content}>
-          <Text style={styles.heading}>Share Your Card</Text>
-          <Text style={styles.url}>{url}</Text>
-
-          <View style={styles.qrContainer}>
-            <QRCode value={url} size={180} backgroundColor="#fff" color="#000" />
+          <View style={styles.titleBlock}>
+            <Text style={styles.heading}>Your Card QR</Text>
+            <Text style={styles.sub}>Someone scans this to open your card</Text>
           </View>
 
-          <View style={styles.buttons}>
-            <Pressable style={[styles.btn, styles.btnPrimary]} onPress={handleShare}>
-              <Text style={styles.btnPrimaryText}>Share</Text>
-            </Pressable>
-            <Pressable style={[styles.btn, styles.btnSecondary]} onPress={handleCopy}>
-              <Text style={styles.btnSecondaryText}>Copy Link</Text>
-            </Pressable>
+          <View style={styles.qrOuter}>
+            <View style={styles.qrInner}>
+              <QRCode value={url} size={120} backgroundColor="#fff" color="#000" />
+            </View>
           </View>
+
+          <Pressable style={styles.btnPrimary} onPress={handleShare}>
+            <Text style={styles.btnPrimaryText}>Share</Text>
+          </Pressable>
+          <Pressable onPress={handleCopy}>
+            <Text style={styles.copyLink}>Copy Link</Text>
+          </Pressable>
         </View>
       </Animated.View>
     </View>
@@ -68,20 +70,23 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    height: SHEET_HEIGHT,
-    backgroundColor: COLORS.surface,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    backgroundColor: '#161618',
+    borderTopLeftRadius: 26,
+    borderTopRightRadius: 26,
+    borderTopWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
   },
-  handle: { width: 36, height: 4, backgroundColor: COLORS.border, borderRadius: 2, alignSelf: 'center', marginTop: 12 },
-  content: { padding: 24, alignItems: 'center', gap: 16 },
-  heading: { fontSize: 20, fontFamily: FONTS.semiBold, color: COLORS.text },
-  url: { fontSize: 13, fontFamily: FONTS.regular, color: COLORS.textSecondary },
-  qrContainer: { padding: 12, backgroundColor: '#fff', borderRadius: 16 },
-  buttons: { flexDirection: 'row', gap: 12, width: '100%' },
-  btn: { flex: 1, height: 52, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  btnPrimary: { backgroundColor: COLORS.accent },
-  btnPrimaryText: { fontSize: 15, fontFamily: FONTS.semiBold, color: '#fff' },
-  btnSecondary: { backgroundColor: COLORS.surface2, borderWidth: 1, borderColor: COLORS.border },
-  btnSecondaryText: { fontSize: 15, fontFamily: FONTS.semiBold, color: COLORS.text },
+  handle: { width: 36, height: 4, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 2, alignSelf: 'center', marginTop: 16, marginBottom: 2 },
+  content: { padding: 18, paddingBottom: 32, gap: 12, alignItems: 'center' },
+  titleBlock: { alignItems: 'center', gap: 3 },
+  heading: { fontSize: 15, fontFamily: FONTS.semiBold, color: COLORS.text, letterSpacing: -0.2 },
+  sub: { fontSize: 11, fontFamily: FONTS.regular, color: COLORS.textSecondary },
+  qrOuter: {
+    width: '100%', backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border,
+    borderRadius: 14, padding: 18, alignItems: 'center', justifyContent: 'center',
+  },
+  qrInner: { padding: 9, backgroundColor: '#fff', borderRadius: 10 },
+  btnPrimary: { width: '100%', height: 46, borderRadius: 13, backgroundColor: COLORS.accent, alignItems: 'center', justifyContent: 'center' },
+  btnPrimaryText: { fontSize: 13, fontFamily: FONTS.semiBold, color: '#0C0C0E' },
+  copyLink: { fontSize: 12, fontFamily: FONTS.medium, color: COLORS.textSecondary, paddingVertical: 4 },
 });

@@ -163,7 +163,7 @@ export default function CardScreen() {
         ) : (
           <View style={styles.topRight}>
             <Pressable style={styles.iconBtn} onPress={() => router.push('/theme')}>
-              <Ionicons name="color-palette-outline" size={20} color={COLORS.text} />
+              <Ionicons name="create-outline" size={20} color={COLORS.text} />
             </Pressable>
             <Pressable style={styles.iconBtn} onPress={() => setShowSettings(true)}>
               <Ionicons name="settings-outline" size={20} color={COLORS.text} />
@@ -172,7 +172,7 @@ export default function CardScreen() {
         )}
       </View>
 
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         {/* Hero */}
         <View style={styles.hero}>
           <Pressable onPress={pickPhoto} disabled={photoUploading} style={styles.avatarWrapper}>
@@ -180,7 +180,7 @@ export default function CardScreen() {
               <Image source={{ uri: user.profilePhoto }} style={styles.avatar} />
             ) : (
               <View style={styles.avatarPlaceholder}>
-                <Text style={styles.avatarPlaceholderText}>+</Text>
+                <Text style={styles.avatarPlaceholderText}>{user?.displayName?.[0]?.toUpperCase() ?? '+'}</Text>
               </View>
             )}
             {photoUploading && (
@@ -254,12 +254,16 @@ export default function CardScreen() {
 
           {!isReordering && (
             <>
-              <Pressable style={styles.contactsRow} onPress={handleAddToContacts}>
-                <Text style={styles.contactsText}>+ Add to Contacts</Text>
+              <Pressable style={({ pressed }) => [styles.contactsRow, pressed && { opacity: 0.7 }]} onPress={handleAddToContacts}>
+                <View style={styles.contactsContent}>
+                  <Text style={styles.contactsTitle}>Add to Contacts</Text>
+                  <Text style={styles.contactsSub}>Save my info to your phone</Text>
+                </View>
+                <Text style={styles.contactsChevron}>›</Text>
               </Pressable>
 
               <Pressable style={styles.addLinkBtn} onPress={() => openLinkEdit(null)}>
-                <Text style={styles.addLinkText}>+ Add Link</Text>
+                <Text style={styles.addLinkText}>＋  Add Link</Text>
               </Pressable>
             </>
           )}
@@ -296,27 +300,41 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: COLORS.bg },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 12 },
-  iconBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.surface, borderRadius: 12, borderWidth: 1, borderColor: COLORS.border },
-  iconBtnText: { fontSize: 16, color: COLORS.text },
+  iconBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(22,22,24,0.9)', borderRadius: 10, borderWidth: 1, borderColor: COLORS.border },
   topRight: { flexDirection: 'row', gap: 8 },
-  doneBtn: { paddingHorizontal: 16, paddingVertical: 8, backgroundColor: COLORS.accent, borderRadius: 12 },
-  doneBtnText: { fontSize: 14, fontFamily: FONTS.semiBold, color: '#fff' },
-  content: { padding: 20, paddingTop: 4, gap: 24, paddingBottom: 60 },
-  hero: { alignItems: 'center', gap: 8 },
-  avatarWrapper: { position: 'relative' },
-  avatar: { width: 96, height: 96, borderRadius: 48, borderWidth: 3, borderColor: COLORS.accent },
-  avatarPlaceholder: { width: 96, height: 96, borderRadius: 48, backgroundColor: COLORS.surface, borderWidth: 3, borderColor: COLORS.border, alignItems: 'center', justifyContent: 'center' },
-  avatarPlaceholderText: { fontSize: 32, color: COLORS.textSecondary },
-  avatarOverlay: { position: 'absolute', inset: 0, borderRadius: 48, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center' },
-  nameInput: { fontSize: 24, fontFamily: FONTS.semiBold, color: COLORS.text, textAlign: 'center', borderBottomWidth: 1, borderBottomColor: COLORS.accent, minWidth: 160 },
-  name: { fontSize: 24, fontFamily: FONTS.semiBold, color: COLORS.text },
-  username: { fontSize: 13, fontFamily: FONTS.regular, color: COLORS.textSecondary },
-  bioInput: { fontSize: 14, fontFamily: FONTS.regular, color: COLORS.textSecondary, textAlign: 'center', maxWidth: 280, borderBottomWidth: 1, borderBottomColor: COLORS.border, minWidth: 160 },
-  bio: { fontSize: 14, fontFamily: FONTS.regular, color: COLORS.textSecondary, textAlign: 'center', maxWidth: 280 },
+  doneBtn: { height: 32, paddingHorizontal: 14, backgroundColor: COLORS.accent, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  doneBtnText: { fontSize: 12, fontFamily: FONTS.semiBold, color: '#0C0C0E' },
+  content: { gap: 16, paddingBottom: 60 },
+  hero: { alignItems: 'center', gap: 10, paddingTop: 22, paddingHorizontal: 18, paddingBottom: 18, backgroundColor: '#1A1510' },
+  avatarWrapper: { position: 'relative', marginTop: 10 },
+  avatar: { width: 80, height: 80, borderRadius: 26, borderWidth: 2, borderColor: COLORS.accent },
+  avatarPlaceholder: {
+    width: 80, height: 80, borderRadius: 26,
+    backgroundColor: 'rgba(201,151,58,0.12)', borderWidth: 2, borderColor: COLORS.accent,
+    alignItems: 'center', justifyContent: 'center',
+    shadowColor: COLORS.accent, shadowOffset: { width: 0, height: 0 }, shadowRadius: 24, shadowOpacity: 0.12,
+  },
+  avatarPlaceholderText: { fontSize: 33, fontFamily: FONTS.semiBold, color: COLORS.accent },
+  avatarOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 26, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center' },
+  nameInput: { fontSize: 20, fontFamily: FONTS.semiBold, color: COLORS.text, textAlign: 'center', borderBottomWidth: 1, borderBottomColor: COLORS.accent, minWidth: 160 },
+  name: { fontSize: 20, fontFamily: FONTS.semiBold, color: COLORS.text, letterSpacing: -0.025 * 20 },
+  username: { fontSize: 12, fontFamily: FONTS.regular, color: COLORS.textSecondary },
+  bioInput: { fontSize: 11, fontFamily: FONTS.regular, color: COLORS.textSecondary, textAlign: 'center', maxWidth: 280, borderBottomWidth: 1, borderBottomColor: COLORS.border, minWidth: 160 },
+  bio: { fontSize: 11, fontFamily: FONTS.regular, color: COLORS.textSecondary, textAlign: 'center', maxWidth: 280, lineHeight: 16 },
   bioPlaceholder: { color: COLORS.textTertiary },
-  links: { gap: 10 },
-  contactsRow: { height: 52, backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  contactsText: { fontSize: 15, fontFamily: FONTS.medium, color: COLORS.text },
-  addLinkBtn: { height: 52, borderWidth: 1.5, borderColor: COLORS.border, borderStyle: 'dashed', borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  addLinkText: { fontSize: 15, fontFamily: FONTS.medium, color: COLORS.textSecondary },
+  links: { gap: 8, paddingHorizontal: 18 },
+  contactsRow: {
+    height: 56, backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border,
+    borderRadius: 14, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center',
+  },
+  contactsContent: { flex: 1, gap: 2 },
+  contactsTitle: { fontSize: 13, fontFamily: FONTS.medium, color: COLORS.text },
+  contactsSub: { fontSize: 10, fontFamily: FONTS.regular, color: COLORS.textSecondary },
+  contactsChevron: { fontSize: 18, color: COLORS.textTertiary },
+  addLinkBtn: {
+    height: 46, borderWidth: 1, borderColor: 'rgba(201,151,58,0.3)', borderStyle: 'dashed',
+    borderRadius: 14, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: COLORS.accentDim,
+  },
+  addLinkText: { fontSize: 12, fontFamily: FONTS.medium, color: COLORS.accent },
 });

@@ -3,14 +3,12 @@ import { Alert, Animated, Dimensions, Pressable, StyleSheet, Text, View } from '
 import { useRevenueCat } from '../../lib/RevenueCatContext';
 import { COLORS, FONTS } from '../../constants/colors';
 
-const SHEET_HEIGHT = Dimensions.get('window').height * 0.7;
+const SHEET_HEIGHT = Dimensions.get('window').height * 0.75;
 
 const PRO_FEATURES = [
-  'Custom card themes',
-  'Accent color customization',
-  'Font & button style picker',
-  'Analytics dashboard',
-  'Remove "Get Linkd" footer',
+  { emoji: '🌐', title: 'Custom Domain', sub: 'Your own domain points to your card' },
+  { emoji: '🎨', title: 'Premium Themes', sub: 'Colors, fonts, button styles' },
+  { emoji: '📊', title: 'Analytics', sub: 'Scans, visits, and link clicks' },
 ];
 
 interface Props {
@@ -21,7 +19,6 @@ interface Props {
 export function PaywallSheet({ visible, onClose }: Props) {
   const { purchasePro } = useRevenueCat();
   const slideAnim = useRef(new Animated.Value(SHEET_HEIGHT)).current;
-  const [plan, setPlan] = useState<'monthly' | 'annual'>('annual');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -32,14 +29,23 @@ export function PaywallSheet({ visible, onClose }: Props) {
     }
   }, [visible]);
 
-  const handlePurchase = async () => {
+  const handleMonthly = async () => {
     setLoading(true);
     try {
-      const success = await purchasePro(plan);
-      if (success) {
-        Alert.alert('Welcome to Pro!', 'All features unlocked.');
-        onClose();
-      }
+      const success = await purchasePro('monthly');
+      if (success) { Alert.alert('Welcome to Pro!', 'All features unlocked.'); onClose(); }
+    } catch (err: any) {
+      Alert.alert('Purchase failed', err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAnnual = async () => {
+    setLoading(true);
+    try {
+      const success = await purchasePro('annual');
+      if (success) { Alert.alert('Welcome to Pro!', 'All features unlocked.'); onClose(); }
     } catch (err: any) {
       Alert.alert('Purchase failed', err.message);
     } finally {
@@ -55,42 +61,43 @@ export function PaywallSheet({ visible, onClose }: Props) {
       <Animated.View style={[styles.sheet, { transform: [{ translateY: slideAnim }] }]}>
         <View style={styles.handle} />
         <View style={styles.content}>
-          <Text style={styles.heading}>Linkd Pro</Text>
-          <Text style={styles.sub}>Unlock your full digital presence</Text>
+          {/* Header */}
+          <View style={styles.headerBlock}>
+            <View style={styles.iconBox}>
+              <Text style={styles.iconText}>✦</Text>
+            </View>
+            <Text style={styles.heading}>Upgrade to Pro</Text>
+            <Text style={styles.sub}>Custom domain, premium themes, and see who's visiting your card.</Text>
+          </View>
 
+          {/* Features */}
           <View style={styles.features}>
             {PRO_FEATURES.map((f) => (
-              <View key={f} style={styles.featureRow}>
-                <Text style={styles.featureCheck}>✓</Text>
-                <Text style={styles.featureText}>{f}</Text>
+              <View key={f.title} style={styles.featureRow}>
+                <View style={styles.featureIcon}>
+                  <Text style={styles.featureEmoji}>{f.emoji}</Text>
+                </View>
+                <View style={styles.featureText}>
+                  <Text style={styles.featureTitle}>{f.title}</Text>
+                  <Text style={styles.featureSub}>{f.sub}</Text>
+                </View>
               </View>
             ))}
           </View>
 
-          <View style={styles.plans}>
-            {(['monthly', 'annual'] as const).map((p) => (
-              <Pressable
-                key={p}
-                style={[styles.planChip, plan === p && styles.planChipActive]}
-                onPress={() => setPlan(p)}
-              >
-                <Text style={[styles.planPrice, plan === p && styles.planPriceActive]}>
-                  {p === 'monthly' ? '$4.99 / mo' : '$39.99 / yr'}
-                </Text>
-                {p === 'annual' && (
-                  <Text style={[styles.planSave, plan === p && styles.planSaveActive]}>Save 33%</Text>
-                )}
-              </Pressable>
-            ))}
+          {/* CTAs */}
+          <View style={styles.ctaBlock}>
+            <Pressable
+              style={[styles.startBtn, loading && styles.startBtnDisabled]}
+              onPress={handleMonthly}
+              disabled={loading}
+            >
+              <Text style={styles.startBtnText}>{loading ? 'Loading…' : 'Start Pro — $7.99 / month'}</Text>
+            </Pressable>
+            <Pressable onPress={handleAnnual} disabled={loading}>
+              <Text style={styles.annualText}>$79 / year · Save 17%</Text>
+            </Pressable>
           </View>
-
-          <Pressable
-            style={[styles.startBtn, loading && styles.startBtnDisabled]}
-            onPress={handlePurchase}
-            disabled={loading}
-          >
-            <Text style={styles.startBtnText}>{loading ? 'Loading…' : 'Start Pro'}</Text>
-          </Pressable>
 
           <Pressable onPress={onClose}>
             <Text style={styles.later}>Maybe Later</Text>
@@ -104,47 +111,37 @@ export function PaywallSheet({ visible, onClose }: Props) {
 const styles = StyleSheet.create({
   backdrop: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(0,0,0,0.7)' },
   sheet: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: SHEET_HEIGHT,
-    backgroundColor: COLORS.surface,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    position: 'absolute', bottom: 0, left: 0, right: 0, height: SHEET_HEIGHT,
+    backgroundColor: '#161618',
+    borderTopLeftRadius: 26, borderTopRightRadius: 26,
+    borderTopWidth: 1, borderColor: 'rgba(255,255,255,0.08)',
   },
-  handle: { width: 36, height: 4, backgroundColor: COLORS.border, borderRadius: 2, alignSelf: 'center', marginTop: 12 },
-  content: { padding: 24, gap: 16 },
-  heading: { fontSize: 26, fontFamily: FONTS.semiBold, color: COLORS.accent, textAlign: 'center' },
-  sub: { fontSize: 14, fontFamily: FONTS.regular, color: COLORS.textSecondary, textAlign: 'center' },
-  features: { gap: 10 },
+  handle: { width: 36, height: 4, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 2, alignSelf: 'center', marginTop: 16 },
+  content: { padding: 18, gap: 16 },
+  headerBlock: { alignItems: 'center', gap: 10 },
+  iconBox: {
+    width: 52, height: 52, borderRadius: 18,
+    backgroundColor: COLORS.accentDim, borderWidth: 1.5, borderColor: 'rgba(201,151,58,0.4)',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  iconText: { fontSize: 22, color: COLORS.accent },
+  heading: { fontSize: 18, fontFamily: FONTS.semiBold, color: COLORS.text, letterSpacing: -0.3 },
+  sub: { fontSize: 12, fontFamily: FONTS.regular, color: COLORS.textSecondary, textAlign: 'center', lineHeight: 18, maxWidth: 210 },
+  features: { gap: 9 },
   featureRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  featureCheck: { fontSize: 14, color: COLORS.accent, width: 16 },
-  featureText: { fontSize: 14, fontFamily: FONTS.regular, color: COLORS.text },
-  plans: { flexDirection: 'row', gap: 12 },
-  planChip: {
-    flex: 1,
-    backgroundColor: COLORS.surface2,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 14,
-    padding: 14,
-    alignItems: 'center',
-    gap: 4,
+  featureIcon: {
+    width: 28, height: 28, borderRadius: 8,
+    backgroundColor: COLORS.accentDim, borderWidth: 1, borderColor: 'rgba(201,151,58,0.25)',
+    alignItems: 'center', justifyContent: 'center',
   },
-  planChipActive: { borderColor: COLORS.accent, backgroundColor: COLORS.accentDim },
-  planPrice: { fontSize: 15, fontFamily: FONTS.semiBold, color: COLORS.text },
-  planPriceActive: { color: COLORS.accent },
-  planSave: { fontSize: 11, fontFamily: FONTS.regular, color: COLORS.textSecondary },
-  planSaveActive: { color: COLORS.accent },
-  startBtn: {
-    height: 52,
-    backgroundColor: COLORS.accent,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  featureEmoji: { fontSize: 13 },
+  featureText: { flex: 1 },
+  featureTitle: { fontSize: 13, fontFamily: FONTS.medium, color: COLORS.text },
+  featureSub: { fontSize: 10, fontFamily: FONTS.regular, color: COLORS.textSecondary, marginTop: 1 },
+  ctaBlock: { gap: 7 },
+  startBtn: { height: 46, backgroundColor: COLORS.accent, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
   startBtnDisabled: { opacity: 0.6 },
-  startBtnText: { fontSize: 15, fontFamily: FONTS.semiBold, color: '#fff' },
-  later: { fontSize: 13, fontFamily: FONTS.regular, color: COLORS.textSecondary, textAlign: 'center' },
+  startBtnText: { fontSize: 13, fontFamily: FONTS.semiBold, color: '#0C0C0E' },
+  annualText: { fontSize: 12, fontFamily: FONTS.regular, color: COLORS.textSecondary, textAlign: 'center', paddingVertical: 4 },
+  later: { fontSize: 12, fontFamily: FONTS.regular, color: COLORS.textSecondary, textAlign: 'center' },
 });

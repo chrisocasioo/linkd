@@ -14,6 +14,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+
 import { useRevenueCat } from '../../lib/RevenueCatContext';
 import { useApi } from '../../lib/api';
 import { COLORS, FONTS } from '../../constants/colors';
@@ -26,16 +27,10 @@ interface Props {
   onShowPaywall: () => void;
 }
 
-interface RowProps {
-  label: string;
-  onPress: () => void;
-  danger?: boolean;
-}
-
-function SettingsRow({ label, onPress, danger }: RowProps) {
+function SettingsRow({ label, onPress }: { label: string; onPress: () => void }) {
   return (
     <Pressable style={styles.row} onPress={onPress}>
-      <Text style={[styles.rowLabel, danger && styles.rowLabelDanger]}>{label}</Text>
+      <Text style={styles.rowLabel}>{label}</Text>
       <Text style={styles.chevron}>›</Text>
     </Pressable>
   );
@@ -89,6 +84,9 @@ export function SettingsSheet({ visible, onClose, onEditProfile, onReorderLinks,
     );
   };
 
+  const emailDisplay = user?.primaryEmailAddress?.emailAddress ?? user?.emailAddresses?.[0]?.emailAddress ?? '';
+  const emailShort = emailDisplay.length > 16 ? emailDisplay.slice(0, 14) + '…' : emailDisplay;
+
   return (
     <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
       <View style={styles.flex}>
@@ -97,45 +95,62 @@ export function SettingsSheet({ visible, onClose, onEditProfile, onReorderLinks,
           <View style={styles.handle} />
           <Text style={styles.title}>Settings</Text>
 
-          <View style={styles.list}>
+          {/* Account */}
+          <View style={styles.group}>
             <SettingsRow label="Edit Profile" onPress={() => { onClose(); setTimeout(onEditProfile, 300); }} />
-            <View style={styles.separator} />
-            <SettingsRow label="Reorder Links" onPress={() => { onClose(); setTimeout(onReorderLinks, 300); }} />
-            <View style={styles.separator} />
+            <View style={styles.sep} />
+            <View style={styles.row}>
+              <Text style={styles.rowLabel}>Email</Text>
+              <Text style={styles.rowValue}>{emailShort}</Text>
+            </View>
+            <View style={styles.sep} />
             <SettingsRow
-              label={isPro ? 'Analytics' : 'Analytics  🔒'}
-              onPress={() => {
-                onClose();
-                if (isPro) {
-                  setTimeout(() => router.push('/analytics'), 300);
-                } else {
-                  setTimeout(onShowPaywall, 300);
-                }
-              }}
+              label="Change Password"
+              onPress={() => WebBrowser.openBrowserAsync('https://accounts.linkd.tattoo/user/security')}
             />
           </View>
 
-          <View style={styles.list}>
-            <SettingsRow
-              label="Privacy Policy"
-              onPress={() => WebBrowser.openBrowserAsync('https://chrisocasioo.github.io/Linkd-Legal/privacy.html')}
-            />
-            <View style={styles.separator} />
+          {/* Analytics */}
+          <View style={styles.group}>
+            <Pressable
+              style={styles.row}
+              onPress={() => {
+                onClose();
+                if (isPro) setTimeout(() => router.push('/analytics'), 300);
+                else setTimeout(onShowPaywall, 300);
+              }}
+            >
+              <Text style={styles.rowLabel}>Analytics</Text>
+              <View style={styles.rowRight}>
+                {!isPro && <Text style={styles.proBadge}>Pro</Text>}
+                <Text style={styles.chevron}>›</Text>
+              </View>
+            </Pressable>
+          </View>
+
+          {/* Support */}
+          <View style={styles.group}>
             <SettingsRow
               label="Support"
               onPress={() => WebBrowser.openBrowserAsync('https://chrisocasioo.github.io/Linkd-Legal/support.html')}
             />
+            <View style={styles.sep} />
+            <SettingsRow
+              label="Privacy Policy"
+              onPress={() => WebBrowser.openBrowserAsync('https://chrisocasioo.github.io/Linkd-Legal/privacy.html')}
+            />
           </View>
 
-          <View style={styles.list}>
-            <SettingsRow label="Sign Out" onPress={handleSignOut} />
-            <View style={styles.separator} />
-            <SettingsRow label="Delete Account" onPress={handleDeleteAccount} danger />
+          {/* Danger */}
+          <View style={styles.group}>
+            <Pressable style={styles.row} onPress={handleSignOut}>
+              <Text style={[styles.rowLabel, styles.rowMuted]}>Sign Out</Text>
+            </Pressable>
+            <View style={styles.sep} />
+            <Pressable style={styles.row} onPress={handleDeleteAccount}>
+              <Text style={[styles.rowLabel, styles.rowDanger]}>Delete Account</Text>
+            </Pressable>
           </View>
-
-          <Pressable style={styles.cancelBtn} onPress={onClose}>
-            <Text style={styles.cancelBtnText}>Cancel</Text>
-          </Pressable>
         </Animated.View>
       </View>
     </Modal>
@@ -147,22 +162,24 @@ const styles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)' },
   sheet: {
     backgroundColor: COLORS.surface,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 24,
+    borderTopLeftRadius: 26,
+    borderTopRightRadius: 26,
+    borderTopWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+    padding: 18,
     paddingBottom: 40,
-    gap: 16,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    gap: 10,
   },
-  handle: { width: 36, height: 4, borderRadius: 2, backgroundColor: COLORS.border, alignSelf: 'center', marginBottom: 4 },
-  title: { fontSize: 18, fontFamily: FONTS.semiBold, color: COLORS.text, letterSpacing: -0.3 },
-  list: { backgroundColor: COLORS.surface2, borderRadius: 18, borderWidth: 1, borderColor: COLORS.border, overflow: 'hidden' },
-  row: { height: 56, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  rowLabel: { fontSize: 15, fontFamily: FONTS.regular, color: COLORS.text },
-  rowLabelDanger: { color: COLORS.danger },
-  chevron: { fontSize: 18, color: COLORS.textTertiary },
-  separator: { height: 1, backgroundColor: COLORS.border },
-  cancelBtn: { height: 52, backgroundColor: COLORS.surface2, borderWidth: 1, borderColor: COLORS.border, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  cancelBtnText: { fontSize: 15, fontFamily: FONTS.medium, color: COLORS.textSecondary },
+  handle: { width: 36, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.15)', alignSelf: 'center', marginBottom: 2 },
+  title: { fontSize: 15, fontFamily: FONTS.semiBold, color: COLORS.text, letterSpacing: -0.2 },
+  group: { backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border, borderRadius: 14, overflow: 'hidden' },
+  row: { height: 50, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  rowLabel: { fontSize: 13, fontFamily: FONTS.regular, color: COLORS.text },
+  rowValue: { fontSize: 11, fontFamily: FONTS.regular, color: COLORS.textSecondary },
+  rowRight: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  rowMuted: { color: COLORS.textSecondary },
+  rowDanger: { color: COLORS.danger },
+  proBadge: { fontSize: 9, fontFamily: FONTS.medium, color: COLORS.textTertiary, backgroundColor: COLORS.surface2, borderRadius: 5, paddingHorizontal: 6, paddingVertical: 2 },
+  chevron: { fontSize: 13, color: COLORS.textTertiary },
+  sep: { height: 1, backgroundColor: COLORS.border },
 });
