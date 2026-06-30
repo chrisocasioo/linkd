@@ -1,7 +1,7 @@
 import { useAuth } from '@clerk/clerk-expo';
 import { useCallback } from 'react';
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL ?? '';
+const API_URL = (process.env.EXPO_PUBLIC_API_URL ?? '').replace(/\/$/, '');
 
 export interface User {
   id: string;
