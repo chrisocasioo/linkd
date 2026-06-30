@@ -15,7 +15,7 @@ import {
 import { ContactMeta } from '../../lib/api';
 import { COLORS, FONTS } from '../../constants/colors';
 
-const SHEET_HEIGHT = Dimensions.get('window').height * 0.75;
+const SHEET_HEIGHT = Dimensions.get('window').height * 0.88;
 
 interface Props {
   visible: boolean;
@@ -26,16 +26,24 @@ interface Props {
 
 export function ContactCardSheet({ visible, existing, onClose, onSave }: Props) {
   const slideAnim = useRef(new Animated.Value(SHEET_HEIGHT)).current;
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [company, setCompany] = useState('');
   const [jobTitle, setJobTitle] = useState('');
+  const [website, setWebsite] = useState('');
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (visible) {
+      setFirstName(existing?.firstName ?? '');
+      setLastName(existing?.lastName ?? '');
+      setEmail(existing?.email ?? '');
       setPhone(existing?.phone ?? '');
       setCompany(existing?.company ?? '');
       setJobTitle(existing?.jobTitle ?? '');
+      setWebsite(existing?.website ?? '');
       Animated.spring(slideAnim, { toValue: 0, useNativeDriver: true, damping: 20, stiffness: 200 }).start();
     } else {
       Animated.timing(slideAnim, { toValue: SHEET_HEIGHT, duration: 250, useNativeDriver: true }).start();
@@ -43,10 +51,17 @@ export function ContactCardSheet({ visible, existing, onClose, onSave }: Props) 
   }, [visible]);
 
   const handleSave = async () => {
-    if (!phone.trim()) return Alert.alert('Phone required', 'Add a phone number so contacts can call you.');
     setSaving(true);
     try {
-      await onSave({ phone: phone.trim(), company: company.trim() || undefined, jobTitle: jobTitle.trim() || undefined });
+      await onSave({
+        firstName: firstName.trim() || undefined,
+        lastName: lastName.trim() || undefined,
+        email: email.trim() || undefined,
+        phone: phone.trim() || undefined,
+        company: company.trim() || undefined,
+        jobTitle: jobTitle.trim() || undefined,
+        website: website.trim() || undefined,
+      });
       onClose();
     } catch (err: any) {
       Alert.alert('Error', err.message);
@@ -69,9 +84,19 @@ export function ContactCardSheet({ visible, existing, onClose, onSave }: Props) 
               <Text style={styles.subheading}>Visitors can save you to their phone contacts</Text>
             </View>
 
-            <Field label="PHONE" value={phone} onChange={setPhone} placeholder="+1 555 000 0000" keyboard="phone-pad" />
+            <View style={styles.row}>
+              <View style={styles.half}>
+                <Field label="FIRST NAME" value={firstName} onChange={setFirstName} placeholder="Alex" />
+              </View>
+              <View style={styles.half}>
+                <Field label="LAST NAME" value={lastName} onChange={setLastName} placeholder="Rivera" />
+              </View>
+            </View>
+            <Field label="EMAIL" value={email} onChange={setEmail} placeholder="alex@example.com" keyboard="email-address" autoCapitalize="none" />
+            <Field label="PHONE" value={phone} onChange={setPhone} placeholder="+1 555 000 0000" keyboard="phone-pad" autoCapitalize="none" />
             <Field label="COMPANY" value={company} onChange={setCompany} placeholder="Santrico Apps" />
             <Field label="JOB TITLE" value={jobTitle} onChange={setJobTitle} placeholder="Founder & CEO" />
+            <Field label="WEBSITE" value={website} onChange={setWebsite} placeholder="https://example.com" keyboard="url" autoCapitalize="none" />
 
             <Pressable
               style={[styles.saveBtn, saving && styles.saveBtnDisabled]}
@@ -88,9 +113,9 @@ export function ContactCardSheet({ visible, existing, onClose, onSave }: Props) 
 }
 
 function Field({
-  label, value, onChange, placeholder, keyboard,
+  label, value, onChange, placeholder, keyboard, autoCapitalize,
 }: {
-  label: string; value: string; onChange: (v: string) => void; placeholder: string; keyboard?: any;
+  label: string; value: string; onChange: (v: string) => void; placeholder: string; keyboard?: any; autoCapitalize?: 'none' | 'words' | 'sentences' | 'characters';
 }) {
   return (
     <View style={fieldStyles.wrap}>
@@ -102,7 +127,7 @@ function Field({
         placeholder={placeholder}
         placeholderTextColor={COLORS.textTertiary}
         keyboardType={keyboard ?? 'default'}
-        autoCapitalize="words"
+        autoCapitalize={autoCapitalize ?? 'words'}
       />
     </View>
   );
@@ -127,6 +152,8 @@ const styles = StyleSheet.create({
   kav: { flex: 1 },
   handle: { width: 36, height: 4, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 2, alignSelf: 'center', marginTop: 16 },
   content: { padding: 18, paddingBottom: 48, gap: 14 },
+  row: { flexDirection: 'row', gap: 10 },
+  half: { flex: 1 },
   headerRow: { gap: 4, marginBottom: 4 },
   heading: { fontSize: 15, fontFamily: FONTS.semiBold, color: COLORS.text, letterSpacing: -0.2 },
   subheading: { fontSize: 11, fontFamily: FONTS.regular, color: COLORS.textSecondary },

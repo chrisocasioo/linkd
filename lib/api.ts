@@ -22,9 +22,13 @@ export interface User {
 }
 
 export interface ContactMeta {
+  firstName?: string;
+  lastName?: string;
+  email?: string;
   phone?: string;
   company?: string;
   jobTitle?: string;
+  website?: string;
 }
 
 export interface Link {

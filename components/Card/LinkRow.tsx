@@ -93,8 +93,9 @@ export function LinkRow({ link, isReordering, isFirst, isLast, onEdit, onDelete,
                 {link.metadata ? (() => {
                   try {
                     const m = JSON.parse(link.metadata);
+                    const name = [m.firstName, m.lastName].filter(Boolean).join(' ');
                     const sub = [m.jobTitle, m.company].filter(Boolean).join(' · ');
-                    return sub ? <Text style={styles.url} numberOfLines={1}>{sub}</Text> : null;
+                    return (name || sub) ? <Text style={styles.url} numberOfLines={1}>{[name, sub].filter(Boolean).join(' — ')}</Text> : null;
                   } catch { return null; }
                 })() : null}
               </View>

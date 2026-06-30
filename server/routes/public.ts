@@ -42,14 +42,15 @@ router.get('/:username/vcard', async (req, res) => {
     const contactLink = await db.query.links.findFirst({
       where: and(eq(links.userId, user.id), eq(links.type, 'contact_card')),
     });
-    const contact: { phone?: string; company?: string; jobTitle?: string } =
+    const contact: { firstName?: string; lastName?: string; email?: string; phone?: string; company?: string; jobTitle?: string; website?: string } =
       contactLink?.metadata ? JSON.parse(contactLink.metadata) : {};
 
-    const name = user.displayName ?? username;
-    const nameParts = name.split(' ');
-    const fn = name;
-    const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
-    const firstName = nameParts[0];
+    const displayName = user.displayName ?? username;
+    const nameParts = displayName.split(' ');
+    const firstName = contact.firstName ?? nameParts[0];
+    const lastName = contact.lastName ?? (nameParts.length > 1 ? nameParts.slice(1).join(' ') : '');
+    const fn = [firstName, lastName].filter(Boolean).join(' ');
+    const email = contact.email ?? user.email;
 
     const lines = [
       'BEGIN:VCARD',
@@ -61,10 +62,10 @@ router.get('/:username/vcard', async (req, res) => {
         : null,
       contact.jobTitle ? `TITLE:${contact.jobTitle.replace(/[;:]/g, '\\$&')}` : null,
       contact.phone ? `TEL;TYPE=CELL:${contact.phone}` : null,
-      `EMAIL;TYPE=WORK:${user.email}`,
+      email ? `EMAIL;TYPE=WORK:${email}` : null,
+      contact.website ? `URL:${contact.website}` : `URL:https://linkd.tattoo/${username}`,
       user.bio ? `NOTE:${user.bio.replace(/\n/g, '\\n')}` : null,
       user.profilePhoto ? `PHOTO;VALUE=URI:${user.profilePhoto}` : null,
-      `URL:https://linkd.tattoo/${username}`,
       'END:VCARD',
     ];
     const vcard = lines.filter(Boolean).join('\r\n');
