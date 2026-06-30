@@ -23,7 +23,6 @@ interface Props {
   visible: boolean;
   onClose: () => void;
   onEditProfile: () => void;
-  onReorderLinks: () => void;
   onShowPaywall: () => void;
 }
 
@@ -36,7 +35,7 @@ function SettingsRow({ label, onPress }: { label: string; onPress: () => void })
   );
 }
 
-export function SettingsSheet({ visible, onClose, onEditProfile, onReorderLinks, onShowPaywall }: Props) {
+export function SettingsSheet({ visible, onClose, onEditProfile, onShowPaywall }: Props) {
   const { signOut } = useAuth();
   const { user } = useClerk();
   const api = useApi();

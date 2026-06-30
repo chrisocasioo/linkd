@@ -292,7 +292,6 @@ export default function CardScreen() {
         visible={showSettings}
         onClose={() => setShowSettings(false)}
         onEditProfile={() => setShowEditProfile(true)}
-        onReorderLinks={enterReorder}
         onShowPaywall={() => setShowPaywall(true)}
       />
       <EditProfileSheet
