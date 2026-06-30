@@ -34,7 +34,10 @@ router.post('/', upload.single('photo'), async (req, res) => {
       })
     );
 
-    const photoUrl = `${process.env.ENDPOINT}/${process.env.BUCKET}/${key}?v=${Date.now()}`;
+    const base = process.env.RAILWAY_PUBLIC_DOMAIN
+      ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
+      : (process.env.SERVER_URL ?? '');
+    const photoUrl = `${base}/api/photos/${userId}?v=${Date.now()}`;
     await db.update(users).set({ profilePhoto: photoUrl }).where(eq(users.id, userId));
     res.json({ photoUrl });
   } catch (err: any) {

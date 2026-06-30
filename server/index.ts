@@ -10,6 +10,7 @@ import { clerk, requireAuth } from './middleware/auth';
 import analyticsRouter from './routes/analytics';
 import linksRouter from './routes/links';
 import photoRouter from './routes/photo';
+import photoServeRouter from './routes/photoServe';
 import publicRouter from './routes/public';
 import revenuecatRouter from './routes/revenuecat';
 import usersRouter from './routes/users';
@@ -73,7 +74,10 @@ app.use('/api/revenuecat/webhook', express.raw({ type: 'application/json' }), re
 // 3. JSON body parser for all other routes
 app.use(express.json());
 
-// 4. Photo upload — must be before generic /api/users mount (multer handles its own body parsing)
+// 4a. Public photo proxy — no auth, before JSON parser
+app.use('/api/photos', photoServeRouter);
+
+// 4b. Photo upload — must be before generic /api/users mount (multer handles its own body parsing)
 app.use('/api/users/me/photo', requireAuth, photoRouter);
 
 // 5. User routes

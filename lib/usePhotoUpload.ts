@@ -1,5 +1,6 @@
 import * as ImagePicker from 'expo-image-picker';
 import { useCallback, useState } from 'react';
+import { Alert } from 'react-native';
 import { useApi } from './api';
 
 export function usePhotoUpload(onSuccess: (photoUrl: string) => void) {
@@ -23,8 +24,8 @@ export function usePhotoUpload(onSuccess: (photoUrl: string) => void) {
     try {
       const { photoUrl } = await api.uploadPhoto(result.assets[0].uri);
       onSuccess(photoUrl);
-    } catch (err) {
-      console.error('Photo upload failed:', err);
+    } catch (err: any) {
+      Alert.alert('Upload failed', err?.message ?? 'Could not upload photo. Please try again.');
     } finally {
       setUploading(false);
     }
