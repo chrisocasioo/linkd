@@ -1,7 +1,17 @@
-import React from 'react';
-import { Alert, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import React, { useRef } from 'react';
+import {
+  Animated,
+  Linking,
+  PanResponder,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { Link } from '../../lib/api';
 import { COLORS, FONTS } from '../../constants/colors';
+
+const ACTION_WIDTH = 140;
 
 interface Props {
   link: Link;
@@ -12,80 +22,138 @@ interface Props {
   onDelete: () => void;
   onMoveUp: () => void;
   onMoveDown: () => void;
+  onLongPress: () => void;
 }
 
-export function LinkRow({ link, isReordering, isFirst, isLast, onEdit, onDelete, onMoveUp, onMoveDown }: Props) {
+export function LinkRow({ link, isReordering, isFirst, isLast, onEdit, onDelete, onMoveUp, onMoveDown, onLongPress }: Props) {
   const isScheduled = link.goLiveAt && new Date(link.goLiveAt) > new Date();
+  const swipeX = useRef(new Animated.Value(0)).current;
+  const offsetRef = useRef(0);
+
+  const snapClose = () => {
+    Animated.spring(swipeX, { toValue: 0, useNativeDriver: true, tension: 120, friction: 10 }).start();
+    offsetRef.current = 0;
+  };
+
+  const snapOpen = () => {
+    Animated.spring(swipeX, { toValue: -ACTION_WIDTH, useNativeDriver: true, tension: 120, friction: 10 }).start();
+    offsetRef.current = -ACTION_WIDTH;
+  };
+
+  const panResponder = useRef(PanResponder.create({
+    onMoveShouldSetPanResponder: (_, g) =>
+      !isReordering && Math.abs(g.dx) > Math.abs(g.dy) * 1.5 && Math.abs(g.dx) > 8,
+    onPanResponderMove: (_, g) => {
+      const next = Math.min(0, Math.max(-ACTION_WIDTH, offsetRef.current + g.dx));
+      swipeX.setValue(next);
+    },
+    onPanResponderRelease: (_, g) => {
+      if (offsetRef.current + g.dx < -(ACTION_WIDTH / 3)) {
+        snapOpen();
+      } else {
+        snapClose();
+      }
+    },
+  })).current;
 
   const handlePress = () => {
     if (isReordering) return;
+    if (offsetRef.current !== 0) { snapClose(); return; }
     Linking.openURL(link.url).catch(() => {});
   };
 
-  const handleLongPress = () => {
-    if (isReordering) return;
-    Alert.alert(link.title, undefined, [
-      { text: 'Edit', onPress: onEdit },
-      { text: 'Delete', style: 'destructive', onPress: () => {
-        Alert.alert('Delete Link', `Delete "${link.title}"?`, [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Delete', style: 'destructive', onPress: onDelete },
-        ]);
-      }},
-      { text: 'Cancel', style: 'cancel' },
-    ]);
-  };
-
   return (
-    <Pressable
-      style={({ pressed }) => [styles.row, pressed && !isReordering && styles.rowPressed]}
-      onPress={handlePress}
-      onLongPress={handleLongPress}
-    >
-      <View style={styles.content}>
-        <Text style={styles.title} numberOfLines={1}>{link.title}</Text>
-        <Text style={styles.url} numberOfLines={1}>{link.url}</Text>
+    <View style={styles.container}>
+      <View style={styles.actions}>
+        <Pressable style={styles.editAction} onPress={() => { snapClose(); onEdit(); }}>
+          <Text style={styles.editActionText}>Edit</Text>
+        </Pressable>
+        <Pressable style={styles.deleteAction} onPress={() => { snapClose(); onDelete(); }}>
+          <Text style={styles.deleteActionText}>Delete</Text>
+        </Pressable>
       </View>
 
-      {isScheduled && !isReordering && (
-        <Text style={styles.scheduledBadge}>Scheduled</Text>
-      )}
+      <Animated.View
+        style={[styles.row, { transform: [{ translateX: swipeX }] }]}
+        {...(isReordering ? {} : panResponder.panHandlers)}
+      >
+        <Pressable
+          style={({ pressed }) => [styles.inner, pressed && !isReordering && styles.rowPressed]}
+          onPress={handlePress}
+          onLongPress={isReordering ? undefined : onLongPress}
+          delayLongPress={400}
+        >
+          <View style={styles.content}>
+            <Text style={styles.title} numberOfLines={1}>{link.title}</Text>
+            <Text style={styles.url} numberOfLines={1}>{link.url}</Text>
+          </View>
 
-      {!isReordering && <Text style={styles.chevron}>›</Text>}
+          {isScheduled && !isReordering && (
+            <Text style={styles.scheduledBadge}>Scheduled</Text>
+          )}
 
-      {isReordering && (
-        <View style={styles.arrows}>
-          <Pressable
-            style={[styles.arrowBtn, isFirst && styles.arrowDisabled]}
-            onPress={isFirst ? undefined : onMoveUp}
-          >
-            <Text style={[styles.arrowText, isFirst && styles.arrowTextDisabled]}>↑</Text>
-          </Pressable>
-          <Pressable
-            style={[styles.arrowBtn, isLast && styles.arrowDisabled]}
-            onPress={isLast ? undefined : onMoveDown}
-          >
-            <Text style={[styles.arrowText, isLast && styles.arrowTextDisabled]}>↓</Text>
-          </Pressable>
-        </View>
-      )}
-    </Pressable>
+          {!isReordering && <Text style={styles.chevron}>›</Text>}
+
+          {isReordering && (
+            <View style={styles.arrows}>
+              <Pressable
+                style={[styles.arrowBtn, isFirst && styles.arrowDisabled]}
+                onPress={isFirst ? undefined : onMoveUp}
+              >
+                <Text style={[styles.arrowText, isFirst && styles.arrowTextDisabled]}>↑</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.arrowBtn, isLast && styles.arrowDisabled]}
+                onPress={isLast ? undefined : onMoveDown}
+              >
+                <Text style={[styles.arrowText, isLast && styles.arrowTextDisabled]}>↓</Text>
+              </Pressable>
+            </View>
+          )}
+        </Pressable>
+      </Animated.View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.surface,
+  container: {
+    overflow: 'hidden',
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: COLORS.border,
-    borderRadius: 14,
+  },
+  actions: {
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    bottom: 0,
+    width: ACTION_WIDTH,
+    flexDirection: 'row',
+  },
+  editAction: {
+    flex: 1,
+    backgroundColor: COLORS.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  editActionText: { fontSize: 14, fontFamily: FONTS.semiBold, color: '#000' },
+  deleteAction: {
+    flex: 1,
+    backgroundColor: '#ef4444',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  deleteActionText: { fontSize: 14, fontFamily: FONTS.semiBold, color: '#fff' },
+  row: { backgroundColor: COLORS.surface },
+  rowPressed: { opacity: 0.7 },
+  inner: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 14,
     gap: 8,
   },
-  rowPressed: { opacity: 0.7 },
   content: { flex: 1, gap: 2 },
   title: { fontSize: 15, fontFamily: FONTS.medium, color: COLORS.text },
   url: { fontSize: 12, fontFamily: FONTS.regular, color: COLORS.textSecondary },

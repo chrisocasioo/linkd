@@ -1,4 +1,5 @@
 import * as Contacts from 'expo-contacts';
+import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import React, { useCallback, useRef, useState } from 'react';
 import {
@@ -153,7 +154,7 @@ export default function CardScreen() {
       {/* Top bar */}
       <View style={styles.topBar}>
         <Pressable style={styles.iconBtn} onPress={() => setShowShare(true)}>
-          <Text style={styles.iconBtnText}>⬆</Text>
+          <Ionicons name="share-outline" size={20} color={COLORS.text} />
         </Pressable>
         {isReordering ? (
           <Pressable style={styles.doneBtn} onPress={finishReorder}>
@@ -162,10 +163,10 @@ export default function CardScreen() {
         ) : (
           <View style={styles.topRight}>
             <Pressable style={styles.iconBtn} onPress={() => router.push('/theme')}>
-              <Text style={styles.iconBtnText}>✎</Text>
+              <Ionicons name="color-palette-outline" size={20} color={COLORS.text} />
             </Pressable>
             <Pressable style={styles.iconBtn} onPress={() => setShowSettings(true)}>
-              <Text style={styles.iconBtnText}>⚙</Text>
+              <Ionicons name="settings-outline" size={20} color={COLORS.text} />
             </Pressable>
           </View>
         )}
@@ -247,6 +248,7 @@ export default function CardScreen() {
               }}
               onMoveUp={() => moveLink(index, 'up')}
               onMoveDown={() => moveLink(index, 'down')}
+              onLongPress={enterReorder}
             />
           ))}
 
