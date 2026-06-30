@@ -3,11 +3,11 @@ import { Router } from 'express';
 import { Readable } from 'stream';
 
 const s3 = new S3Client({
-  region: 'auto',
-  endpoint: process.env.ENDPOINT,
+  region: process.env.AWS_REGION ?? 'auto',
+  endpoint: process.env.AWS_ENDPOINT_URL_S3 ?? process.env.ENDPOINT,
   credentials: {
-    accessKeyId: process.env.ACCESS_KEY_ID ?? '',
-    secretAccessKey: process.env.SECRET_ACCESS_KEY ?? '',
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID ?? process.env.ACCESS_KEY_ID ?? '',
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY ?? process.env.SECRET_ACCESS_KEY ?? '',
   },
   forcePathStyle: true,
 });
@@ -21,7 +21,7 @@ router.get('/:userId', async (req, res) => {
 
     const result = await s3.send(
       new GetObjectCommand({
-        Bucket: process.env.BUCKET ?? '',
+        Bucket: process.env.BUCKET_NAME ?? process.env.BUCKET ?? '',
         Key: key,
       })
     );

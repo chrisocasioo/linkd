@@ -6,11 +6,11 @@ import { db } from '../db';
 import { users } from '../db/schema';
 
 const s3 = new S3Client({
-  region: 'auto',
-  endpoint: process.env.ENDPOINT,
+  region: process.env.AWS_REGION ?? 'auto',
+  endpoint: process.env.AWS_ENDPOINT_URL_S3 ?? process.env.ENDPOINT,
   credentials: {
-    accessKeyId: process.env.ACCESS_KEY_ID ?? '',
-    secretAccessKey: process.env.SECRET_ACCESS_KEY ?? '',
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID ?? process.env.ACCESS_KEY_ID ?? '',
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY ?? process.env.SECRET_ACCESS_KEY ?? '',
   },
   forcePathStyle: true,
 });
@@ -27,7 +27,7 @@ router.post('/', upload.single('photo'), async (req, res) => {
     const key = `profiles/${userId}.jpg`;
     await s3.send(
       new PutObjectCommand({
-        Bucket: process.env.BUCKET ?? '',
+        Bucket: process.env.BUCKET_NAME ?? process.env.BUCKET ?? '',
         Key: key,
         Body: req.file.buffer,
         ContentType: req.file.mimetype,
