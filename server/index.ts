@@ -70,10 +70,7 @@ app.post(
 // 2. RevenueCat webhook — raw body, no auth (signature verified inside router)
 app.use('/api/revenuecat/webhook', express.raw({ type: 'application/json' }), revenuecatRouter);
 
-// 3. Serve uploaded photos from the Railway volume
-app.use('/photos', express.static(process.env.UPLOAD_DIR ?? '/data'));
-
-// 4. JSON body parser for all other routes
+// 3. JSON body parser for all other routes
 app.use(express.json());
 
 // 4. Photo upload — must be before generic /api/users mount (multer handles its own body parsing)
