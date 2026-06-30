@@ -1,15 +1,17 @@
-import { v2 as cloudinary } from 'cloudinary';
+import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { eq } from 'drizzle-orm';
 import { Router } from 'express';
 import multer from 'multer';
-import { Readable } from 'stream';
 import { db } from '../db';
 import { users } from '../db/schema';
 
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
+const s3 = new S3Client({
+  region: 'auto',
+  endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+  credentials: {
+    accessKeyId: process.env.R2_ACCESS_KEY_ID ?? '',
+    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY ?? '',
+  },
 });
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
@@ -21,21 +23,20 @@ router.post('/', upload.single('photo'), async (req, res) => {
     const userId = (req as any).userId as string;
     if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
 
-    const result = await new Promise<any>((resolve, reject) => {
-      const stream = cloudinary.uploader.upload_stream(
-        {
-          folder: 'linkd/profiles',
-          public_id: userId,
-          overwrite: true,
-          transformation: [{ width: 400, height: 400, crop: 'fill', gravity: 'face' }],
-        },
-        (err, result) => (err ? reject(err) : resolve(result))
-      );
-      Readable.from(req.file!.buffer).pipe(stream);
-    });
+    const key = `profiles/${userId}.jpg`;
+    await s3.send(
+      new PutObjectCommand({
+        Bucket: process.env.R2_BUCKET_NAME ?? '',
+        Key: key,
+        Body: req.file.buffer,
+        ContentType: req.file.mimetype,
+      })
+    );
 
-    await db.update(users).set({ profilePhoto: result.secure_url }).where(eq(users.id, userId));
-    res.json({ photoUrl: result.secure_url });
+    // Cache-buster so the app sees the updated photo immediately after re-upload
+    const photoUrl = `${process.env.R2_PUBLIC_URL}/${key}?v=${Date.now()}`;
+    await db.update(users).set({ profilePhoto: photoUrl }).where(eq(users.id, userId));
+    res.json({ photoUrl });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
