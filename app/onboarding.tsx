@@ -84,6 +84,7 @@ export default function OnboardingScreen() {
 
       const personalCard = await api.addCard({ name: 'Personal', accentColor: '#7C3AED' });
       if (email.trim()) await api.addField(personalCard.id, { type: 'email', value: email.trim() });
+      if (phone.trim()) await api.addField(personalCard.id, { type: 'phone', value: phone.trim() });
 
       router.replace('/(tabs)/cards');
     } catch (err: any) {
