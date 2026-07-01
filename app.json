@@ -43,7 +43,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Linkd needs access to your photos to set your profile picture."
+          "photosPermission": "Linkd needs access to your photos to set your profile picture.",
+          "cameraPermission": "Linkd needs camera access to scan business cards."
         }
       ],
       [
