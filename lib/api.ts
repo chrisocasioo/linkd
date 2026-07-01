@@ -143,8 +143,10 @@ export function useApi() {
 
     uploadPhoto: (uri: string) =>
       withToken(async (t) => {
+        const localRes = await fetch(uri);
+        const blob = await localRes.blob();
         const formData = new FormData();
-        formData.append('photo', { uri, type: 'image/jpeg', name: 'photo.jpg' } as any);
+        formData.append('photo', blob, 'photo.jpg');
         return request<{ photoUrl: string }>('/api/users/me/photo', t, { method: 'POST', body: formData });
       }),
 
