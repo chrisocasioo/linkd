@@ -59,55 +59,57 @@ export function CardPreview({ card, user }: Props) {
 
   return (
     <View style={styles.card}>
-      {/* Banner */}
-      <View style={styles.banner}>
-        {user.profilePhoto ? (
-          <Image source={{ uri: user.profilePhoto }} style={styles.bannerImg} />
-        ) : (
-          <View style={[styles.bannerPlaceholder, { backgroundColor: accent + '22' }]}>
-            <Text style={[styles.bannerInitial, { color: accent }]}>{initial}</Text>
-          </View>
-        )}
-        <View style={styles.labelPill}>
-          <Text style={styles.labelText}>{card.name.toUpperCase()}</Text>
-        </View>
-      </View>
-
-      {/* Identity */}
-      <View style={styles.identity}>
-        <Text style={styles.name}>{user.displayName ?? user.username ?? ''}</Text>
-        {(() => {
-          const title = card.fields.find(f => f.type === 'title')?.value;
-          const company = card.fields.find(f => f.type === 'company')?.value;
-          return (
-            <>
-              {title ? <Text style={styles.jobTitle}>{title}</Text> : null}
-              {company ? <Text style={styles.company}>{company}</Text> : null}
-            </>
-          );
-        })()}
-      </View>
-
-      {/* Fields */}
-      <ScrollView style={styles.fields} showsVerticalScrollIndicator={false} bounces={false}>
-        {card.fields.filter(f => !['title', 'company', 'department', 'headline'].includes(f.type)).map((field) => (
-          <Pressable
-            key={field.id}
-            style={({ pressed }) => [styles.fieldRow, pressed && styles.fieldRowPressed]}
-            onPress={() => { const url = fieldUrl(field); if (url) Linking.openURL(url).catch(() => {}); }}
-          >
-            <View style={[styles.fieldIcon, { backgroundColor: accent }]}>
-              <Ionicons
-                name={FIELD_ICONS[field.type] ?? FIELD_ICONS.custom}
-                size={16}
-                color="#fff"
-              />
+      <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
+        {/* Banner */}
+        <View style={styles.banner}>
+          {user.profilePhoto ? (
+            <Image source={{ uri: user.profilePhoto }} style={styles.bannerImg} />
+          ) : (
+            <View style={[styles.bannerPlaceholder, { backgroundColor: accent + '22' }]}>
+              <Text style={[styles.bannerInitial, { color: accent }]}>{initial}</Text>
             </View>
-            <Text style={styles.fieldValue} numberOfLines={1}>
-              {fieldDisplayValue(field)}
-            </Text>
-          </Pressable>
-        ))}
+          )}
+          <View style={styles.labelPill}>
+            <Text style={styles.labelText}>{card.name.toUpperCase()}</Text>
+          </View>
+        </View>
+
+        {/* Identity */}
+        <View style={styles.identity}>
+          <Text style={styles.name}>{user.displayName ?? user.username ?? ''}</Text>
+          {(() => {
+            const title = card.fields.find(f => f.type === 'title')?.value;
+            const company = card.fields.find(f => f.type === 'company')?.value;
+            return (
+              <>
+                {title ? <Text style={styles.jobTitle}>{title}</Text> : null}
+                {company ? <Text style={styles.company}>{company}</Text> : null}
+              </>
+            );
+          })()}
+        </View>
+
+        {/* Fields */}
+        <View style={styles.fields}>
+          {card.fields.filter(f => !['title', 'company', 'department', 'headline'].includes(f.type)).map((field) => (
+            <Pressable
+              key={field.id}
+              style={({ pressed }) => [styles.fieldRow, pressed && styles.fieldRowPressed]}
+              onPress={() => { const url = fieldUrl(field); if (url) Linking.openURL(url).catch(() => {}); }}
+            >
+              <View style={[styles.fieldIcon, { backgroundColor: accent }]}>
+                <Ionicons
+                  name={FIELD_ICONS[field.type] ?? FIELD_ICONS.custom}
+                  size={16}
+                  color="#fff"
+                />
+              </View>
+              <Text style={styles.fieldValue} numberOfLines={1}>
+                {fieldDisplayValue(field)}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
       </ScrollView>
     </View>
   );
@@ -182,7 +184,6 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
   fields: {
-    flex: 1,
     paddingBottom: 8,
   },
   fieldRow: {
