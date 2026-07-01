@@ -13,6 +13,8 @@ const FIELD_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
   linkedin:  'logo-linkedin',
   tiktok:    'logo-tiktok',
   youtube:   'logo-youtube',
+  title:     'briefcase-outline',
+  company:   'business-outline',
   custom:    'ellipsis-horizontal',
 };
 
@@ -26,6 +28,8 @@ function fieldUrl(field: CardField): string {
     case 'linkedin':  return `https://linkedin.com/in/${v.replace('@', '')}`;
     case 'tiktok':    return `https://tiktok.com/@${v.replace('@', '')}`;
     case 'youtube':   return `https://youtube.com/@${v.replace('@', '')}`;
+    case 'title':
+    case 'company':   return '';
     default:          return v.startsWith('http') ? v : `https://${v}`;
   }
 }
@@ -72,7 +76,7 @@ export function CardPreview({ card, user, onEditField, onAddField }: Props) {
           <Pressable
             key={field.id}
             style={({ pressed }) => [styles.fieldRow, pressed && styles.fieldRowPressed]}
-            onPress={() => Linking.openURL(fieldUrl(field)).catch(() => {})}
+            onPress={() => { const url = fieldUrl(field); if (url) Linking.openURL(url).catch(() => {}); }}
             onLongPress={() => onEditField(field)}
             delayLongPress={400}
           >

@@ -29,6 +29,8 @@ const FIELD_TYPES = [
   { id: 'linkedin',  label: 'LinkedIn',  icon: 'logo-linkedin' as const,    placeholder: 'username',          keyboardType: 'default' as const },
   { id: 'tiktok',    label: 'TikTok',    icon: 'logo-tiktok' as const,      placeholder: '@handle',           keyboardType: 'default' as const },
   { id: 'youtube',   label: 'YouTube',   icon: 'logo-youtube' as const,     placeholder: '@channel',          keyboardType: 'default' as const },
+  { id: 'title',     label: 'Title',     icon: 'briefcase-outline' as const,   placeholder: 'e.g. Founder',      keyboardType: 'default' as const },
+  { id: 'company',   label: 'Company',   icon: 'business-outline' as const,    placeholder: 'e.g. Acme Inc',     keyboardType: 'default' as const },
   { id: 'custom',    label: 'Custom',    icon: 'ellipsis-horizontal' as const, placeholder: 'Value',          keyboardType: 'default' as const },
 ];
 
