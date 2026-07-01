@@ -352,7 +352,12 @@ export default function CardScreen() {
         </View>
       </ScrollView>
 
-      <ShareSheet visible={showShare} username={user?.username ?? ''} onClose={() => setShowShare(false)} />
+      <ShareSheet
+        visible={showShare}
+        username={user?.username ?? ''}
+        onClose={() => setShowShare(false)}
+        onUsernameChange={(u) => { setUser((prev) => prev ? { ...prev, username: u } : prev); setUsernameValue(u); }}
+      />
       <SettingsSheet
         visible={showSettings}
         onClose={() => setShowSettings(false)}
