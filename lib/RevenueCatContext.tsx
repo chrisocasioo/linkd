@@ -5,12 +5,14 @@ interface RevenueCatContextValue {
   isPro: boolean;
   refresh: () => Promise<void>;
   purchasePro: (type: 'monthly' | 'annual') => Promise<boolean>;
+  seedIsPro: (value: boolean) => void;
 }
 
 const RevenueCatContext = createContext<RevenueCatContextValue>({
   isPro: false,
   refresh: async () => {},
   purchasePro: async () => false,
+  seedIsPro: () => {},
 });
 
 export function RevenueCatProvider({ children }: { children: React.ReactNode }) {
@@ -30,8 +32,12 @@ export function RevenueCatProvider({ children }: { children: React.ReactNode }) 
     [refresh]
   );
 
+  const seedIsPro = useCallback((value: boolean) => {
+    setIsPro((current) => current || value);
+  }, []);
+
   return (
-    <RevenueCatContext.Provider value={{ isPro, refresh, purchasePro }}>
+    <RevenueCatContext.Provider value={{ isPro, refresh, purchasePro, seedIsPro }}>
       {children}
     </RevenueCatContext.Provider>
   );

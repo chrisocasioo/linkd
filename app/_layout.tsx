@@ -14,6 +14,7 @@ import { tokenCache } from '../lib/clerk';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { RevenueCatProvider, useRevenueCat } from '../lib/RevenueCatContext';
 import { initRevenueCat } from '../lib/revenuecat';
+import { useApi } from '../lib/api';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -28,9 +29,12 @@ if (g.ErrorUtils) {
 
 function AppInitializer() {
   const { userId } = useAuth();
-  const { refresh } = useRevenueCat();
+  const { refresh, seedIsPro } = useRevenueCat();
+  const api = useApi();
   useEffect(() => {
-    if (userId) initRevenueCat(userId).then(() => refresh()).catch(() => {});
+    if (!userId) return;
+    initRevenueCat(userId).then(() => refresh()).catch(() => {});
+    api.getMe().then((u) => { if (u.isPro) seedIsPro(true); }).catch(() => {});
   }, [userId]);
   return null;
 }
