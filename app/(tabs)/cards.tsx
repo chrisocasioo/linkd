@@ -25,6 +25,7 @@ const { width: SCREEN_W } = Dimensions.get('window');
 const SIDE_INSET = 24;
 const CARD_GAP = 12;
 const CARD_WIDTH = SCREEN_W - SIDE_INSET * 2;
+const CARD_HEIGHT = 460;
 
 export default function CardScreen() {
   const api = useApi();
@@ -115,7 +116,7 @@ export default function CardScreen() {
             setActiveIndex(Math.min(idx, cards.length - 1));
           }}
           renderItem={({ item }) => (
-            <View style={{ width: CARD_WIDTH }}>
+            <View style={{ width: CARD_WIDTH, height: CARD_HEIGHT }}>
               <CardPreview card={item} user={user!} />
             </View>
           )}
