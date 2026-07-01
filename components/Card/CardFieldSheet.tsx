@@ -1,0 +1,215 @@
+import { Ionicons } from '@expo/vector-icons';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  Alert,
+  Animated,
+  Dimensions,
+  Keyboard,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
+import { CardField } from '../../lib/api';
+import { COLORS, FONTS } from '../../constants/colors';
+
+const { height: SCREEN_H } = Dimensions.get('window');
+
+const FIELD_TYPES = [
+  { id: 'email',     label: 'Email',     icon: 'mail' as const,             placeholder: 'you@example.com',   keyboardType: 'email-address' as const },
+  { id: 'phone',     label: 'Phone',     icon: 'call' as const,             placeholder: '+1 555 000 0000',   keyboardType: 'phone-pad' as const },
+  { id: 'website',   label: 'Website',   icon: 'globe-outline' as const,    placeholder: 'https://yoursite.com', keyboardType: 'url' as const },
+  { id: 'instagram', label: 'Instagram', icon: 'logo-instagram' as const,   placeholder: '@handle',           keyboardType: 'default' as const },
+  { id: 'twitter',   label: 'Twitter',   icon: 'logo-twitter' as const,     placeholder: '@handle',           keyboardType: 'default' as const },
+  { id: 'linkedin',  label: 'LinkedIn',  icon: 'logo-linkedin' as const,    placeholder: 'username',          keyboardType: 'default' as const },
+  { id: 'tiktok',    label: 'TikTok',    icon: 'logo-tiktok' as const,      placeholder: '@handle',           keyboardType: 'default' as const },
+  { id: 'youtube',   label: 'YouTube',   icon: 'logo-youtube' as const,     placeholder: '@channel',          keyboardType: 'default' as const },
+  { id: 'custom',    label: 'Custom',    icon: 'ellipsis-horizontal' as const, placeholder: 'Value',          keyboardType: 'default' as const },
+];
+
+interface Props {
+  visible: boolean;
+  cardId: string;
+  field: CardField | null;
+  onClose: () => void;
+  onSave: (cardId: string, data: { type: string; value: string; label?: string }, fieldId?: string) => Promise<void>;
+  onDelete?: (cardId: string, fieldId: string) => Promise<void>;
+}
+
+export function CardFieldSheet({ visible, cardId, field, onClose, onSave, onDelete }: Props) {
+  const slideY = useRef(new Animated.Value(SCREEN_H)).current;
+  const [selectedType, setSelectedType] = useState(field?.type ?? 'email');
+  const [value, setValue] = useState(field?.value ?? '');
+  const [label, setLabel] = useState(field?.label ?? '');
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (visible) {
+      setSelectedType(field?.type ?? 'email');
+      setValue(field?.value ?? '');
+      setLabel(field?.label ?? '');
+      Animated.spring(slideY, { toValue: 0, useNativeDriver: true, damping: 20, stiffness: 200 }).start();
+    } else {
+      Animated.timing(slideY, { toValue: SCREEN_H, duration: 220, useNativeDriver: true }).start();
+    }
+  }, [visible, field]);
+
+  const close = () => { Keyboard.dismiss(); onClose(); };
+
+  const handleSave = async () => {
+    if (!value.trim()) return;
+    setSaving(true);
+    try {
+      await onSave(cardId, { type: selectedType, value: value.trim(), label: label.trim() || undefined }, field?.id);
+      close();
+    } catch (err: any) {
+      Alert.alert('Error', err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = () => {
+    if (!field || !onDelete) return;
+    Alert.alert('Delete field?', 'This will remove the field from your card.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete', style: 'destructive',
+        onPress: async () => {
+          setSaving(true);
+          try { await onDelete(cardId, field.id); close(); }
+          catch (err: any) { Alert.alert('Error', err.message); }
+          finally { setSaving(false); }
+        },
+      },
+    ]);
+  };
+
+  const currentTypeDef = FIELD_TYPES.find((t) => t.id === selectedType) ?? FIELD_TYPES[0];
+
+  return (
+    <Modal visible={visible} transparent animationType="none" onRequestClose={close}>
+      <Pressable style={styles.backdrop} onPress={close} />
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={styles.kav}
+        pointerEvents="box-none"
+      >
+        <Animated.View style={[styles.sheet, { transform: [{ translateY: slideY }] }]}>
+          <View style={styles.handle} />
+          <View style={styles.header}>
+            <Text style={styles.title}>{field ? 'Edit Field' : 'Add Field'}</Text>
+            <Pressable onPress={close} hitSlop={12}>
+              <Ionicons name="close" size={20} color={COLORS.textSecondary} />
+            </Pressable>
+          </View>
+
+          {/* Type picker */}
+          {!field && (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.typeRow}>
+              {FIELD_TYPES.map((t) => (
+                <Pressable
+                  key={t.id}
+                  style={[styles.typeChip, selectedType === t.id && styles.typeChipActive]}
+                  onPress={() => setSelectedType(t.id)}
+                >
+                  <Ionicons name={t.icon} size={14} color={selectedType === t.id ? COLORS.accent : COLORS.textSecondary} />
+                  <Text style={[styles.typeChipLabel, selectedType === t.id && styles.typeChipLabelActive]}>
+                    {t.label}
+                  </Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+          )}
+
+          <View style={styles.body}>
+            <Text style={styles.fieldLabel}>{currentTypeDef.label}</Text>
+            <TextInput
+              style={styles.input}
+              value={value}
+              onChangeText={setValue}
+              placeholder={currentTypeDef.placeholder}
+              placeholderTextColor={COLORS.textTertiary}
+              keyboardType={currentTypeDef.keyboardType}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+
+            <Text style={[styles.fieldLabel, { marginTop: 16 }]}>Label (optional)</Text>
+            <TextInput
+              style={styles.input}
+              value={label}
+              onChangeText={setLabel}
+              placeholder={`e.g. Work ${currentTypeDef.label}`}
+              placeholderTextColor={COLORS.textTertiary}
+            />
+          </View>
+
+          <View style={styles.actions}>
+            {field && onDelete && (
+              <Pressable style={styles.deleteBtn} onPress={handleDelete} disabled={saving}>
+                <Text style={styles.deleteBtnText}>Delete</Text>
+              </Pressable>
+            )}
+            <Pressable
+              style={[styles.saveBtn, (!value.trim() || saving) && styles.saveBtnDim]}
+              onPress={handleSave}
+              disabled={!value.trim() || saving}
+            >
+              <Text style={styles.saveBtnText}>{saving ? '…' : 'Save'}</Text>
+            </Pressable>
+          </View>
+        </Animated.View>
+      </KeyboardAvoidingView>
+    </Modal>
+  );
+}
+
+const styles = StyleSheet.create({
+  backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.6)' },
+  kav: { flex: 1, justifyContent: 'flex-end' },
+  sheet: {
+    backgroundColor: COLORS.surface,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingBottom: 40,
+  },
+  handle: { width: 36, height: 4, backgroundColor: COLORS.border, borderRadius: 2, alignSelf: 'center', marginTop: 10, marginBottom: 4 },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 14 },
+  title: { fontSize: 16, fontFamily: FONTS.semiBold, color: COLORS.text },
+  typeRow: { gap: 8, paddingHorizontal: 20, paddingBottom: 16 },
+  typeChip: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    paddingHorizontal: 12, paddingVertical: 8,
+    backgroundColor: COLORS.surface2, borderRadius: 20,
+    borderWidth: 1, borderColor: COLORS.border,
+  },
+  typeChipActive: { borderColor: COLORS.accent, backgroundColor: COLORS.accentDim },
+  typeChipLabel: { fontSize: 12, fontFamily: FONTS.medium, color: COLORS.textSecondary },
+  typeChipLabelActive: { color: COLORS.accent },
+  body: { paddingHorizontal: 20 },
+  fieldLabel: { fontSize: 10, fontFamily: FONTS.medium, color: COLORS.textSecondary, letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 6 },
+  input: {
+    height: 48, backgroundColor: COLORS.surface2, borderRadius: 12,
+    borderWidth: 1, borderColor: COLORS.border,
+    paddingHorizontal: 14, fontSize: 15, fontFamily: FONTS.regular, color: COLORS.text,
+  },
+  actions: { flexDirection: 'row', gap: 10, paddingHorizontal: 20, paddingTop: 20 },
+  deleteBtn: {
+    height: 48, paddingHorizontal: 20, borderRadius: 14,
+    borderWidth: 1, borderColor: '#ef4444',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  deleteBtnText: { fontSize: 15, fontFamily: FONTS.medium, color: '#ef4444' },
+  saveBtn: {
+    flex: 1, height: 48, borderRadius: 14,
+    backgroundColor: COLORS.accent, alignItems: 'center', justifyContent: 'center',
+  },
+  saveBtnDim: { opacity: 0.5 },
+  saveBtnText: { fontSize: 15, fontFamily: FONTS.semiBold, color: '#0C0C0E' },
+});

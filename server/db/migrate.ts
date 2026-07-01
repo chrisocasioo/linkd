@@ -51,6 +51,24 @@ export async function runMigrations() {
       link_id UUID REFERENCES links(id),
       viewed_at TIMESTAMP DEFAULT NOW()
     );
+
+    CREATE TABLE IF NOT EXISTS cards (
+      id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      name TEXT NOT NULL DEFAULT 'Card',
+      accent_color TEXT NOT NULL DEFAULT '#C9A84C',
+      display_order INTEGER DEFAULT 0,
+      created_at TIMESTAMP DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS card_fields (
+      id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+      card_id UUID NOT NULL REFERENCES cards(id) ON DELETE CASCADE,
+      type TEXT NOT NULL,
+      label TEXT,
+      value TEXT NOT NULL,
+      display_order INTEGER DEFAULT 0
+    );
   `);
   console.log('✓ Database tables ready');
 }

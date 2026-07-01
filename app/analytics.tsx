@@ -1,6 +1,6 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import React, { useCallback, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { PaywallSheet } from '../components/Card/PaywallSheet';
 import { useApi, AnalyticsData } from '../lib/api';
@@ -50,43 +50,18 @@ export default function AnalyticsScreen() {
           <ActivityIndicator color={COLORS.accent} size="large" />
         </View>
       ) : data ? (
-        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-          {/* Stat cards row */}
-          <View style={styles.statRow}>
-            <View style={[styles.statCard, styles.statCardFlex]}>
-              <Text style={styles.statLabel}>Profile Views</Text>
-              <Text style={styles.statNumber}>{data.profileViews.toLocaleString()}</Text>
-              <Text style={styles.statDelta}>{delta(data.profileViews, data.prevProfileViews)}</Text>
-            </View>
-            <View style={[styles.statCard, styles.statCardFlex]}>
-              <Text style={styles.statLabel}>Link Taps</Text>
-              <Text style={styles.statNumber}>{data.totalLinkClicks.toLocaleString()}</Text>
-              <Text style={styles.statDelta}>{delta(data.totalLinkClicks, data.prevTotalLinkClicks)}</Text>
-            </View>
+        <View style={styles.content}>
+          <View style={styles.statCard}>
+            <Text style={styles.statLabel}>Profile Views</Text>
+            <Text style={styles.statNumber}>{data.profileViews.toLocaleString()}</Text>
+            <Text style={styles.statDelta}>{delta(data.profileViews, data.prevProfileViews)}</Text>
           </View>
-
-          {/* Link clicks */}
-          <Text style={styles.sectionLabel}>Link Clicks</Text>
-
-          {data.linkClicks.length === 0 ? (
-            <Text style={styles.empty}>No clicks yet — share your card to get started.</Text>
-          ) : (
-            <View style={styles.linkList}>
-              {data.linkClicks.map((item) => (
-                <View key={item.linkId} style={styles.linkStat}>
-                  <Text style={styles.linkStatName} numberOfLines={1}>{item.title}</Text>
-                  <Text style={styles.linkStatCount}>{item.count}</Text>
-                </View>
-              ))}
-            </View>
-          )}
-
           {data.trackingSince && (
             <Text style={styles.trackingNote}>
               Tracking since {formatTrackingSince(data.trackingSince)}
             </Text>
           )}
-        </ScrollView>
+        </View>
       ) : null}
 
       <PaywallSheet visible={showPaywall} onClose={() => { setShowPaywall(false); router.back(); }} />
@@ -100,27 +75,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 18, paddingTop: 14, paddingBottom: 10,
   },
-  heading: { fontSize: 18, fontFamily: FONTS.semiBold, color: COLORS.text, letterSpacing: -0.02 * 18 },
-  period: { fontSize: 10, fontFamily: FONTS.medium, color: COLORS.textSecondary, letterSpacing: 0.05 * 10, textTransform: 'uppercase' },
+  heading: { fontSize: 18, fontFamily: FONTS.semiBold, color: COLORS.text, letterSpacing: -0.36 },
+  period: { fontSize: 10, fontFamily: FONTS.medium, color: COLORS.textSecondary, letterSpacing: 0.5, textTransform: 'uppercase' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  content: { paddingHorizontal: 18, paddingBottom: 60, gap: 10 },
-  statRow: { flexDirection: 'row', gap: 8 },
+  content: { paddingHorizontal: 18, paddingTop: 8, gap: 12 },
   statCard: {
     backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border,
-    borderRadius: 14, padding: 14, paddingHorizontal: 16, gap: 3,
+    borderRadius: 14, padding: 18, gap: 4,
   },
-  statCardFlex: { flex: 1 },
-  statLabel: { fontSize: 10, fontFamily: FONTS.medium, color: COLORS.textSecondary, letterSpacing: 0.06 * 10, textTransform: 'uppercase' },
-  statNumber: { fontSize: 30, fontFamily: FONTS.semiBold, color: COLORS.text, letterSpacing: -0.03 * 30, lineHeight: 33 },
-  statDelta: { fontSize: 10, fontFamily: FONTS.regular, color: COLORS.accent, marginTop: 2 },
-  sectionLabel: { fontSize: 10, fontFamily: FONTS.medium, color: COLORS.textSecondary, letterSpacing: 0.08 * 10, textTransform: 'uppercase', paddingLeft: 2 },
-  empty: { fontSize: 13, fontFamily: FONTS.regular, color: COLORS.textSecondary, textAlign: 'center', paddingVertical: 20 },
-  linkList: { gap: 7 },
-  linkStat: {
-    height: 44, backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border,
-    borderRadius: 12, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-  },
-  linkStatName: { fontSize: 12, fontFamily: FONTS.medium, color: COLORS.text, flex: 1, marginRight: 8 },
-  linkStatCount: { fontSize: 13, fontFamily: FONTS.semiBold, color: COLORS.accent },
-  trackingNote: { fontSize: 10, fontFamily: FONTS.regular, color: COLORS.textTertiary, textAlign: 'center', paddingTop: 4 },
+  statLabel: { fontSize: 10, fontFamily: FONTS.medium, color: COLORS.textSecondary, letterSpacing: 0.6, textTransform: 'uppercase' },
+  statNumber: { fontSize: 40, fontFamily: FONTS.semiBold, color: COLORS.text, letterSpacing: -1.2, lineHeight: 44 },
+  statDelta: { fontSize: 11, fontFamily: FONTS.regular, color: COLORS.accent, marginTop: 2 },
+  trackingNote: { fontSize: 11, fontFamily: FONTS.regular, color: COLORS.textTertiary, textAlign: 'center' },
 });

@@ -53,7 +53,31 @@ export const cardViews = pgTable('card_views', {
   viewedAt: timestamp('viewed_at').defaultNow(),
 });
 
+export const cards = pgTable('cards', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  name: text('name').notNull().default('Card'),
+  accentColor: text('accent_color').notNull().default('#C9A84C'),
+  displayOrder: integer('display_order').default(0),
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
+export const cardFields = pgTable('card_fields', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  cardId: uuid('card_id')
+    .notNull()
+    .references(() => cards.id, { onDelete: 'cascade' }),
+  type: text('type').notNull(),
+  label: text('label'),
+  value: text('value').notNull(),
+  displayOrder: integer('display_order').default(0),
+});
+
 export type User = typeof users.$inferSelect;
 export type SavedQr = typeof savedQrs.$inferSelect;
 export type Link = typeof links.$inferSelect;
 export type CardView = typeof cardViews.$inferSelect;
+export type Card = typeof cards.$inferSelect;
+export type CardField = typeof cardFields.$inferSelect;

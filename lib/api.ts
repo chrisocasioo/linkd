@@ -55,10 +55,26 @@ export interface SavedQR {
 export interface AnalyticsData {
   profileViews: number;
   prevProfileViews: number;
-  totalLinkClicks: number;
-  prevTotalLinkClicks: number;
   trackingSince: string | null;
-  linkClicks: Array<{ linkId: string; title: string; url: string; count: number }>;
+}
+
+export interface CardField {
+  id: string;
+  cardId: string;
+  type: string;
+  label: string | null;
+  value: string;
+  displayOrder: number;
+}
+
+export interface Card {
+  id: string;
+  userId: string;
+  name: string;
+  accentColor: string;
+  displayOrder: number;
+  createdAt: string;
+  fields: CardField[];
 }
 
 async function request<T>(path: string, token: string | null, options: RequestInit = {}): Promise<T> {
@@ -131,13 +147,44 @@ export function useApi() {
 
     getAnalytics: () => withToken((t) => request<AnalyticsData>('/api/analytics/me', t)),
 
-    getCard: (username: string) =>
-      request<{ user: User; links: Link[] }>(`/api/cards/${username}`, null),
-    logView: (body: { username: string; linkId?: string }) =>
+    logView: (body: { username: string }) =>
       request<{ success: boolean }>('/api/analytics/view', null, {
         method: 'POST',
         body: JSON.stringify(body),
       }),
+
+    // Cards (new multi-card system)
+    getMyCards: () => withToken((t) => request<Card[]>('/api/cards', t)),
+    addCard: (body: { name: string; accentColor: string }) =>
+      withToken((t) => request<Card>('/api/cards', t, { method: 'POST', body: JSON.stringify(body) })),
+    updateCard: (id: string, body: Partial<{ name: string; accentColor: string }>) =>
+      withToken((t) => request<Card>(`/api/cards/${id}`, t, { method: 'PATCH', body: JSON.stringify(body) })),
+    deleteCard: (id: string) =>
+      withToken((t) => request<{ success: boolean }>(`/api/cards/${id}`, t, { method: 'DELETE' })),
+    reorderCards: (items: Array<{ id: string; order: number }>) =>
+      withToken((t) =>
+        request<{ success: boolean }>('/api/cards/reorder', t, { method: 'PATCH', body: JSON.stringify({ items }) })
+      ),
+
+    addField: (cardId: string, body: { type: string; value: string; label?: string }) =>
+      withToken((t) =>
+        request<CardField>(`/api/cards/${cardId}/fields`, t, { method: 'POST', body: JSON.stringify(body) })
+      ),
+    updateField: (cardId: string, fieldId: string, body: { value?: string; label?: string }) =>
+      withToken((t) =>
+        request<CardField>(`/api/cards/${cardId}/fields/${fieldId}`, t, { method: 'PATCH', body: JSON.stringify(body) })
+      ),
+    deleteField: (cardId: string, fieldId: string) =>
+      withToken((t) =>
+        request<{ success: boolean }>(`/api/cards/${cardId}/fields/${fieldId}`, t, { method: 'DELETE' })
+      ),
+    reorderFields: (cardId: string, items: Array<{ id: string; order: number }>) =>
+      withToken((t) =>
+        request<{ success: boolean }>(`/api/cards/${cardId}/fields/reorder`, t, {
+          method: 'PATCH',
+          body: JSON.stringify({ items }),
+        })
+      ),
 
     getQRs: () => withToken((t) => request<SavedQR[]>('/api/qrs', t)),
     saveQR: (body: { type: string; label: string; data: string }) =>
