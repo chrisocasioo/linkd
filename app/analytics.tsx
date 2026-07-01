@@ -1,10 +1,8 @@
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useFocusEffect } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { PaywallSheet } from '../components/Card/PaywallSheet';
 import { useApi, AnalyticsData } from '../lib/api';
-import { useRevenueCat } from '../lib/RevenueCatContext';
 import { COLORS, FONTS } from '../constants/colors';
 
 function delta(current: number, prev: number): string {
@@ -20,22 +18,14 @@ function formatTrackingSince(iso: string | null): string {
 }
 
 export default function AnalyticsScreen() {
-  const router = useRouter();
   const api = useApi();
-  const { isPro } = useRevenueCat();
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [showPaywall, setShowPaywall] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
-      if (!isPro) {
-        setLoading(false);
-        setShowPaywall(true);
-        return;
-      }
       api.getAnalytics().then(setData).catch(() => {}).finally(() => setLoading(false));
-    }, [isPro])
+    }, [])
   );
 
   return (
@@ -64,7 +54,6 @@ export default function AnalyticsScreen() {
         </View>
       ) : null}
 
-      <PaywallSheet visible={showPaywall} onClose={() => { setShowPaywall(false); router.back(); }} />
     </SafeAreaView>
   );
 }
