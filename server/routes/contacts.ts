@@ -1,13 +1,9 @@
-import Anthropic from '@anthropic-ai/sdk';
 import { desc, eq } from 'drizzle-orm';
 import { Router } from 'express';
-import multer from 'multer';
 import { db } from '../db';
 import { contacts } from '../db/schema';
 
 const router = Router();
-const upload = multer({ storage: multer.memoryStorage() });
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 // GET / — list all contacts for the authenticated user
 router.get('/', async (req, res) => {
@@ -19,38 +15,6 @@ router.get('/', async (req, res) => {
       .where(eq(contacts.userId, userId))
       .orderBy(desc(contacts.createdAt));
     res.json(rows);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// POST /scan — OCR a business card image, return extracted fields (does not save)
-router.post('/scan', upload.single('card'), async (req, res) => {
-  try {
-    if (!req.file) return res.status(400).json({ error: 'No image uploaded' });
-
-    const base64 = req.file.buffer.toString('base64');
-    const mediaType = (req.file.mimetype === 'image/png' ? 'image/png' : 'image/jpeg') as 'image/jpeg' | 'image/png';
-
-    const msg = await anthropic.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 512,
-      messages: [{
-        role: 'user',
-        content: [
-          { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
-          {
-            type: 'text',
-            text: 'Extract contact information from this business card image. Return ONLY valid JSON with no other text or markdown: { "firstName": "", "lastName": "", "email": "", "phone": "", "company": "", "jobTitle": "", "website": "" }. Use null for any field not found on the card.',
-          },
-        ],
-      }],
-    });
-
-    const raw = (msg.content[0] as any).text.trim()
-      .replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
-    const extracted = JSON.parse(raw);
-    res.json(extracted);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }

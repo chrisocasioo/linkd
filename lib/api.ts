@@ -218,13 +218,6 @@ export function useApi() {
       withToken((t) => request<Contact>(`/api/contacts/${id}`, t, { method: 'PATCH', body: JSON.stringify(body) })),
     deleteContact: (id: string) =>
       withToken((t) => request<{ success: boolean }>(`/api/contacts/${id}`, t, { method: 'DELETE' })),
-    scanBusinessCard: (uri: string) =>
-      withToken(async (t) => {
-        const formData = new FormData();
-        formData.append('card', { uri, type: 'image/jpeg', name: 'card.jpg' } as any);
-        return request<ScanResult>('/api/contacts/scan', t, { method: 'POST', body: formData });
-      }),
-
     getQRs: () => withToken((t) => request<SavedQR[]>('/api/qrs', t)),
     saveQR: (body: { type: string; label: string; data: string }) =>
       withToken((t) =>

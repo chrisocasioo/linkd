@@ -11,9 +11,61 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import TextRecognition from '@react-native-ml-kit/text-recognition';
 import { ContactReviewSheet } from '../../components/Contacts/ContactReviewSheet';
 import { useApi, ScanResult } from '../../lib/api';
 import { COLORS, FONTS } from '../../constants/colors';
+
+function parseBusinessCard(rawText: string): Partial<ScanResult> {
+  const lines = rawText.split('\n').map((l) => l.trim()).filter(Boolean);
+
+  const emailMatch = lines.find((l) =>
+    /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/.test(l.replace(/\s/g, ''))
+  );
+  const email = emailMatch ? emailMatch.replace(/\s/g, '') : null;
+
+  const phoneMatch = lines.find(
+    (l) => /^[\+]?[\d\s\.\-\(\)]{7,}$/.test(l.trim()) && (l.match(/\d/g) ?? []).length >= 7
+  );
+
+  const websiteMatch = lines.find(
+    (l) => /^(https?:\/\/|www\.)/i.test(l) || /\.(com|io|co|net|org|app|me|dev)\/?$/i.test(l)
+  );
+
+  const used = new Set([emailMatch, phoneMatch, websiteMatch].filter(Boolean) as string[]);
+  const remaining = lines.filter((l) => !used.has(l));
+
+  const nameLine = remaining.find((l) => {
+    const w = l.split(/\s+/);
+    return w.length >= 2 && w.length <= 4 && /^[A-Za-z\s\.\-\']+$/.test(l) && l !== l.toUpperCase();
+  });
+  const firstName = nameLine ? nameLine.split(/\s+/)[0] : null;
+  const lastName = nameLine ? nameLine.split(/\s+/).slice(1).join(' ') || null : null;
+  if (nameLine) used.add(nameLine);
+
+  const afterName = remaining.filter((l) => !used.has(l));
+
+  const titleKw = /\b(CEO|CTO|CFO|COO|VP|SVP|EVP|Director|Manager|Engineer|Developer|Designer|Founder|President|Lead|Head|Consultant|Advisor|Partner|Associate|Analyst|Specialist|Officer|Coordinator|Executive|Producer|Architect|Strategist)\b/i;
+  const jobTitleLine = afterName.find(
+    (l) => titleKw.test(l) || (l.split(/\s+/).length <= 4 && !/\d/.test(l))
+  );
+  if (jobTitleLine) used.add(jobTitleLine);
+
+  const coKw = /\b(Inc\.?|LLC|Ltd\.?|Corp\.?|Group|Studio|Agency|Labs?|Technologies?|Solutions?|Services?|Consulting|Co\.?|International|Global|Holdings?)\b/i;
+  const companyLine = afterName.find(
+    (l) => !used.has(l) && (coKw.test(l) || l === l.toUpperCase() || l.split(/\s+/).length <= 4)
+  );
+
+  return {
+    firstName,
+    lastName,
+    email,
+    phone: phoneMatch ?? null,
+    company: companyLine ?? null,
+    jobTitle: jobTitleLine ?? null,
+    website: websiteMatch ?? null,
+  };
+}
 
 export default function ScansScreen() {
   const api = useApi();
@@ -56,11 +108,12 @@ export default function ScansScreen() {
   const processImage = async (uri: string) => {
     setScanning(true);
     try {
-      const extracted = await api.scanBusinessCard(uri);
+      const result = await TextRecognition.recognize(uri);
+      const extracted = parseBusinessCard(result.text);
       setScanResult(extracted);
       setShowReview(true);
     } catch (err: any) {
-      Alert.alert('Scan failed', err.message ?? 'Could not extract info from the card.');
+      Alert.alert('Scan failed', err.message ?? 'Could not read the card.');
     } finally {
       setScanning(false);
     }
@@ -78,7 +131,6 @@ export default function ScansScreen() {
         <Text style={styles.heading}>Scans</Text>
       </View>
 
-      {/* Empty / hero state */}
       <View style={styles.hero}>
         <View style={styles.circleOuter}>
           <View style={styles.circleMiddle}>
@@ -93,16 +145,15 @@ export default function ScansScreen() {
         </View>
 
         <Text style={styles.heroTitle}>
-          {scanning ? 'Extracting contact info…' : 'Scan a business card'}
+          {scanning ? 'Reading card…' : 'Scan a business card'}
         </Text>
         <Text style={styles.heroSub}>
           {scanning
-            ? 'Claude AI is reading the card'
+            ? 'Extracting contact info on-device'
             : 'Point your camera at any business card to instantly save the contact'}
         </Text>
       </View>
 
-      {/* Scan button */}
       <View style={styles.btnWrapper}>
         <Pressable
           style={[styles.scanBtn, scanning && styles.scanBtnDim]}
