@@ -74,7 +74,7 @@ app.post(
 app.use('/api/revenuecat/webhook', express.raw({ type: 'application/json' }), revenuecatRouter);
 
 // 3. JSON body parser for all other routes
-app.use(express.json());
+app.use(express.json({ limit: '20mb' }));
 
 // 4a. Public photo proxy — no auth, before JSON parser
 app.use('/api/photos', photoServeRouter);
