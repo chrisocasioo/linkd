@@ -51,11 +51,9 @@ function fieldDisplayValue(field: CardField): string {
 interface Props {
   card: Card;
   user: User;
-  onEditField: (field: CardField) => void;
-  onAddField: () => void;
 }
 
-export function CardPreview({ card, user, onEditField, onAddField }: Props) {
+export function CardPreview({ card, user }: Props) {
   const accent = card.accentColor;
   const initial = (user.displayName ?? user.username ?? '?')[0].toUpperCase();
 
@@ -97,8 +95,6 @@ export function CardPreview({ card, user, onEditField, onAddField }: Props) {
             key={field.id}
             style={({ pressed }) => [styles.fieldRow, pressed && styles.fieldRowPressed]}
             onPress={() => { const url = fieldUrl(field); if (url) Linking.openURL(url).catch(() => {}); }}
-            onLongPress={() => onEditField(field)}
-            delayLongPress={400}
           >
             <View style={[styles.fieldIcon, { backgroundColor: accent }]}>
               <Ionicons
@@ -112,17 +108,6 @@ export function CardPreview({ card, user, onEditField, onAddField }: Props) {
             </Text>
           </Pressable>
         ))}
-
-        {/* Add field row */}
-        <Pressable
-          style={({ pressed }) => [styles.fieldRow, styles.addFieldRow, pressed && styles.fieldRowPressed]}
-          onPress={onAddField}
-        >
-          <View style={[styles.fieldIcon, { backgroundColor: accent + '33', borderWidth: 1.5, borderColor: accent, borderStyle: 'dashed' }]}>
-            <Ionicons name="add" size={16} color={accent} />
-          </View>
-          <Text style={[styles.fieldValue, { color: accent, opacity: 0.8 }]}>Add field</Text>
-        </Pressable>
       </View>
     </View>
   );
@@ -209,9 +194,6 @@ const styles = StyleSheet.create({
   },
   fieldRowPressed: {
     backgroundColor: 'rgba(255,255,255,0.04)',
-  },
-  addFieldRow: {
-    opacity: 0.7,
   },
   fieldIcon: {
     width: 32,

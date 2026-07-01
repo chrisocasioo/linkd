@@ -11,12 +11,11 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { CardFieldSheet } from '../../components/Card/CardFieldSheet';
 import { CardPreview } from '../../components/Card/CardPreview';
 import { PaywallSheet } from '../../components/Card/PaywallSheet';
 import { ShareSheet } from '../../components/Card/ShareSheet';
 import { SettingsSheet } from '../../components/Profile/SettingsSheet';
-import { useApi, Card, CardField, User } from '../../lib/api';
+import { useApi, Card, User } from '../../lib/api';
 import { useRevenueCat } from '../../lib/RevenueCatContext';
 import { COLORS, FONTS } from '../../constants/colors';
 
@@ -41,9 +40,6 @@ export default function CardScreen() {
   const [showSettings, setShowSettings] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
 
-  const [showFieldEdit, setShowFieldEdit] = useState(false);
-  const [fieldEditContext, setFieldEditContext] = useState<{ cardId: string; field: CardField | null } | null>(null);
-
   const flatListRef = useRef<FlatList>(null);
 
   const load = useCallback(async () => {
@@ -67,42 +63,6 @@ export default function CardScreen() {
     const created = await api.addCard({ name: 'New Card', accentColor: ACCENT_COLORS[0] });
     setCards((cs) => [...cs, created]);
     router.push({ pathname: '/edit-card', params: { cardId: created.id } });
-  };
-
-  // ── Field CRUD ─────────────────────────────────────────────────────────────
-
-  const handleSaveField = async (
-    cardId: string,
-    data: { type: string; value: string; label?: string },
-    fieldId?: string
-  ) => {
-    if (fieldId) {
-      const updated = await api.updateField(cardId, fieldId, { value: data.value, label: data.label });
-      setCards((cs) =>
-        cs.map((c) =>
-          c.id === cardId
-            ? { ...c, fields: c.fields.map((f) => f.id === fieldId ? updated : f) }
-            : c
-        )
-      );
-    } else {
-      const created = await api.addField(cardId, data);
-      setCards((cs) =>
-        cs.map((c) => c.id === cardId ? { ...c, fields: [...c.fields, created] } : c)
-      );
-    }
-  };
-
-  const handleDeleteField = async (cardId: string, fieldId: string) => {
-    await api.deleteField(cardId, fieldId);
-    setCards((cs) =>
-      cs.map((c) => c.id === cardId ? { ...c, fields: c.fields.filter((f) => f.id !== fieldId) } : c)
-    );
-  };
-
-  const openFieldEdit = (cardId: string, field: CardField | null) => {
-    setFieldEditContext({ cardId, field });
-    setShowFieldEdit(true);
   };
 
   // ── Render ─────────────────────────────────────────────────────────────────
@@ -156,12 +116,7 @@ export default function CardScreen() {
           }}
           renderItem={({ item }) => (
             <View style={{ width: CARD_WIDTH }}>
-              <CardPreview
-                card={item}
-                user={user!}
-                onEditField={(field) => openFieldEdit(item.id, field)}
-                onAddField={() => openFieldEdit(item.id, null)}
-              />
+              <CardPreview card={item} user={user!} />
             </View>
           )}
         />
@@ -206,14 +161,6 @@ export default function CardScreen() {
         visible={showSettings}
         onClose={() => setShowSettings(false)}
         onShowPaywall={() => setShowPaywall(true)}
-      />
-      <CardFieldSheet
-        visible={showFieldEdit}
-        cardId={fieldEditContext?.cardId ?? ''}
-        field={fieldEditContext?.field ?? null}
-        onClose={() => { setShowFieldEdit(false); setFieldEditContext(null); }}
-        onSave={handleSaveField}
-        onDelete={handleDeleteField}
       />
       <PaywallSheet visible={showPaywall} onClose={() => setShowPaywall(false)} />
     </SafeAreaView>
