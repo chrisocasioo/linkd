@@ -78,11 +78,21 @@ export function CardPreview({ card, user, onEditField, onAddField }: Props) {
       {/* Identity */}
       <View style={styles.identity}>
         <Text style={styles.name}>{user.displayName ?? user.username ?? ''}</Text>
+        {(() => {
+          const title = card.fields.find(f => f.type === 'title')?.value;
+          const company = card.fields.find(f => f.type === 'company')?.value;
+          return (
+            <>
+              {title ? <Text style={styles.jobTitle}>{title}</Text> : null}
+              {company ? <Text style={styles.company}>{company}</Text> : null}
+            </>
+          );
+        })()}
       </View>
 
       {/* Fields */}
       <View style={styles.fields}>
-        {card.fields.map((field) => (
+        {card.fields.filter(f => !['title', 'company', 'department', 'headline'].includes(f.type)).map((field) => (
           <Pressable
             key={field.id}
             style={({ pressed }) => [styles.fieldRow, pressed && styles.fieldRowPressed]}
@@ -171,6 +181,19 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.semiBold,
     color: '#fff',
     letterSpacing: -0.3,
+  },
+  jobTitle: {
+    fontSize: 14,
+    fontFamily: FONTS.semiBold,
+    color: 'rgba(255,255,255,0.85)',
+    marginTop: 3,
+  },
+  company: {
+    fontSize: 14,
+    fontFamily: FONTS.regular,
+    fontStyle: 'italic',
+    color: 'rgba(255,255,255,0.65)',
+    marginTop: 1,
   },
   fields: {
     paddingBottom: 8,
