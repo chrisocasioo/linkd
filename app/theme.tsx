@@ -16,15 +16,15 @@ import { useRevenueCat } from '../lib/RevenueCatContext';
 import { COLORS, FONTS } from '../constants/colors';
 
 const THEMES = [
-  { id: 'dark',     label: 'Dark',     bg: '#0C0C0E', accent: '#C9973A', pro: false },
-  { id: 'light',    label: 'Light',    bg: '#FAFAFA', accent: '#C9973A', pro: true },
-  { id: 'midnight', label: 'Midnight', bg: '#0A0A2E', accent: '#7C3AED', pro: true },
-  { id: 'forest',   label: 'Forest',   bg: '#0A1A0A', accent: '#2ECC71', pro: true },
-  { id: 'rose',     label: 'Rose',     bg: '#2E0A1A', accent: '#F43F5E', pro: true },
-  { id: 'ocean',    label: 'Ocean',    bg: '#0A1A2E', accent: '#0EA5E9', pro: true },
-  { id: 'sand',     label: 'Sand',     bg: '#F5E6D3', accent: '#C9A84C', pro: true },
-  { id: 'slate',    label: 'Slate',    bg: '#1E293B', accent: '#94A3B8', pro: true },
-  { id: 'purple',   label: 'Purple',   bg: '#1A0A2E', accent: '#A855F7', pro: true },
+  { id: 'dark',    label: 'Dark',    bg: '#0C0C0E', accent: '#C9973A', pro: false },
+  { id: 'light',   label: 'Light',   bg: '#FAFAFA', accent: '#C9973A', pro: true },
+  { id: 'minimal', label: 'Minimal', bg: '#F5F0E8', accent: '#2C2C2C', pro: true },
+  { id: 'violet',  label: 'Violet',  bg: '#0A0A1A', accent: '#6C63FF', pro: true },
+  { id: 'forest',  label: 'Forest',  bg: '#0A1A0A', accent: '#2ECC71', pro: true },
+  { id: 'rose',    label: 'Rose',    bg: '#2E0A1A', accent: '#F43F5E', pro: true },
+  { id: 'ocean',   label: 'Ocean',   bg: '#0A1A2E', accent: '#0EA5E9', pro: true },
+  { id: 'sand',    label: 'Sand',    bg: '#F5E6D3', accent: '#C9A84C', pro: true },
+  { id: 'slate',   label: 'Slate',   bg: '#1E293B', accent: '#94A3B8', pro: true },
 ];
 
 const ACCENT_COLORS = ['#C9A84C', '#7C3AED', '#22C55E', '#F43F5E', '#0EA5E9', '#F97316', '#EC4899', '#14B8A6'];
@@ -211,7 +211,7 @@ const styles = StyleSheet.create({
   sectionLabel: { fontSize: 10, fontFamily: FONTS.medium, color: COLORS.textSecondary, letterSpacing: 0.08 * 10, textTransform: 'uppercase', paddingLeft: 2 },
   themeRow: { gap: 8, paddingHorizontal: 18, paddingBottom: 4 },
   themeChip: {
-    width: 76, height: 52, borderRadius: 12, borderWidth: 2, borderColor: COLORS.border,
+    width: 96, height: 60, borderRadius: 14, borderWidth: 2, borderColor: COLORS.border,
     alignItems: 'center', justifyContent: 'center', gap: 5, position: 'relative',
   },
   themeChipActive: { borderColor: COLORS.accent },

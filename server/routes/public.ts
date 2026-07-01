@@ -21,15 +21,15 @@ async function getActiveLinks(userId: string) {
 }
 
 const themeMap: Record<string, { bg: string; text: string; card: string; accent: string }> = {
-  dark:     { bg: '#000000', text: '#FFFFFF', card: '#1A1A1A', accent: '#C9A84C' },
-  light:    { bg: '#FFFFFF', text: '#1A1A1A', card: '#F5F5F5', accent: '#C9A84C' },
-  midnight: { bg: '#0A0A2E', text: '#FFFFFF', card: '#1A1A3E', accent: '#7C3AED' },
-  forest:   { bg: '#0A2E1A', text: '#FFFFFF', card: '#1A3E2A', accent: '#22C55E' },
-  rose:     { bg: '#2E0A1A', text: '#FFFFFF', card: '#3E1A2A', accent: '#F43F5E' },
-  ocean:    { bg: '#0A1A2E', text: '#FFFFFF', card: '#1A2A3E', accent: '#0EA5E9' },
-  sand:     { bg: '#F5E6D3', text: '#1A1A1A', card: '#EAD5BC', accent: '#C9A84C' },
-  slate:    { bg: '#1E293B', text: '#FFFFFF', card: '#334155', accent: '#94A3B8' },
-  purple:   { bg: '#1A0A2E', text: '#FFFFFF', card: '#2A1A3E', accent: '#A855F7' },
+  dark:    { bg: '#000000', text: '#FFFFFF', card: '#1A1A1A', accent: '#C9A84C' },
+  light:   { bg: '#FFFFFF', text: '#1A1A1A', card: '#F5F5F5', accent: '#C9A84C' },
+  minimal: { bg: '#F5F0E8', text: '#1A1A1A', card: '#EAE5DD', accent: '#2C2C2C' },
+  violet:  { bg: '#0A0A1A', text: '#FFFFFF', card: '#14142A', accent: '#6C63FF' },
+  forest:  { bg: '#0A1A0A', text: '#FFFFFF', card: '#142414', accent: '#2ECC71' },
+  rose:    { bg: '#2E0A1A', text: '#FFFFFF', card: '#3E1A2A', accent: '#F43F5E' },
+  ocean:   { bg: '#0A1A2E', text: '#FFFFFF', card: '#1A2A3E', accent: '#0EA5E9' },
+  sand:    { bg: '#F5E6D3', text: '#1A1A1A', card: '#EAD5BC', accent: '#C9A84C' },
+  slate:   { bg: '#1E293B', text: '#FFFFFF', card: '#334155', accent: '#94A3B8' },
 };
 
 const esc = (s: string) =>
