@@ -29,7 +29,12 @@ export function LinkRow({ link, isReordering, isFirst, isLast, onEdit, onDelete,
   const isContactCard = link.type === 'contact_card';
   const isScheduled = !isContactCard && link.goLiveAt && new Date(link.goLiveAt) > new Date();
   const swipeX = useRef(new Animated.Value(0)).current;
-  const offsetRef = useRef(0);
+  const offsetRef = useRef(0);       // committed position (0 or -ACTION_WIDTH)
+  const startOffsetRef = useRef(0);  // position at gesture start
+  const isReorderingRef = useRef(isReordering);
+
+  // Keep ref fresh so the PanResponder closure always sees the current value
+  React.useEffect(() => { isReorderingRef.current = isReordering; }, [isReordering]);
 
   const snapClose = () => {
     Animated.spring(swipeX, { toValue: 0, useNativeDriver: true, tension: 120, friction: 10 }).start();
@@ -42,19 +47,31 @@ export function LinkRow({ link, isReordering, isFirst, isLast, onEdit, onDelete,
   };
 
   const panResponder = useRef(PanResponder.create({
+    onStartShouldSetPanResponder: () => false,
     onMoveShouldSetPanResponder: (_, g) =>
-      !isReordering && Math.abs(g.dx) > Math.abs(g.dy) * 1.5 && Math.abs(g.dx) > 8,
+      !isReorderingRef.current &&
+      Math.abs(g.dx) > Math.abs(g.dy) * 1.5 &&
+      Math.abs(g.dx) > 8,
+    onPanResponderGrant: () => {
+      startOffsetRef.current = offsetRef.current;
+    },
     onPanResponderMove: (_, g) => {
-      const next = Math.min(0, Math.max(-ACTION_WIDTH, offsetRef.current + g.dx));
+      const next = Math.min(0, Math.max(-ACTION_WIDTH, startOffsetRef.current + g.dx));
       swipeX.setValue(next);
     },
     onPanResponderRelease: (_, g) => {
-      if (offsetRef.current + g.dx < -(ACTION_WIDTH / 3)) {
+      const endVal = startOffsetRef.current + g.dx;
+      if (endVal < -(ACTION_WIDTH / 2)) {
         snapOpen();
       } else {
         snapClose();
       }
     },
+    onPanResponderTerminate: () => {
+      // ScrollView or another responder stole the gesture — snap back cleanly
+      snapClose();
+    },
+    onShouldBlockNativeResponder: () => true,
   })).current;
 
   const handlePress = () => {
