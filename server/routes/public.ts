@@ -126,7 +126,7 @@ router.get('/:username', async (req, res) => {
     body{background:${t.bg};color:${t.text};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:48px 20px 80px}
     .card{width:100%;max-width:480px;display:flex;flex-direction:column;align-items:center;gap:16px}
     .avatar{width:96px;height:96px;border-radius:50%;object-fit:cover;border:3px solid ${accent}}
-    .avatar-ph{width:96px;height:96px;border-radius:50%;background:${t.card};border:3px solid ${accent}}
+    .avatar-ph{width:96px;height:96px;border-radius:28px;background:rgba(201,151,58,0.10);border:3px solid ${accent};display:flex;align-items:center;justify-content:center;font-size:42px;font-weight:700;color:${accent};box-shadow:0 0 28px rgba(201,151,58,0.12)}
     .name{font-size:24px;font-weight:700;text-align:center}
     .bio{font-size:14px;opacity:.7;text-align:center;max-width:320px;line-height:1.5;white-space:pre-wrap}
     .links{width:100%;display:flex;flex-direction:column;gap:12px;margin-top:8px}
@@ -138,7 +138,7 @@ router.get('/:username', async (req, res) => {
 </head>
 <body>
   <div class="card">
-    ${user.profilePhoto ? `<img class="avatar" src="${user.profilePhoto}" alt="${name}" />` : '<div class="avatar-ph"></div>'}
+    ${user.profilePhoto ? `<img class="avatar" src="${user.profilePhoto}" alt="${name}" />` : `<div class="avatar-ph">${(user.displayName ?? username)[0].toUpperCase()}</div>`}
     <div class="name">${name}</div>
     ${bio ? `<div class="bio">${bio}</div>` : ''}
     <div class="links">${linkItems}</div>

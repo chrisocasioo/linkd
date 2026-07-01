@@ -244,7 +244,7 @@ export default function CardScreen() {
               <Image source={{ uri: user.profilePhoto }} style={styles.avatar} />
             ) : (
               <View style={styles.avatarPlaceholder}>
-                <Text style={styles.avatarPlaceholderText}>{user?.displayName?.[0]?.toUpperCase() ?? '+'}</Text>
+                <Text style={styles.avatarPlaceholderText}>{(nameValue || user?.displayName)?.[0]?.toUpperCase() ?? '?'}</Text>
               </View>
             )}
             {photoUploading && (
