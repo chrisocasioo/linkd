@@ -54,6 +54,10 @@ export interface SavedQR {
 
 export interface AnalyticsData {
   profileViews: number;
+  prevProfileViews: number;
+  totalLinkClicks: number;
+  prevTotalLinkClicks: number;
+  trackingSince: string | null;
   linkClicks: Array<{ linkId: string; title: string; url: string; count: number }>;
 }
 
