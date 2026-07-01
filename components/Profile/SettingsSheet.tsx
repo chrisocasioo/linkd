@@ -22,7 +22,6 @@ import { COLORS, FONTS } from '../../constants/colors';
 interface Props {
   visible: boolean;
   onClose: () => void;
-  onEditProfile: () => void;
   onShowPaywall: () => void;
 }
 
@@ -35,7 +34,7 @@ function SettingsRow({ label, onPress }: { label: string; onPress: () => void })
   );
 }
 
-export function SettingsSheet({ visible, onClose, onEditProfile, onShowPaywall }: Props) {
+export function SettingsSheet({ visible, onClose, onShowPaywall }: Props) {
   const { signOut } = useAuth();
   const { user } = useClerk();
   const api = useApi();
@@ -96,8 +95,6 @@ export function SettingsSheet({ visible, onClose, onEditProfile, onShowPaywall }
 
           {/* Account */}
           <View style={styles.group}>
-            <SettingsRow label="Edit Profile" onPress={() => { onClose(); setTimeout(onEditProfile, 300); }} />
-            <View style={styles.sep} />
             <View style={styles.row}>
               <Text style={styles.rowLabel}>Email</Text>
               <Text style={styles.rowValue}>{emailShort}</Text>

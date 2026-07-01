@@ -20,7 +20,6 @@ import { LinkEditSheet } from '../components/Card/LinkEditSheet';
 import { ContactCardSheet } from '../components/Card/ContactCardSheet';
 import { ShareSheet } from '../components/Card/ShareSheet';
 import { PaywallSheet } from '../components/Card/PaywallSheet';
-import { EditProfileSheet } from '../components/Profile/EditProfileSheet';
 import { SettingsSheet } from '../components/Profile/SettingsSheet';
 import { useApi, User, Link, ContactMeta } from '../lib/api';
 import { usePhotoUpload } from '../lib/usePhotoUpload';
@@ -39,7 +38,6 @@ export default function CardScreen() {
 
   const [showShare, setShowShare] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [showEditProfile, setShowEditProfile] = useState(false);
   const [showLinkEdit, setShowLinkEdit] = useState(false);
   const [editingLink, setEditingLink] = useState<Link | null>(null);
   const [showPaywall, setShowPaywall] = useState(false);
@@ -47,15 +45,10 @@ export default function CardScreen() {
 
   const [editingName, setEditingName] = useState(false);
   const [nameValue, setNameValue] = useState('');
-  const [editingUsername, setEditingUsername] = useState(false);
-  const [usernameValue, setUsernameValue] = useState('');
-  const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
-  const usernameCheckTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [editingBio, setEditingBio] = useState(false);
   const [bioValue, setBioValue] = useState('');
 
   const nameInputRef = useRef<TextInput>(null);
-  const usernameInputRef = useRef<TextInput>(null);
   const bioInputRef = useRef<TextInput>(null);
 
   const load = useCallback(async () => {
@@ -64,7 +57,6 @@ export default function CardScreen() {
       setUser(u);
       setLinks(ls);
       setNameValue(u.displayName ?? '');
-      setUsernameValue(u.username ?? '');
       setBioValue(u.bio ?? '');
     } catch {}
     setLoading(false);
@@ -83,37 +75,6 @@ export default function CardScreen() {
       const updated = await api.updateMe({ displayName: name, bio });
       setUser(updated);
     } catch {}
-  };
-
-  const handleUsernameChange = (v: string) => {
-    const cleaned = v.toLowerCase().replace(/[^a-z0-9_-]/g, '');
-    setUsernameValue(cleaned);
-    setUsernameAvailable(null);
-    if (usernameCheckTimer.current) clearTimeout(usernameCheckTimer.current);
-    if (!cleaned || cleaned === user?.username) return;
-    if (!/^[a-z0-9_-]{3,30}$/.test(cleaned)) { setUsernameAvailable(false); return; }
-    usernameCheckTimer.current = setTimeout(async () => {
-      try {
-        const { available } = await api.checkUsername(cleaned);
-        setUsernameAvailable(available);
-      } catch {}
-    }, 500);
-  };
-
-  const saveUsername = async (value: string) => {
-    const cleaned = value.toLowerCase().trim();
-    if (!cleaned || cleaned === user?.username) return;
-    if (!/^[a-z0-9_-]{3,30}$/.test(cleaned)) {
-      setUsernameValue(user?.username ?? '');
-      return;
-    }
-    try {
-      const updated = await api.updateMe({ username: cleaned });
-      setUser(updated);
-      setUsernameValue(updated.username ?? cleaned);
-    } catch {
-      setUsernameValue(user?.username ?? '');
-    }
   };
 
   const openLinkEdit = (link: Link | null) => {
@@ -272,34 +233,6 @@ export default function CardScreen() {
             </Pressable>
           )}
 
-          {editingUsername ? (
-            <View style={styles.usernameInputRow}>
-              <Text style={styles.usernameAt}>@</Text>
-              <TextInput
-                ref={usernameInputRef}
-                style={styles.usernameInput}
-                value={usernameValue}
-                onChangeText={handleUsernameChange}
-                onBlur={() => { setEditingUsername(false); setUsernameAvailable(null); saveUsername(usernameValue); }}
-                autoCapitalize="none"
-                autoCorrect={false}
-                textAlign="left"
-              />
-              {usernameValue.length >= 3 && usernameValue !== user?.username && (
-                <Text style={usernameAvailable === true ? styles.usernameCheck : usernameAvailable === false ? styles.usernameX : styles.usernameChecking}>
-                  {usernameAvailable === true ? '✓' : usernameAvailable === false ? '✗' : '…'}
-                </Text>
-              )}
-            </View>
-          ) : (
-            <Pressable
-              onPress={() => { setEditingUsername(true); setTimeout(() => usernameInputRef.current?.focus(), 100); }}
-              hitSlop={{ top: 8, bottom: 8, left: 16, right: 16 }}
-            >
-              <Text style={styles.username}>{usernameValue ? `@${usernameValue}` : 'Tap to set username'}</Text>
-            </Pressable>
-          )}
-
           {editingBio ? (
             <TextInput
               ref={bioInputRef}
@@ -356,19 +289,12 @@ export default function CardScreen() {
         visible={showShare}
         username={user?.username ?? ''}
         onClose={() => setShowShare(false)}
-        onUsernameChange={(u) => { setUser((prev) => prev ? { ...prev, username: u } : prev); setUsernameValue(u); }}
+        onUsernameChange={(u) => setUser((prev) => prev ? { ...prev, username: u } : prev)}
       />
       <SettingsSheet
         visible={showSettings}
         onClose={() => setShowSettings(false)}
-        onEditProfile={() => setShowEditProfile(true)}
         onShowPaywall={() => setShowPaywall(true)}
-      />
-      <EditProfileSheet
-        visible={showEditProfile}
-        user={user}
-        onClose={() => setShowEditProfile(false)}
-        onSaved={(updated) => { setUser(updated); setNameValue(updated.displayName ?? ''); setBioValue(updated.bio ?? ''); }}
       />
       <LinkEditSheet
         visible={showLinkEdit}
@@ -410,13 +336,6 @@ const styles = StyleSheet.create({
   avatarOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 26, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center' },
   nameInput: { fontSize: 20, fontFamily: FONTS.semiBold, color: COLORS.text, textAlign: 'center', borderBottomWidth: 1, borderBottomColor: COLORS.accent, minWidth: 160 },
   name: { fontSize: 20, fontFamily: FONTS.semiBold, color: COLORS.text, letterSpacing: -0.025 * 20 },
-  username: { fontSize: 12, fontFamily: FONTS.regular, color: COLORS.textSecondary },
-  usernameInputRow: { flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: COLORS.border },
-  usernameAt: { fontSize: 12, fontFamily: FONTS.regular, color: COLORS.textSecondary },
-  usernameInput: { fontSize: 12, fontFamily: FONTS.regular, color: COLORS.textSecondary, minWidth: 100, paddingVertical: 2 },
-  usernameCheck: { fontSize: 13, color: '#22c55e', marginLeft: 6 },
-  usernameX: { fontSize: 13, color: '#ef4444', marginLeft: 6 },
-  usernameChecking: { fontSize: 13, color: COLORS.textTertiary, marginLeft: 6 },
   bioInput: { fontSize: 11, fontFamily: FONTS.regular, color: COLORS.textSecondary, textAlign: 'center', maxWidth: 280, minWidth: 160, minHeight: 40, borderBottomWidth: 1, borderBottomColor: COLORS.border },
   bio: { fontSize: 11, fontFamily: FONTS.regular, color: COLORS.textSecondary, textAlign: 'center', maxWidth: 280, lineHeight: 16 },
   bioPlaceholder: { color: COLORS.textTertiary },
