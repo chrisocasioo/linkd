@@ -83,6 +83,7 @@ export default function EditCardScreen() {
   const [headline, setHeadline] = useState('');
 
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const [showFieldSheet, setShowFieldSheet] = useState(false);
   const [fieldSheetCtx, setFieldSheetCtx] = useState<{ field: CardField | null; initialType?: string } | null>(null);
@@ -177,6 +178,25 @@ export default function EditCardScreen() {
   const handleFieldDelete = async (cId: string, fieldId: string) => {
     await api.deleteField(cId, fieldId);
     setCard((c) => c ? { ...c, fields: c.fields.filter((f) => f.id !== fieldId) } : c);
+  };
+
+  const handleDeleteCard = () => {
+    Alert.alert('Delete Card', 'This card and all its fields will be permanently deleted.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete', style: 'destructive',
+        onPress: async () => {
+          setDeleting(true);
+          try {
+            await api.deleteCard(cardId);
+            router.back();
+          } catch (err: any) {
+            Alert.alert('Error', err.message);
+            setDeleting(false);
+          }
+        },
+      },
+    ]);
   };
 
   const openFieldSheet = (field: CardField | null, initialType?: string) => {
@@ -403,6 +423,16 @@ export default function EditCardScreen() {
         </ScrollView>
       </KeyboardAvoidingView>
 
+      {/* Delete card */}
+      <Pressable
+        style={[styles.deleteBtn, deleting && { opacity: 0.5 }]}
+        onPress={handleDeleteCard}
+        disabled={deleting}
+      >
+        <Ionicons name="trash-outline" size={16} color="#EF4444" />
+        <Text style={styles.deleteBtnText}>{deleting ? 'Deleting…' : 'Delete Card'}</Text>
+      </Pressable>
+
       <CardFieldSheet
         visible={showFieldSheet}
         cardId={cardId}
@@ -516,4 +546,11 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: COLORS.border,
   },
   chipLabel: { fontSize: 13, fontFamily: FONTS.medium, color: COLORS.textSecondary },
+
+  deleteBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    marginHorizontal: 16, marginVertical: 12, paddingVertical: 14, borderRadius: 14,
+    backgroundColor: 'rgba(239,68,68,0.1)', borderWidth: 1, borderColor: 'rgba(239,68,68,0.25)',
+  },
+  deleteBtnText: { fontSize: 14, fontFamily: FONTS.semiBold, color: '#EF4444' },
 });
