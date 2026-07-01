@@ -123,8 +123,8 @@ export default function CardScreen() {
       <View style={styles.topBar}>
         <Text style={styles.heading}>Cards</Text>
         <View style={styles.topRight}>
-          <Pressable style={styles.iconBtn} onPress={() => setShowShare(true)}>
-            <Ionicons name="share-outline" size={20} color={COLORS.text} />
+          <Pressable style={styles.iconBtn} onPress={handlePressAddCard}>
+            <Ionicons name="add" size={22} color={COLORS.text} />
           </Pressable>
           <Pressable style={styles.iconBtn} onPress={() => setShowSettings(true)}>
             <Ionicons name="settings-outline" size={20} color={COLORS.text} />
@@ -167,7 +167,7 @@ export default function CardScreen() {
         />
       )}
 
-      {/* Dots + Add */}
+      {/* Dots */}
       <View style={styles.dotsRow}>
         {cards.map((c, i) => (
           <View
@@ -175,9 +175,6 @@ export default function CardScreen() {
             style={[styles.dot, i === activeIndex && { backgroundColor: activeAccent, width: 16 }]}
           />
         ))}
-        <Pressable style={[styles.addBtn, { borderColor: activeAccent + '66' }]} onPress={handlePressAddCard}>
-          <Text style={[styles.addBtnText, { color: activeAccent }]}>+</Text>
-        </Pressable>
       </View>
 
       {/* Action row */}
@@ -245,13 +242,6 @@ const styles = StyleSheet.create({
     gap: 6, paddingVertical: 14,
   },
   dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: COLORS.border },
-  addBtn: {
-    width: 28, height: 28, borderRadius: 14,
-    borderWidth: 1.5, borderStyle: 'dashed',
-    alignItems: 'center', justifyContent: 'center',
-    marginLeft: 4,
-  },
-  addBtnText: { fontSize: 18, lineHeight: 20, fontFamily: FONTS.light },
   actionRow: {
     flexDirection: 'row', paddingHorizontal: 20, paddingBottom: 16, gap: 12,
   },
