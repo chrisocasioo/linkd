@@ -1,9 +1,15 @@
 import { and, asc, eq, gt, isNull, lt, or } from 'drizzle-orm';
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import { db } from '../db';
 import { cardViews, links, users } from '../db/schema';
 
 const router = Router();
+
+const DEFAULT_HOST_SUFFIXES = ['linkd.tattoo', 'railway.app', 'localhost'];
+
+function isDefaultHost(hostname: string): boolean {
+  return DEFAULT_HOST_SUFFIXES.some((s) => hostname === s || hostname.endsWith('.' + s));
+}
 
 async function getActiveLinks(userId: string) {
   const now = new Date();
@@ -20,99 +26,40 @@ async function getActiveLinks(userId: string) {
     .orderBy(asc(links.order));
 }
 
-router.get('/api/cards/:username', async (req, res) => {
-  try {
-    const { username } = req.params;
-    const user = await db.query.users.findFirst({ where: eq(users.username, username) });
-    if (!user) return res.status(404).json({ error: 'User not found' });
-    const activeLinks = await getActiveLinks(user.id);
-    res.json({ user, links: activeLinks });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
+const themeMap: Record<string, { bg: string; text: string; card: string; accent: string }> = {
+  dark:     { bg: '#000000', text: '#FFFFFF', card: '#1A1A1A', accent: '#C9A84C' },
+  light:    { bg: '#FFFFFF', text: '#1A1A1A', card: '#F5F5F5', accent: '#C9A84C' },
+  midnight: { bg: '#0A0A2E', text: '#FFFFFF', card: '#1A1A3E', accent: '#7C3AED' },
+  forest:   { bg: '#0A2E1A', text: '#FFFFFF', card: '#1A3E2A', accent: '#22C55E' },
+  rose:     { bg: '#2E0A1A', text: '#FFFFFF', card: '#3E1A2A', accent: '#F43F5E' },
+  ocean:    { bg: '#0A1A2E', text: '#FFFFFF', card: '#1A2A3E', accent: '#0EA5E9' },
+  sand:     { bg: '#F5E6D3', text: '#1A1A1A', card: '#EAD5BC', accent: '#C9A84C' },
+  slate:    { bg: '#1E293B', text: '#FFFFFF', card: '#334155', accent: '#94A3B8' },
+  purple:   { bg: '#1A0A2E', text: '#FFFFFF', card: '#2A1A3E', accent: '#A855F7' },
+};
 
-router.get('/:username/vcard', async (req, res) => {
-  try {
-    const { username } = req.params;
-    const user = await db.query.users.findFirst({ where: eq(users.username, username) });
-    if (!user) return res.status(404).send('Not found');
+const esc = (s: string) =>
+  s.replace(/[<>&"]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c] ?? c));
 
-    // Pull extra contact data from a contact_card link if one exists
-    const contactLink = await db.query.links.findFirst({
-      where: and(eq(links.userId, user.id), eq(links.type, 'contact_card')),
-    });
-    const contact: { firstName?: string; lastName?: string; email?: string; phone?: string; company?: string; jobTitle?: string; website?: string } =
-      contactLink?.metadata ? JSON.parse(contactLink.metadata) : {};
+type UserRow = typeof users.$inferSelect;
+type LinkRow = typeof links.$inferSelect;
 
-    const displayName = user.displayName ?? username;
-    const nameParts = displayName.split(' ');
-    const firstName = contact.firstName ?? nameParts[0];
-    const lastName = contact.lastName ?? (nameParts.length > 1 ? nameParts.slice(1).join(' ') : '');
-    const fn = [firstName, lastName].filter(Boolean).join(' ');
-    const email = contact.email ?? user.email;
+function buildCardHtml(user: UserRow, activeLinks: LinkRow[], username: string): string {
+  const t = themeMap[user.theme ?? 'dark'] ?? themeMap.dark;
+  const accent = user.accentColor ?? t.accent;
+  const name = esc(user.displayName ?? username);
+  const bio = user.bio ? esc(user.bio) : '';
 
-    const lines = [
-      'BEGIN:VCARD',
-      'VERSION:3.0',
-      `FN:${fn}`,
-      `N:${lastName};${firstName};;;`,
-      contact.company || contact.jobTitle
-        ? `ORG:${(contact.company ?? '').replace(/[;:]/g, '\\$&')}`
-        : null,
-      contact.jobTitle ? `TITLE:${contact.jobTitle.replace(/[;:]/g, '\\$&')}` : null,
-      contact.phone ? `TEL;TYPE=CELL:${contact.phone}` : null,
-      email ? `EMAIL;TYPE=WORK:${email}` : null,
-      contact.website ? `URL:${contact.website}` : `URL:https://linkd.tattoo/${username}`,
-      user.bio ? `NOTE:${user.bio.replace(/\n/g, '\\n')}` : null,
-      user.profilePhoto ? `PHOTO;VALUE=URI:${user.profilePhoto}` : null,
-      'END:VCARD',
-    ];
-    const vcard = lines.filter(Boolean).join('\r\n');
-    res.setHeader('Content-Type', 'text/vcard; charset=utf-8');
-    res.setHeader('Content-Disposition', `attachment; filename="${username}.vcf"`);
-    res.send(vcard);
-  } catch (err: any) {
-    res.status(500).send('Error');
-  }
-});
+  const linkItems = activeLinks
+    .map((l) => {
+      if (l.type === 'contact_card') {
+        return `<a href="/${username}/vcard" class="link-btn contact-btn" onclick="logClick('${l.id}');return true;">📇 Save to Contacts</a>`;
+      }
+      return `<a href="${esc(l.url)}" class="link-btn" onclick="logClick('${l.id}');return true;">${esc(l.title)}</a>`;
+    })
+    .join('\n');
 
-router.get('/:username', async (req, res) => {
-  try {
-    const { username } = req.params;
-    const user = await db.query.users.findFirst({ where: eq(users.username, username) });
-    if (!user) return res.status(404).send('<!DOCTYPE html><html><body><h1>Card not found</h1></body></html>');
-    const activeLinks = await getActiveLinks(user.id);
-
-    db.insert(cardViews).values({ userId: user.id, linkId: null }).catch(() => {});
-
-    const themeMap: Record<string, { bg: string; text: string; card: string; accent: string }> = {
-      dark: { bg: '#000000', text: '#FFFFFF', card: '#1A1A1A', accent: '#C9A84C' },
-      light: { bg: '#FFFFFF', text: '#1A1A1A', card: '#F5F5F5', accent: '#C9A84C' },
-      midnight: { bg: '#0A0A2E', text: '#FFFFFF', card: '#1A1A3E', accent: '#7C3AED' },
-      forest: { bg: '#0A2E1A', text: '#FFFFFF', card: '#1A3E2A', accent: '#22C55E' },
-      rose: { bg: '#2E0A1A', text: '#FFFFFF', card: '#3E1A2A', accent: '#F43F5E' },
-      ocean: { bg: '#0A1A2E', text: '#FFFFFF', card: '#1A2A3E', accent: '#0EA5E9' },
-      sand: { bg: '#F5E6D3', text: '#1A1A1A', card: '#EAD5BC', accent: '#C9A84C' },
-      slate: { bg: '#1E293B', text: '#FFFFFF', card: '#334155', accent: '#94A3B8' },
-      purple: { bg: '#1A0A2E', text: '#FFFFFF', card: '#2A1A3E', accent: '#A855F7' },
-    };
-
-    const esc = (s: string) => s.replace(/[<>&"]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c] ?? c));
-    const t = themeMap[user.theme ?? 'dark'] ?? themeMap.dark;
-    const accent = user.accentColor ?? t.accent;
-    const name = esc(user.displayName ?? username);
-    const bio = user.bio ? esc(user.bio) : '';
-    const linkItems = activeLinks
-      .map((l) => {
-        if (l.type === 'contact_card') {
-          return `<a href="/${username}/vcard" class="link-btn contact-btn" onclick="logClick('${l.id}');return true;">📇 Save to Contacts</a>`;
-        }
-        return `<a href="${esc(l.url)}" class="link-btn" onclick="logClick('${l.id}');return true;">${esc(l.title)}</a>`;
-      })
-      .join('\n');
-
-    const html = `<!DOCTYPE html>
+  return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -151,9 +98,113 @@ router.get('/:username', async (req, res) => {
   </script>
 </body>
 </html>`;
+}
 
+async function buildVcard(user: UserRow, username: string): Promise<string> {
+  const contactLink = await db.query.links.findFirst({
+    where: and(eq(links.userId, user.id), eq(links.type, 'contact_card')),
+  });
+  const contact: {
+    firstName?: string; lastName?: string; email?: string;
+    phone?: string; company?: string; jobTitle?: string; website?: string;
+  } = contactLink?.metadata ? JSON.parse(contactLink.metadata) : {};
+
+  const displayName = user.displayName ?? username;
+  const nameParts = displayName.split(' ');
+  const firstName = contact.firstName ?? nameParts[0];
+  const lastName = contact.lastName ?? (nameParts.length > 1 ? nameParts.slice(1).join(' ') : '');
+  const fn = [firstName, lastName].filter(Boolean).join(' ');
+  const email = contact.email ?? user.email;
+
+  const lines = [
+    'BEGIN:VCARD',
+    'VERSION:3.0',
+    `FN:${fn}`,
+    `N:${lastName};${firstName};;;`,
+    contact.company || contact.jobTitle
+      ? `ORG:${(contact.company ?? '').replace(/[;:]/g, '\\$&')}`
+      : null,
+    contact.jobTitle ? `TITLE:${contact.jobTitle.replace(/[;:]/g, '\\$&')}` : null,
+    contact.phone ? `TEL;TYPE=CELL:${contact.phone}` : null,
+    email ? `EMAIL;TYPE=WORK:${email}` : null,
+    contact.website ? `URL:${contact.website}` : `URL:https://linkd.tattoo/${username}`,
+    user.bio ? `NOTE:${user.bio.replace(/\n/g, '\\n')}` : null,
+    user.profilePhoto ? `PHOTO;VALUE=URI:${user.profilePhoto}` : null,
+    'END:VCARD',
+  ];
+  return lines.filter(Boolean).join('\r\n');
+}
+
+// ── Custom domain middleware ──────────────────────────────────────────────────
+// Detects requests arriving on a user's custom domain (CNAME → this server)
+// and serves their card without requiring the username in the path.
+router.use(async (req: Request, res: Response, next) => {
+  const hostname = req.hostname;
+  if (isDefaultHost(hostname)) return next();
+
+  try {
+    const user = await db.query.users.findFirst({ where: eq(users.customDomain, hostname) });
+    if (!user) return next();
+
+    const username = user.username ?? user.id;
+
+    if (req.path === '/' || req.path === '') {
+      const activeLinks = await getActiveLinks(user.id);
+      db.insert(cardViews).values({ userId: user.id, linkId: null }).catch(() => {});
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      return res.send(buildCardHtml(user, activeLinks, username));
+    }
+
+    if (req.path === '/vcard') {
+      const vcf = await buildVcard(user, username);
+      res.setHeader('Content-Type', 'text/vcard; charset=utf-8');
+      res.setHeader('Content-Disposition', `attachment; filename="${username}.vcf"`);
+      return res.send(vcf);
+    }
+
+    next();
+  } catch {
+    next();
+  }
+});
+
+// ── Standard routes ───────────────────────────────────────────────────────────
+
+router.get('/api/cards/:username', async (req, res) => {
+  try {
+    const { username } = req.params;
+    const user = await db.query.users.findFirst({ where: eq(users.username, username) });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    const activeLinks = await getActiveLinks(user.id);
+    res.json({ user, links: activeLinks });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.get('/:username/vcard', async (req, res) => {
+  try {
+    const { username } = req.params;
+    const user = await db.query.users.findFirst({ where: eq(users.username, username) });
+    if (!user) return res.status(404).send('Not found');
+    const vcf = await buildVcard(user, username);
+    res.setHeader('Content-Type', 'text/vcard; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="${username}.vcf"`);
+    res.send(vcf);
+  } catch {
+    res.status(500).send('Error');
+  }
+});
+
+router.get('/:username', async (req, res) => {
+  try {
+    const { username } = req.params;
+    const user = await db.query.users.findFirst({ where: eq(users.username, username) });
+    if (!user) return res.status(404).send('<!DOCTYPE html><html><body><h1>Card not found</h1></body></html>');
+    const activeLinks = await getActiveLinks(user.id);
+    db.insert(cardViews).values({ userId: user.id, linkId: null }).catch(() => {});
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.send(html);
+    res.send(buildCardHtml(user, activeLinks, username));
   } catch (err: any) {
     res.status(500).send('<!DOCTYPE html><html><body><h1>Server error</h1></body></html>');
   }
