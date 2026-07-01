@@ -83,7 +83,42 @@ export function SettingsSheet({ visible, onClose, onShowPaywall }: Props) {
   };
 
   const emailDisplay = user?.primaryEmailAddress?.emailAddress ?? user?.emailAddresses?.[0]?.emailAddress ?? '';
-  const emailShort = emailDisplay.length > 16 ? emailDisplay.slice(0, 14) + '…' : emailDisplay;
+  const emailShort = emailDisplay.length > 22 ? emailDisplay.slice(0, 20) + '…' : emailDisplay;
+
+  const handleChangeEmail = () => {
+    Alert.prompt(
+      'Change Email',
+      'Enter your new email address',
+      async (newEmail) => {
+        if (!newEmail?.includes('@')) return;
+        try {
+          const emailAddr = await user!.createEmailAddress({ email: newEmail.trim() });
+          await emailAddr.prepareVerification({ strategy: 'email_code' });
+          Alert.prompt(
+            'Verify Email',
+            `Enter the code sent to ${newEmail.trim()}`,
+            async (code) => {
+              if (!code) return;
+              try {
+                await emailAddr.attemptVerification({ code: code.trim() });
+                await emailAddr.setAsPrimary();
+                await user!.reload();
+                Alert.alert('Success', 'Email updated successfully.');
+              } catch (err: any) {
+                Alert.alert('Error', err.errors?.[0]?.longMessage ?? err.message ?? 'Verification failed.');
+              }
+            },
+            'plain-text',
+          );
+        } catch (err: any) {
+          Alert.alert('Error', err.errors?.[0]?.longMessage ?? err.message ?? 'Could not update email.');
+        }
+      },
+      'plain-text',
+      emailDisplay,
+      'email-address',
+    );
+  };
 
   return (
     <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
@@ -95,10 +130,13 @@ export function SettingsSheet({ visible, onClose, onShowPaywall }: Props) {
 
           {/* Account */}
           <View style={styles.group}>
-            <View style={styles.row}>
+            <Pressable style={styles.row} onPress={handleChangeEmail}>
               <Text style={styles.rowLabel}>Email</Text>
-              <Text style={styles.rowValue}>{emailShort}</Text>
-            </View>
+              <View style={styles.rowRight}>
+                <Text style={styles.rowValue}>{emailShort}</Text>
+                <Text style={styles.chevron}>›</Text>
+              </View>
+            </Pressable>
             <View style={styles.sep} />
             <SettingsRow
               label="Change Password"
