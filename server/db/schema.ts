@@ -75,9 +75,24 @@ export const cardFields = pgTable('card_fields', {
   displayOrder: integer('display_order').default(0),
 });
 
+export const contacts = pgTable('contacts', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  firstName: text('first_name'),
+  lastName: text('last_name'),
+  email: text('email'),
+  phone: text('phone'),
+  company: text('company'),
+  jobTitle: text('job_title'),
+  website: text('website'),
+  notes: text('notes'),
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
 export type User = typeof users.$inferSelect;
 export type SavedQr = typeof savedQrs.$inferSelect;
 export type Link = typeof links.$inferSelect;
 export type CardView = typeof cardViews.$inferSelect;
 export type Card = typeof cards.$inferSelect;
 export type CardField = typeof cardFields.$inferSelect;
+export type Contact = typeof contacts.$inferSelect;

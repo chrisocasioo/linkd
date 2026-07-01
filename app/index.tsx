@@ -30,7 +30,7 @@ export default function Index() {
 
   if (!isSignedIn) return <Redirect href="/(auth)/sign-up" />;
   if (!hasUsername) return <Redirect href="/onboarding" />;
-  return <Redirect href="/card" />;
+  return <Redirect href="/(tabs)/cards" />;
 }
 
 const styles = StyleSheet.create({

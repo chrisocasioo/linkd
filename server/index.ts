@@ -9,6 +9,7 @@ import { runMigrations } from './db/migrate';
 import { clerk, requireAuth } from './middleware/auth';
 import analyticsRouter from './routes/analytics';
 import cardsRouter from './routes/cards';
+import contactsRouter from './routes/contacts';
 import linksRouter from './routes/links';
 import photoRouter from './routes/photo';
 import photoServeRouter from './routes/photoServe';
@@ -89,6 +90,9 @@ app.use('/api/links', requireAuth, linksRouter);
 
 // 6b. Card routes (new multi-card system)
 app.use('/api/cards', requireAuth, cardsRouter);
+
+// 6c. Contacts routes
+app.use('/api/contacts', requireAuth, contactsRouter);
 
 // 7. Analytics routes (POST /view is public; GET /me applies requireAuth internally)
 app.use('/api/analytics', analyticsRouter);

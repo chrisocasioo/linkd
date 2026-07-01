@@ -31,6 +31,30 @@ export interface ContactMeta {
   website?: string;
 }
 
+export interface Contact {
+  id: string;
+  userId: string;
+  firstName: string | null;
+  lastName: string | null;
+  email: string | null;
+  phone: string | null;
+  company: string | null;
+  jobTitle: string | null;
+  website: string | null;
+  notes: string | null;
+  createdAt: string;
+}
+
+export interface ScanResult {
+  firstName: string | null;
+  lastName: string | null;
+  email: string | null;
+  phone: string | null;
+  company: string | null;
+  jobTitle: string | null;
+  website: string | null;
+}
+
 export interface Link {
   id: string;
   userId: string;
@@ -185,6 +209,21 @@ export function useApi() {
           body: JSON.stringify({ items }),
         })
       ),
+
+    // Contacts
+    getMyContacts: () => withToken((t) => request<Contact[]>('/api/contacts', t)),
+    addContact: (body: Partial<Omit<Contact, 'id' | 'userId' | 'createdAt'>>) =>
+      withToken((t) => request<Contact>('/api/contacts', t, { method: 'POST', body: JSON.stringify(body) })),
+    updateContact: (id: string, body: Partial<Omit<Contact, 'id' | 'userId' | 'createdAt'>>) =>
+      withToken((t) => request<Contact>(`/api/contacts/${id}`, t, { method: 'PATCH', body: JSON.stringify(body) })),
+    deleteContact: (id: string) =>
+      withToken((t) => request<{ success: boolean }>(`/api/contacts/${id}`, t, { method: 'DELETE' })),
+    scanBusinessCard: (uri: string) =>
+      withToken(async (t) => {
+        const formData = new FormData();
+        formData.append('card', { uri, type: 'image/jpeg', name: 'card.jpg' } as any);
+        return request<ScanResult>('/api/contacts/scan', t, { method: 'POST', body: formData });
+      }),
 
     getQRs: () => withToken((t) => request<SavedQR[]>('/api/qrs', t)),
     saveQR: (body: { type: string; label: string; data: string }) =>

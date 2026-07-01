@@ -69,6 +69,20 @@ export async function runMigrations() {
       value TEXT NOT NULL,
       display_order INTEGER DEFAULT 0
     );
+
+    CREATE TABLE IF NOT EXISTS contacts (
+      id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      first_name TEXT,
+      last_name TEXT,
+      email TEXT,
+      phone TEXT,
+      company TEXT,
+      job_title TEXT,
+      website TEXT,
+      notes TEXT,
+      created_at TIMESTAMP DEFAULT NOW()
+    );
   `);
   console.log('✓ Database tables ready');
 }
