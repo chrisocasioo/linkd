@@ -13,9 +13,14 @@ const FIELD_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
   linkedin:  'logo-linkedin',
   tiktok:    'logo-tiktok',
   youtube:   'logo-youtube',
-  title:     'briefcase-outline',
-  company:   'business-outline',
-  custom:    'ellipsis-horizontal',
+  title:      'briefcase-outline',
+  company:    'business-outline',
+  facebook:   'logo-facebook',
+  whatsapp:   'logo-whatsapp',
+  spotify:    'musical-notes-outline',
+  department: 'people-outline',
+  headline:   'document-text-outline',
+  custom:     'ellipsis-horizontal',
 };
 
 function fieldUrl(field: CardField): string {
@@ -28,9 +33,14 @@ function fieldUrl(field: CardField): string {
     case 'linkedin':  return `https://linkedin.com/in/${v.replace('@', '')}`;
     case 'tiktok':    return `https://tiktok.com/@${v.replace('@', '')}`;
     case 'youtube':   return `https://youtube.com/@${v.replace('@', '')}`;
+    case 'facebook':   return `https://facebook.com/${v.replace('@', '')}`;
+    case 'whatsapp':   return `https://wa.me/${v.replace(/\D/g, '')}`;
+    case 'spotify':    return `https://open.spotify.com/user/${v.replace('@', '')}`;
     case 'title':
-    case 'company':   return '';
-    default:          return v.startsWith('http') ? v : `https://${v}`;
+    case 'company':
+    case 'department':
+    case 'headline':   return '';
+    default:           return v.startsWith('http') ? v : `https://${v}`;
   }
 }
 

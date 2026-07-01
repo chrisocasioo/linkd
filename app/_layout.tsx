@@ -69,6 +69,7 @@ export default function RootLayout() {
             <Stack.Screen name="(tabs)" options={{ animation: 'fade', gestureEnabled: false }} />
             <Stack.Screen name="theme" options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="analytics" options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="edit-card" options={{ animation: 'slide_from_right' }} />
           </Stack>
         </RevenueCatProvider>
       </ClerkProvider>

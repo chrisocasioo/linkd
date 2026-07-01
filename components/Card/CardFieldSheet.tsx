@@ -29,37 +29,43 @@ const FIELD_TYPES = [
   { id: 'linkedin',  label: 'LinkedIn',  icon: 'logo-linkedin' as const,    placeholder: 'username',          keyboardType: 'default' as const },
   { id: 'tiktok',    label: 'TikTok',    icon: 'logo-tiktok' as const,      placeholder: '@handle',           keyboardType: 'default' as const },
   { id: 'youtube',   label: 'YouTube',   icon: 'logo-youtube' as const,     placeholder: '@channel',          keyboardType: 'default' as const },
-  { id: 'title',     label: 'Title',     icon: 'briefcase-outline' as const,   placeholder: 'e.g. Founder',      keyboardType: 'default' as const },
-  { id: 'company',   label: 'Company',   icon: 'business-outline' as const,    placeholder: 'e.g. Acme Inc',     keyboardType: 'default' as const },
-  { id: 'custom',    label: 'Custom',    icon: 'ellipsis-horizontal' as const, placeholder: 'Value',          keyboardType: 'default' as const },
+  { id: 'facebook',   label: 'Facebook',   icon: 'logo-facebook' as const,          placeholder: 'username',                 keyboardType: 'default' as const },
+  { id: 'whatsapp',   label: 'WhatsApp',   icon: 'logo-whatsapp' as const,          placeholder: '+1 555 000 0000',           keyboardType: 'phone-pad' as const },
+  { id: 'spotify',    label: 'Spotify',    icon: 'musical-notes-outline' as const,  placeholder: '@username',                 keyboardType: 'default' as const },
+  { id: 'title',      label: 'Title',      icon: 'briefcase-outline' as const,      placeholder: 'e.g. Founder',             keyboardType: 'default' as const },
+  { id: 'company',    label: 'Company',    icon: 'business-outline' as const,       placeholder: 'e.g. Acme Inc',            keyboardType: 'default' as const },
+  { id: 'department', label: 'Department', icon: 'people-outline' as const,         placeholder: 'e.g. Engineering',         keyboardType: 'default' as const },
+  { id: 'headline',   label: 'Headline',   icon: 'document-text-outline' as const,  placeholder: 'e.g. Connecting people',   keyboardType: 'default' as const },
+  { id: 'custom',     label: 'Custom',     icon: 'ellipsis-horizontal' as const,    placeholder: 'Value',                    keyboardType: 'default' as const },
 ];
 
 interface Props {
   visible: boolean;
   cardId: string;
   field: CardField | null;
+  initialType?: string;
   onClose: () => void;
   onSave: (cardId: string, data: { type: string; value: string; label?: string }, fieldId?: string) => Promise<void>;
   onDelete?: (cardId: string, fieldId: string) => Promise<void>;
 }
 
-export function CardFieldSheet({ visible, cardId, field, onClose, onSave, onDelete }: Props) {
+export function CardFieldSheet({ visible, cardId, field, initialType, onClose, onSave, onDelete }: Props) {
   const slideY = useRef(new Animated.Value(SCREEN_H)).current;
-  const [selectedType, setSelectedType] = useState(field?.type ?? 'email');
+  const [selectedType, setSelectedType] = useState(field?.type ?? initialType ?? 'email');
   const [value, setValue] = useState(field?.value ?? '');
   const [label, setLabel] = useState(field?.label ?? '');
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (visible) {
-      setSelectedType(field?.type ?? 'email');
+      setSelectedType(field?.type ?? initialType ?? 'email');
       setValue(field?.value ?? '');
       setLabel(field?.label ?? '');
       Animated.spring(slideY, { toValue: 0, useNativeDriver: true, damping: 20, stiffness: 200 }).start();
     } else {
       Animated.timing(slideY, { toValue: SCREEN_H, duration: 220, useNativeDriver: true }).start();
     }
-  }, [visible, field]);
+  }, [visible, field, initialType]);
 
   const close = () => { Keyboard.dismiss(); onClose(); };
 

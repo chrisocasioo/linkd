@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import React, { useCallback, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -11,15 +11,15 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { CardEditSheet } from '../components/Card/CardEditSheet';
-import { CardFieldSheet } from '../components/Card/CardFieldSheet';
-import { CardPreview } from '../components/Card/CardPreview';
-import { PaywallSheet } from '../components/Card/PaywallSheet';
-import { ShareSheet } from '../components/Card/ShareSheet';
-import { SettingsSheet } from '../components/Profile/SettingsSheet';
-import { useApi, Card, CardField, User } from '../lib/api';
-import { useRevenueCat } from '../lib/RevenueCatContext';
-import { COLORS, FONTS } from '../constants/colors';
+import { CardEditSheet } from '../../components/Card/CardEditSheet';
+import { CardFieldSheet } from '../../components/Card/CardFieldSheet';
+import { CardPreview } from '../../components/Card/CardPreview';
+import { PaywallSheet } from '../../components/Card/PaywallSheet';
+import { ShareSheet } from '../../components/Card/ShareSheet';
+import { SettingsSheet } from '../../components/Profile/SettingsSheet';
+import { useApi, Card, CardField, User } from '../../lib/api';
+import { useRevenueCat } from '../../lib/RevenueCatContext';
+import { COLORS, FONTS } from '../../constants/colors';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 const SIDE_INSET = 24;
@@ -28,6 +28,7 @@ const CARD_WIDTH = SCREEN_W - SIDE_INSET * 2;
 
 export default function CardScreen() {
   const api = useApi();
+  const router = useRouter();
   const { isPro } = useRevenueCat();
 
   const [user, setUser] = useState<User | null>(null);
@@ -39,8 +40,8 @@ export default function CardScreen() {
   const [showSettings, setShowSettings] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
 
-  const [showCardEdit, setShowCardEdit] = useState(false);
-  const [editingCard, setEditingCard] = useState<Card | null>(null);
+  // New card creation sheet (existing cards go to full-screen edit-card route)
+  const [showNewCard, setShowNewCard] = useState(false);
 
   const [showFieldEdit, setShowFieldEdit] = useState(false);
   const [fieldEditContext, setFieldEditContext] = useState<{ cardId: string; field: CardField | null } | null>(null);
@@ -63,31 +64,19 @@ export default function CardScreen() {
 
   // ── Card CRUD ──────────────────────────────────────────────────────────────
 
-  const handleSaveCard = async (data: { name: string; accentColor: string }, cardId?: string) => {
-    if (cardId) {
-      const updated = await api.updateCard(cardId, data);
-      setCards((cs) => cs.map((c) => c.id === cardId ? { ...c, ...updated } : c));
-    } else {
-      const created = await api.addCard(data);
-      const nextIndex = cards.length;
-      setCards((cs) => [...cs, created]);
-      setTimeout(() => {
-        flatListRef.current?.scrollToIndex({ index: nextIndex, animated: true });
-        setActiveIndex(nextIndex);
-      }, 100);
-    }
-  };
-
-  const handleDeleteCard = async (cardId: string) => {
-    await api.deleteCard(cardId);
-    setCards((cs) => cs.filter((c) => c.id !== cardId));
-    setActiveIndex((i) => Math.max(0, i - 1));
+  const handleSaveNewCard = async (data: { name: string; accentColor: string }) => {
+    const created = await api.addCard(data);
+    const nextIndex = cards.length;
+    setCards((cs) => [...cs, created]);
+    setTimeout(() => {
+      flatListRef.current?.scrollToIndex({ index: nextIndex, animated: true });
+      setActiveIndex(nextIndex);
+    }, 100);
   };
 
   const handlePressAddCard = () => {
     if (!isPro && cards.length >= 3) { setShowPaywall(true); return; }
-    setEditingCard(null);
-    setShowCardEdit(true);
+    setShowNewCard(true);
   };
 
   // ── Field CRUD ─────────────────────────────────────────────────────────────
@@ -178,7 +167,7 @@ export default function CardScreen() {
           renderItem={({ item }) => (
             <View style={{ width: CARD_WIDTH }}>
               <Pressable
-                onLongPress={() => { setEditingCard(item); setShowCardEdit(true); }}
+                onLongPress={() => router.push({ pathname: '/edit-card', params: { cardId: item.id } })}
                 delayLongPress={400}
               >
                 <CardPreview
@@ -229,11 +218,10 @@ export default function CardScreen() {
         onShowPaywall={() => setShowPaywall(true)}
       />
       <CardEditSheet
-        visible={showCardEdit}
-        card={editingCard}
-        onClose={() => { setShowCardEdit(false); setEditingCard(null); }}
-        onSave={handleSaveCard}
-        onDelete={handleDeleteCard}
+        visible={showNewCard}
+        card={null}
+        onClose={() => setShowNewCard(false)}
+        onSave={handleSaveNewCard}
       />
       <CardFieldSheet
         visible={showFieldEdit}
