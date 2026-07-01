@@ -144,23 +144,11 @@ export function useApi() {
 
     uploadPhoto: (uri: string) =>
       withToken(async (t) => {
-        const result = await FileSystem.uploadAsync(
-          `${API_URL}/api/users/me/photo`,
-          uri,
-          {
-            httpMethod: 'POST',
-            uploadType: FileSystem.FileSystemUploadType.MULTIPART,
-            fieldName: 'photo',
-            mimeType: 'image/jpeg',
-            headers: { Authorization: `Bearer ${t}` },
-          }
-        );
-        if (result.status < 200 || result.status >= 300) {
-          let msg = 'Upload failed';
-          try { msg = JSON.parse(result.body)?.error ?? msg; } catch {}
-          throw new Error(msg);
-        }
-        return JSON.parse(result.body) as { photoUrl: string };
+        const base64 = await FileSystem.readAsStringAsync(uri, { encoding: 'base64' as any });
+        return request<{ photoUrl: string }>('/api/users/me/photo', t, {
+          method: 'POST',
+          body: JSON.stringify({ photo: base64, mimeType: 'image/jpeg' }),
+        });
       }),
 
     getMyLinks: () => withToken((t) => request<Link[]>('/api/links', t)),

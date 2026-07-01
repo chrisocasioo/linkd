@@ -1,7 +1,6 @@
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { eq } from 'drizzle-orm';
 import { Router } from 'express';
-import multer from 'multer';
 import { db } from '../db';
 import { users } from '../db/schema';
 
@@ -15,15 +14,15 @@ const s3 = new S3Client({
   forcePathStyle: true,
 });
 
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
-
 const router = Router();
 
-router.post('/', upload.single('photo'), async (req, res) => {
+router.post('/', async (req, res) => {
   try {
     const userId = (req as any).userId as string;
-    if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+    const { photo: base64, mimeType = 'image/jpeg' } = req.body;
+    if (!base64) return res.status(400).json({ error: 'No photo provided' });
 
+    const buffer = Buffer.from(base64, 'base64');
     const bucket = process.env.BUCKET_NAME ?? process.env.BUCKET ?? '';
     const key = `profiles/${userId}.jpg`;
     console.log(`[photo] uploading to bucket="${bucket}" key="${key}" endpoint="${process.env.AWS_ENDPOINT_URL_S3 ?? process.env.ENDPOINT}"`);
@@ -31,8 +30,8 @@ router.post('/', upload.single('photo'), async (req, res) => {
       new PutObjectCommand({
         Bucket: bucket,
         Key: key,
-        Body: req.file.buffer,
-        ContentType: req.file.mimetype,
+        Body: buffer,
+        ContentType: mimeType,
       })
     );
     console.log(`[photo] upload success for ${userId}`);
