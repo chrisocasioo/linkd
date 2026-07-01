@@ -139,7 +139,6 @@ export default function CardScreen() {
           onPress={() => activeCard && router.push({ pathname: '/edit-card', params: { cardId: activeCard.id } })}
           disabled={!activeCard}
         >
-          <Ionicons name="pencil" size={16} color={COLORS.text} />
           <Text style={styles.editBtnText}>EDIT</Text>
         </Pressable>
         <Pressable
