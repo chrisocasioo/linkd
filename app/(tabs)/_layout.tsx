@@ -25,17 +25,17 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="contacts"
-        options={{
-          title: 'Contacts',
-          tabBarIcon: ({ color, size }) => <Ionicons name="people-outline" size={size} color={color} />,
-        }}
-      />
-      <Tabs.Screen
         name="cards"
         options={{
           title: 'Cards',
           tabBarIcon: ({ color, size }) => <Ionicons name="id-card-outline" size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="contacts"
+        options={{
+          title: 'Contacts',
+          tabBarIcon: ({ color, size }) => <Ionicons name="people-outline" size={size} color={color} />,
         }}
       />
     </Tabs>
