@@ -76,6 +76,7 @@ export default function EditCardScreen() {
   const [accent, setAccent] = useState('');
 
   const [firstName, setFirstName] = useState('');
+  const [middleName, setMiddleName] = useState('');
   const [lastName, setLastName] = useState('');
   const [infoTitle, setInfoTitle] = useState('');
   const [company, setCompany] = useState('');
@@ -100,7 +101,8 @@ export default function EditCardScreen() {
         setAccent(found.accentColor);
         const nameParts = (u.displayName ?? '').split(' ');
         setFirstName(nameParts[0] ?? '');
-        setLastName(nameParts.slice(1).join(' '));
+        if (nameParts.length === 2) { setLastName(nameParts[1]); }
+        else if (nameParts.length >= 3) { setMiddleName(nameParts[1]); setLastName(nameParts.slice(2).join(' ')); }
         setInfoTitle(found.fields.find((f) => f.type === 'title')?.value ?? '');
         setCompany(found.fields.find((f) => f.type === 'company')?.value ?? '');
         setDepartment(found.fields.find((f) => f.type === 'department')?.value ?? '');
@@ -136,7 +138,7 @@ export default function EditCardScreen() {
     try {
       if (photoUri) await api.uploadPhoto(photoUri);
 
-      const displayName = [firstName.trim(), lastName.trim()].filter(Boolean).join(' ');
+      const displayName = [firstName.trim(), middleName.trim(), lastName.trim()].filter(Boolean).join(' ');
       if (displayName) await api.updateMe({ displayName });
 
       await api.updateCard(cardId, { name: cardName.trim() || 'Card', accentColor: accent });
@@ -311,6 +313,14 @@ export default function EditCardScreen() {
                   value={firstName}
                   onChangeText={setFirstName}
                   placeholder="First name"
+                  placeholderTextColor={COLORS.textTertiary}
+                />
+                <Text style={[styles.label, { marginTop: 16 }]}>Middle Name</Text>
+                <TextInput
+                  style={styles.input}
+                  value={middleName}
+                  onChangeText={setMiddleName}
+                  placeholder="Middle name (optional)"
                   placeholderTextColor={COLORS.textTertiary}
                 />
                 <Text style={[styles.label, { marginTop: 16 }]}>Last Name</Text>

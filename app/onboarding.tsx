@@ -24,7 +24,9 @@ export default function OnboardingScreen() {
   const api = useApi();
 
   const [step, setStep] = useState(0);
-  const [name, setName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [middleName, setMiddleName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [jobTitle, setJobTitle] = useState('');
   const [company, setCompany] = useState('');
   const [photoUri, setPhotoUri] = useState<string | null>(null);
@@ -35,7 +37,12 @@ export default function OnboardingScreen() {
 
   useEffect(() => {
     api.getMe().then((u) => {
-      if (u.displayName) setName(u.displayName);
+      if (u.displayName) {
+        const parts = u.displayName.split(' ');
+        setFirstName(parts[0] ?? '');
+        if (parts.length === 2) { setLastName(parts[1]); }
+        else if (parts.length >= 3) { setMiddleName(parts[1]); setLastName(parts.slice(2).join(' ')); }
+      }
       if (u.email) setEmail(u.email);
     }).catch(() => {}).finally(() => setLoadingUser(false));
   }, []);
@@ -59,14 +66,15 @@ export default function OnboardingScreen() {
 
   const handleFinish = async () => {
     setSubmitting(true);
+    const displayName = [firstName.trim(), middleName.trim(), lastName.trim()].filter(Boolean).join(' ');
     try {
-      await api.updateMe({ displayName: name.trim() || undefined });
+      await api.updateMe({ displayName: displayName || undefined });
 
       if (photoUri) {
         await api.uploadPhoto(photoUri);
       }
 
-      const base = (name.trim().toLowerCase().replace(/[^a-z0-9]/g, '') || 'user').slice(0, 20);
+      const base = (firstName.trim().toLowerCase().replace(/[^a-z0-9]/g, '') || 'user').slice(0, 20);
       let username = base;
       try {
         const { available } = await api.checkUsername(base);
@@ -116,20 +124,42 @@ export default function OnboardingScreen() {
         <Text style={styles.stepTitle}>Let's start with{'\n'}the basics</Text>
         <Text style={styles.stepSub}>What should people call you?</Text>
         <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>NAME</Text>
+          <Text style={styles.inputLabel}>FIRST NAME</Text>
           <TextInput
             style={styles.input}
-            value={name}
-            onChangeText={setName}
-            placeholder="Your full name"
+            value={firstName}
+            onChangeText={setFirstName}
+            placeholder="First name"
+            placeholderTextColor={COLORS.textTertiary}
+            autoCorrect={false}
+          />
+        </View>
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputLabel}>MIDDLE NAME</Text>
+          <TextInput
+            style={styles.input}
+            value={middleName}
+            onChangeText={setMiddleName}
+            placeholder="Middle name (optional)"
+            placeholderTextColor={COLORS.textTertiary}
+            autoCorrect={false}
+          />
+        </View>
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputLabel}>LAST NAME</Text>
+          <TextInput
+            style={styles.input}
+            value={lastName}
+            onChangeText={setLastName}
+            placeholder="Last name"
             placeholderTextColor={COLORS.textTertiary}
             autoCorrect={false}
           />
         </View>
         <Pressable
-          style={[styles.continueBtn, !name.trim() && styles.continueBtnDim]}
-          onPress={() => name.trim() && setStep(1)}
-          disabled={!name.trim()}
+          style={[styles.continueBtn, !firstName.trim() && styles.continueBtnDim]}
+          onPress={() => firstName.trim() && setStep(1)}
+          disabled={!firstName.trim()}
         >
           <Text style={styles.continueBtnText}>Continue</Text>
         </Pressable>
