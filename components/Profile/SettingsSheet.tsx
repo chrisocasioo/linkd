@@ -1,6 +1,5 @@
 import { useAuth } from '@clerk/clerk-expo';
 import { useClerk } from '@clerk/clerk-expo';
-import * as WebBrowser from 'expo-web-browser';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useRef } from 'react';
 import {
@@ -140,7 +139,33 @@ export function SettingsSheet({ visible, onClose, onShowPaywall }: Props) {
             <View style={styles.sep} />
             <SettingsRow
               label="Change Password"
-              onPress={() => WebBrowser.openBrowserAsync('https://accounts.linkd.tattoo/user/security')}
+              onPress={() => {
+                Alert.prompt(
+                  'Current Password',
+                  'Enter your current password',
+                  (current) => {
+                    if (!current) return;
+                    Alert.prompt(
+                      'New Password',
+                      'Enter your new password (min 8 characters)',
+                      async (next) => {
+                        if (!next || next.length < 8) {
+                          Alert.alert('Error', 'Password must be at least 8 characters.');
+                          return;
+                        }
+                        try {
+                          await user!.updatePassword({ currentPassword: current, newPassword: next });
+                          Alert.alert('Success', 'Password updated.');
+                        } catch (err: any) {
+                          Alert.alert('Error', err.errors?.[0]?.longMessage ?? err.message ?? 'Could not update password.');
+                        }
+                      },
+                      'secure-text',
+                    );
+                  },
+                  'secure-text',
+                );
+              }}
             />
           </View>
 
