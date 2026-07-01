@@ -17,7 +17,7 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.santrico.linkd",
       "minimumOsVersion": "16.0",
-      "buildNumber": "44",
+      "buildNumber": "45",
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "Linkd needs access to your photos to set your profile picture.",
         "NSPhotoLibraryAddUsageDescription": "Linkd saves content to your photo library.",
