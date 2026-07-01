@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
-import { Image, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Card, CardField, User } from '../../lib/api';
 import { FONTS } from '../../constants/colors';
 
@@ -89,7 +89,7 @@ export function CardPreview({ card, user }: Props) {
       </View>
 
       {/* Fields */}
-      <ScrollView style={styles.fields} showsVerticalScrollIndicator={false} bounces={false}>
+      <View style={styles.fields}>
         {card.fields.filter(f => !['title', 'company', 'department', 'headline'].includes(f.type)).map((field) => (
           <Pressable
             key={field.id}
@@ -108,14 +108,13 @@ export function CardPreview({ card, user }: Props) {
             </Text>
           </Pressable>
         ))}
-      </ScrollView>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    flex: 1,
     backgroundColor: '#161616',
     borderRadius: 22,
     overflow: 'hidden',
@@ -182,7 +181,6 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
   fields: {
-    flex: 1,
     paddingBottom: 8,
   },
   fieldRow: {

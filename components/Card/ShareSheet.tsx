@@ -14,7 +14,7 @@ import { useApi } from '../../lib/api';
 import { COLORS, FONTS } from '../../constants/colors';
 
 const SHEET_HEIGHT = Dimensions.get('window').height * 0.52;
-const BASE = 'linkd.tattoo';
+const BASE = 'linkd-production-fdce.up.railway.app';
 
 interface Props {
   visible: boolean;
