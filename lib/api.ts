@@ -1,4 +1,5 @@
 import { useAuth } from '@clerk/clerk-expo';
+import * as FileSystem from 'expo-file-system';
 import { useCallback } from 'react';
 
 const API_URL = (process.env.EXPO_PUBLIC_API_URL ?? '').replace(/\/$/, '');
@@ -143,11 +144,23 @@ export function useApi() {
 
     uploadPhoto: (uri: string) =>
       withToken(async (t) => {
-        const localRes = await fetch(uri);
-        const blob = await localRes.blob();
-        const formData = new FormData();
-        formData.append('photo', blob, 'photo.jpg');
-        return request<{ photoUrl: string }>('/api/users/me/photo', t, { method: 'POST', body: formData });
+        const result = await FileSystem.uploadAsync(
+          `${API_URL}/api/users/me/photo`,
+          uri,
+          {
+            httpMethod: 'POST',
+            uploadType: FileSystem.FileSystemUploadType.MULTIPART,
+            fieldName: 'photo',
+            mimeType: 'image/jpeg',
+            headers: { Authorization: `Bearer ${t}` },
+          }
+        );
+        if (result.status < 200 || result.status >= 300) {
+          let msg = 'Upload failed';
+          try { msg = JSON.parse(result.body)?.error ?? msg; } catch {}
+          throw new Error(msg);
+        }
+        return JSON.parse(result.body) as { photoUrl: string };
       }),
 
     getMyLinks: () => withToken((t) => request<Link[]>('/api/links', t)),
