@@ -11,7 +11,6 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { CardEditSheet } from '../../components/Card/CardEditSheet';
 import { CardFieldSheet } from '../../components/Card/CardFieldSheet';
 import { CardPreview } from '../../components/Card/CardPreview';
 import { PaywallSheet } from '../../components/Card/PaywallSheet';
@@ -20,6 +19,8 @@ import { SettingsSheet } from '../../components/Profile/SettingsSheet';
 import { useApi, Card, CardField, User } from '../../lib/api';
 import { useRevenueCat } from '../../lib/RevenueCatContext';
 import { COLORS, FONTS } from '../../constants/colors';
+
+const ACCENT_COLORS = ['#C9A84C', '#7C3AED', '#22C55E', '#F43F5E', '#0EA5E9', '#F97316', '#EC4899', '#14B8A6'];
 
 const { width: SCREEN_W } = Dimensions.get('window');
 const SIDE_INSET = 24;
@@ -39,9 +40,6 @@ export default function CardScreen() {
   const [showShare, setShowShare] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
-
-  // New card creation sheet (existing cards go to full-screen edit-card route)
-  const [showNewCard, setShowNewCard] = useState(false);
 
   const [showFieldEdit, setShowFieldEdit] = useState(false);
   const [fieldEditContext, setFieldEditContext] = useState<{ cardId: string; field: CardField | null } | null>(null);
@@ -64,19 +62,11 @@ export default function CardScreen() {
 
   // ── Card CRUD ──────────────────────────────────────────────────────────────
 
-  const handleSaveNewCard = async (data: { name: string; accentColor: string }) => {
-    const created = await api.addCard(data);
-    const nextIndex = cards.length;
-    setCards((cs) => [...cs, created]);
-    setTimeout(() => {
-      flatListRef.current?.scrollToIndex({ index: nextIndex, animated: true });
-      setActiveIndex(nextIndex);
-    }, 100);
-  };
-
-  const handlePressAddCard = () => {
+  const handlePressAddCard = async () => {
     if (!isPro && cards.length >= 3) { setShowPaywall(true); return; }
-    setShowNewCard(true);
+    const created = await api.addCard({ name: 'New Card', accentColor: ACCENT_COLORS[0] });
+    setCards((cs) => [...cs, created]);
+    router.push({ pathname: '/edit-card', params: { cardId: created.id } });
   };
 
   // ── Field CRUD ─────────────────────────────────────────────────────────────
@@ -166,17 +156,12 @@ export default function CardScreen() {
           }}
           renderItem={({ item }) => (
             <View style={{ width: CARD_WIDTH }}>
-              <Pressable
-                onLongPress={() => router.push({ pathname: '/edit-card', params: { cardId: item.id } })}
-                delayLongPress={400}
-              >
-                <CardPreview
-                  card={item}
-                  user={user!}
-                  onEditField={(field) => openFieldEdit(item.id, field)}
-                  onAddField={() => openFieldEdit(item.id, null)}
-                />
-              </Pressable>
+              <CardPreview
+                card={item}
+                user={user!}
+                onEditField={(field) => openFieldEdit(item.id, field)}
+                onAddField={() => openFieldEdit(item.id, null)}
+              />
             </View>
           )}
         />
@@ -195,8 +180,16 @@ export default function CardScreen() {
         </Pressable>
       </View>
 
-      {/* Share button */}
-      <View style={styles.shareWrapper}>
+      {/* Action row */}
+      <View style={styles.actionRow}>
+        <Pressable
+          style={[styles.editBtn, !activeCard && { opacity: 0.4 }]}
+          onPress={() => activeCard && router.push({ pathname: '/edit-card', params: { cardId: activeCard.id } })}
+          disabled={!activeCard}
+        >
+          <Ionicons name="pencil" size={16} color={COLORS.text} />
+          <Text style={styles.editBtnText}>EDIT</Text>
+        </Pressable>
         <Pressable
           style={[styles.shareBtn, { backgroundColor: activeAccent }]}
           onPress={() => setShowShare(true)}
@@ -216,12 +209,6 @@ export default function CardScreen() {
         visible={showSettings}
         onClose={() => setShowSettings(false)}
         onShowPaywall={() => setShowPaywall(true)}
-      />
-      <CardEditSheet
-        visible={showNewCard}
-        card={null}
-        onClose={() => setShowNewCard(false)}
-        onSave={handleSaveNewCard}
       />
       <CardFieldSheet
         visible={showFieldEdit}
@@ -265,9 +252,17 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
   addBtnText: { fontSize: 18, lineHeight: 20, fontFamily: FONTS.light },
-  shareWrapper: { paddingHorizontal: 20, paddingBottom: 16 },
+  actionRow: {
+    flexDirection: 'row', paddingHorizontal: 20, paddingBottom: 16, gap: 12,
+  },
+  editBtn: {
+    flex: 1, height: 52, borderRadius: 16,
+    backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+  },
+  editBtnText: { fontSize: 14, fontFamily: FONTS.semiBold, color: COLORS.text, letterSpacing: 1 },
   shareBtn: {
-    width: '100%', height: 52, borderRadius: 16,
+    flex: 2, height: 52, borderRadius: 16,
     alignItems: 'center', justifyContent: 'center',
   },
   shareBtnText: { fontSize: 14, fontFamily: FONTS.semiBold, color: '#0C0C0E', letterSpacing: 1 },
