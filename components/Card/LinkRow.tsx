@@ -103,20 +103,8 @@ export function LinkRow({ link, isReordering, isFirst, isLast, onEdit, onDelete,
           delayLongPress={400}
         >
           {isContactCard ? (
-            <View style={styles.contactCardContent}>
-              <Text style={styles.contactCardIcon}>📇</Text>
-              <View style={styles.content}>
-                <Text style={styles.title} numberOfLines={1}>Contact Card</Text>
-                {link.metadata ? (() => {
-                  try {
-                    const m = JSON.parse(link.metadata);
-                    const name = [m.firstName, m.lastName].filter(Boolean).join(' ');
-                    const sub = [m.jobTitle, m.company].filter(Boolean).join(' · ');
-                    return (name || sub) ? <Text style={styles.url} numberOfLines={1}>{[name, sub].filter(Boolean).join(' — ')}</Text> : null;
-                  } catch { return null; }
-                })() : null}
-              </View>
-              {!isReordering && <Text style={[styles.contactCardBadge]}>📲 Save</Text>}
+            <View style={styles.content}>
+              <Text style={styles.title} numberOfLines={1}>Contact Card</Text>
             </View>
           ) : (
             <>
@@ -194,9 +182,6 @@ const styles = StyleSheet.create({
   content: { flex: 1, gap: 2 },
   title: { fontSize: 15, fontFamily: FONTS.medium, color: COLORS.text },
   url: { fontSize: 12, fontFamily: FONTS.regular, color: COLORS.textSecondary },
-  contactCardContent: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },
-  contactCardIcon: { fontSize: 22 },
-  contactCardBadge: { fontSize: 11, fontFamily: FONTS.medium, color: COLORS.accent },
   scheduledBadge: {
     fontSize: 11,
     fontFamily: FONTS.medium,

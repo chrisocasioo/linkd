@@ -323,7 +323,7 @@ const styles = StyleSheet.create({
   doneBtn: { height: 32, paddingHorizontal: 14, backgroundColor: COLORS.accent, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   doneBtnText: { fontSize: 12, fontFamily: FONTS.semiBold, color: '#0C0C0E' },
   content: { gap: 16, paddingBottom: 60 },
-  hero: { alignItems: 'center', gap: 10, paddingTop: 22, paddingHorizontal: 18, paddingBottom: 18, backgroundColor: '#1A1510' },
+  hero: { alignItems: 'center', gap: 10, paddingTop: 22, paddingHorizontal: 18, paddingBottom: 18, backgroundColor: COLORS.bg },
   avatarWrapper: { position: 'relative', marginTop: 10 },
   avatar: { width: 80, height: 80, borderRadius: 26, borderWidth: 2, borderColor: COLORS.accent },
   avatarPlaceholder: {
