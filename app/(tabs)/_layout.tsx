@@ -20,7 +20,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="scans"
         options={{
-          title: 'Scans',
+          title: 'Scan',
           tabBarIcon: ({ color, size }) => <Ionicons name="scan-outline" size={size} color={color} />,
         }}
       />
