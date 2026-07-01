@@ -12,7 +12,7 @@ import { useEffect } from 'react';
 import { Alert } from 'react-native';
 import { tokenCache } from '../lib/clerk';
 import { ErrorBoundary } from '../components/ErrorBoundary';
-import { RevenueCatProvider } from '../lib/RevenueCatContext';
+import { RevenueCatProvider, useRevenueCat } from '../lib/RevenueCatContext';
 import { initRevenueCat } from '../lib/revenuecat';
 
 SplashScreen.preventAutoHideAsync();
@@ -28,8 +28,9 @@ if (g.ErrorUtils) {
 
 function AppInitializer() {
   const { userId } = useAuth();
+  const { refresh } = useRevenueCat();
   useEffect(() => {
-    if (userId) initRevenueCat(userId).catch(() => {});
+    if (userId) initRevenueCat(userId).then(() => refresh()).catch(() => {});
   }, [userId]);
   return null;
 }
