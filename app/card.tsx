@@ -288,10 +288,8 @@ export default function CardScreen() {
       <ShareSheet
         visible={showShare}
         username={user?.username ?? ''}
-        customDomain={user?.customDomain}
         onClose={() => setShowShare(false)}
         onUsernameChange={(u) => setUser((prev) => prev ? { ...prev, username: u } : prev)}
-        onCustomDomainChange={(d) => setUser((prev) => prev ? { ...prev, customDomain: d } : prev)}
       />
       <SettingsSheet
         visible={showSettings}

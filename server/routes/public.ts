@@ -1,15 +1,9 @@
 import { and, asc, eq, gt, isNull, lt, or } from 'drizzle-orm';
-import { Router, Request, Response } from 'express';
+import { Router } from 'express';
 import { db } from '../db';
 import { cardViews, links, users } from '../db/schema';
 
 const router = Router();
-
-const DEFAULT_HOST_SUFFIXES = ['linkd.tattoo', 'railway.app', 'localhost'];
-
-function isDefaultHost(hostname: string): boolean {
-  return DEFAULT_HOST_SUFFIXES.some((s) => hostname === s || hostname.endsWith('.' + s));
-}
 
 async function getActiveLinks(userId: string) {
   const now = new Date();
@@ -135,40 +129,7 @@ async function buildVcard(user: UserRow, username: string): Promise<string> {
   return lines.filter(Boolean).join('\r\n');
 }
 
-// ── Custom domain middleware ──────────────────────────────────────────────────
-// Detects requests arriving on a user's custom domain (CNAME → this server)
-// and serves their card without requiring the username in the path.
-router.use(async (req: Request, res: Response, next) => {
-  const hostname = req.hostname;
-  if (isDefaultHost(hostname)) return next();
-
-  try {
-    const user = await db.query.users.findFirst({ where: eq(users.customDomain, hostname) });
-    if (!user) return next();
-
-    const username = user.username ?? user.id;
-
-    if (req.path === '/' || req.path === '') {
-      const activeLinks = await getActiveLinks(user.id);
-      db.insert(cardViews).values({ userId: user.id, linkId: null }).catch(() => {});
-      res.setHeader('Content-Type', 'text/html; charset=utf-8');
-      return res.send(buildCardHtml(user, activeLinks, username));
-    }
-
-    if (req.path === '/vcard') {
-      const vcf = await buildVcard(user, username);
-      res.setHeader('Content-Type', 'text/vcard; charset=utf-8');
-      res.setHeader('Content-Disposition', `attachment; filename="${username}.vcf"`);
-      return res.send(vcf);
-    }
-
-    next();
-  } catch {
-    next();
-  }
-});
-
-// ── Standard routes ───────────────────────────────────────────────────────────
+// ── Routes ────────────────────────────────────────────────────────────────────
 
 router.get('/api/cards/:username', async (req, res) => {
   try {
