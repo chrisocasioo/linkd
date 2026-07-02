@@ -60,12 +60,6 @@
           "savePhotosPermission": "Linkd saves content to your photo library."
         }
       ],
-      [
-        "react-native-vision-camera",
-        {
-          "cameraPermissionText": "Linkd needs camera access to scan business cards."
-        }
-      ],
       "expo-web-browser",
       "@react-native-community/datetimepicker"
     ],
