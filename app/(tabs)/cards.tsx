@@ -15,7 +15,7 @@ import { CardPreview } from '../../components/Card/CardPreview';
 import { PaywallSheet } from '../../components/Card/PaywallSheet';
 import { ShareSheet } from '../../components/Card/ShareSheet';
 import { SettingsSheet } from '../../components/Profile/SettingsSheet';
-import { useApi, Card, User } from '../../lib/api';
+import { useApi, Card, CardAnalytics, User } from '../../lib/api';
 import { useRevenueCat } from '../../lib/RevenueCatContext';
 import { COLORS, FONTS } from '../../constants/colors';
 
@@ -33,6 +33,7 @@ export default function CardScreen() {
 
   const [user, setUser] = useState<User | null>(null);
   const [cards, setCards] = useState<Card[]>([]);
+  const [cardAnalytics, setCardAnalytics] = useState<CardAnalytics[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeIndex, setActiveIndex] = useState(0);
 
@@ -44,9 +45,10 @@ export default function CardScreen() {
 
   const load = useCallback(async () => {
     try {
-      const [u, cs] = await Promise.all([api.getMe(), api.getMyCards()]);
+      const [u, cs, analytics] = await Promise.all([api.getMe(), api.getMyCards(), api.getAnalytics()]);
       setUser(u);
       setCards(cs);
+      setCardAnalytics(analytics.cardBreakdown ?? []);
     } catch {}
     setLoading(false);
   }, [api]);
@@ -116,7 +118,11 @@ export default function CardScreen() {
           }}
           renderItem={({ item }) => (
             <View style={{ width: CARD_WIDTH }}>
-              <CardPreview card={item} user={user!} />
+              <CardPreview
+                card={item}
+                user={user!}
+                analytics={cardAnalytics.find((a) => a.cardId === item.id)}
+              />
             </View>
           )}
         />

@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
-import React from 'react';
-import { Image, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
-import { Card, CardField, User } from '../../lib/api';
+import React, { useRef, useState } from 'react';
+import { Animated, Image, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Card, CardAnalytics, CardField, User } from '../../lib/api';
 import { FONTS } from '../../constants/colors';
 
 const FIELD_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
@@ -48,17 +48,42 @@ function fieldDisplayValue(field: CardField): string {
   return field.label ?? field.value;
 }
 
+function deltaText(views: number, prevViews: number): string {
+  if (prevViews === 0) return views > 0 ? '↑ New data' : 'No views yet';
+  const pct = Math.round(((views - prevViews) / prevViews) * 100);
+  return pct >= 0 ? `↑ ${pct}% vs last month` : `↓ ${Math.abs(pct)}% vs last month`;
+}
+
 interface Props {
   card: Card;
   user: User;
+  analytics?: CardAnalytics;
 }
 
-export function CardPreview({ card, user }: Props) {
+export function CardPreview({ card, user, analytics }: Props) {
   const accent = card.accentColor;
   const initial = (user.displayName ?? user.username ?? '?')[0].toUpperCase();
 
+  const [cardHeight, setCardHeight] = useState<number | undefined>();
+  const [isFlipped, setIsFlipped] = useState(false);
+  const flipAnim = useRef(new Animated.Value(0)).current;
+
+  const flip = () => {
+    const toValue = isFlipped ? 0 : 1;
+    setIsFlipped(!isFlipped);
+    Animated.spring(flipAnim, { toValue, useNativeDriver: true, friction: 8, tension: 10 }).start();
+  };
+
+  const frontRotate = flipAnim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '180deg'] });
+  const backRotate  = flipAnim.interpolate({ inputRange: [0, 1], outputRange: ['180deg', '360deg'] });
+
   return (
-    <View style={styles.card}>
+    <View style={[styles.card, cardHeight ? { height: cardHeight } : {}]}>
+      {/* ── Front face ── */}
+      <Animated.View
+        style={[styles.face, { transform: [{ rotateY: frontRotate }] }]}
+        onLayout={(e) => { if (!cardHeight) setCardHeight(e.nativeEvent.layout.height); }}
+      >
         {/* Banner */}
         <View style={styles.banner}>
           {user.profilePhoto ? (
@@ -71,6 +96,10 @@ export function CardPreview({ card, user }: Props) {
           <View style={styles.labelPill}>
             <Text style={styles.labelText}>{card.name.toUpperCase()}</Text>
           </View>
+          {/* Stats flip button */}
+          <Pressable style={styles.flipBtn} onPress={flip} hitSlop={8}>
+            <Ionicons name="stats-chart-outline" size={14} color="rgba(255,255,255,0.75)" />
+          </Pressable>
         </View>
 
         {/* Identity */}
@@ -111,6 +140,42 @@ export function CardPreview({ card, user }: Props) {
             </Pressable>
           ))}
         </View>
+      </Animated.View>
+
+      {/* ── Back face ── */}
+      {cardHeight && (
+        <Animated.View
+          style={[styles.face, styles.backFace, StyleSheet.absoluteFill, { transform: [{ rotateY: backRotate }] }]}
+        >
+          {/* Card label pill */}
+          <View style={[styles.backHeader, { backgroundColor: accent + '22', borderBottomColor: accent + '33' }]}>
+            <Text style={[styles.backCardName, { color: accent }]}>{card.name.toUpperCase()}</Text>
+            <Pressable style={styles.flipBtn} onPress={flip} hitSlop={8}>
+              <Ionicons name="card-outline" size={14} color="rgba(255,255,255,0.75)" />
+            </Pressable>
+          </View>
+
+          <View style={styles.backContent}>
+            <Text style={styles.backPeriod}>LAST 30 DAYS</Text>
+            <Text style={styles.backViews}>
+              {analytics ? analytics.views.toLocaleString() : '—'}
+            </Text>
+            <Text style={styles.backViewsLabel}>profile views</Text>
+
+            {analytics && (
+              <View style={[styles.backDeltaPill, { backgroundColor: accent + '22' }]}>
+                <Text style={[styles.backDelta, { color: accent }]}>
+                  {deltaText(analytics.views, analytics.prevViews)}
+                </Text>
+              </View>
+            )}
+
+            {!analytics && (
+              <Text style={styles.backEmpty}>No analytics data yet</Text>
+            )}
+          </View>
+        </Animated.View>
+      )}
     </View>
   );
 }
@@ -122,6 +187,24 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.08)',
+  },
+  face: {
+    backfaceVisibility: 'hidden',
+  },
+  backFace: {
+    backgroundColor: '#161616',
+    borderRadius: 22,
+  },
+  flipBtn: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   banner: {
     width: '100%',
@@ -216,5 +299,63 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: FONTS.regular,
     color: '#fff',
+  },
+
+  // Back face styles
+  backHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    position: 'relative',
+  },
+  backCardName: {
+    fontSize: 11,
+    fontFamily: FONTS.semiBold,
+    letterSpacing: 1.2,
+  },
+  backContent: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+    gap: 6,
+  },
+  backPeriod: {
+    fontSize: 10,
+    fontFamily: FONTS.medium,
+    color: 'rgba(255,255,255,0.35)',
+    letterSpacing: 1,
+    marginBottom: 8,
+  },
+  backViews: {
+    fontSize: 64,
+    fontFamily: FONTS.semiBold,
+    color: '#fff',
+    letterSpacing: -2,
+    lineHeight: 68,
+  },
+  backViewsLabel: {
+    fontSize: 14,
+    fontFamily: FONTS.regular,
+    color: 'rgba(255,255,255,0.45)',
+    marginBottom: 16,
+  },
+  backDeltaPill: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 20,
+  },
+  backDelta: {
+    fontSize: 13,
+    fontFamily: FONTS.medium,
+    letterSpacing: 0.2,
+  },
+  backEmpty: {
+    fontSize: 13,
+    fontFamily: FONTS.regular,
+    color: 'rgba(255,255,255,0.3)',
+    marginTop: 8,
   },
 });
