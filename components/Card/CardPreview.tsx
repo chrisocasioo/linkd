@@ -90,7 +90,7 @@ export function CardPreview({ card, user, analytics }: Props) {
           if (!cardHeight) setCardHeight(Math.min(e.nativeEvent.layout.height, MAX_CARD_H));
         }}
       >
-        <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
+        <ScrollView style={cardHeight ? { flex: 1 } : undefined} showsVerticalScrollIndicator={false} bounces={false}>
           {/* Banner */}
           <View style={styles.banner}>
             {user.profilePhoto ? (
