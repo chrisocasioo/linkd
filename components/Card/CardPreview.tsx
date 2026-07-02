@@ -1,18 +1,22 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useRef, useState } from 'react';
-import { Animated, Image, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Animated, Dimensions, Image, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Card, CardAnalytics, CardField, User } from '../../lib/api';
 import { FONTS } from '../../constants/colors';
 
+const { height: SCREEN_H } = Dimensions.get('window');
+// Leave room for top bar (~60px), dots (~34px), action row (~84px), safe area (~50px), padding
+const MAX_CARD_H = SCREEN_H - 250;
+
 const FIELD_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
-  email:     'mail',
-  phone:     'call',
-  website:   'globe-outline',
-  instagram: 'logo-instagram',
-  twitter:   'logo-twitter',
-  linkedin:  'logo-linkedin',
-  tiktok:    'logo-tiktok',
-  youtube:   'logo-youtube',
+  email:      'mail',
+  phone:      'call',
+  website:    'globe-outline',
+  instagram:  'logo-instagram',
+  twitter:    'logo-twitter',
+  linkedin:   'logo-linkedin',
+  tiktok:     'logo-tiktok',
+  youtube:    'logo-youtube',
   title:      'briefcase-outline',
   company:    'business-outline',
   facebook:   'logo-facebook',
@@ -26,13 +30,13 @@ const FIELD_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
 function fieldUrl(field: CardField): string {
   const v = field.value.trim();
   switch (field.type) {
-    case 'email':     return `mailto:${v}`;
-    case 'phone':     return `tel:${v}`;
-    case 'instagram': return `https://instagram.com/${v.replace('@', '')}`;
-    case 'twitter':   return `https://twitter.com/${v.replace('@', '')}`;
-    case 'linkedin':  return `https://linkedin.com/in/${v.replace('@', '')}`;
-    case 'tiktok':    return `https://tiktok.com/@${v.replace('@', '')}`;
-    case 'youtube':   return `https://youtube.com/@${v.replace('@', '')}`;
+    case 'email':      return `mailto:${v}`;
+    case 'phone':      return `tel:${v}`;
+    case 'instagram':  return `https://instagram.com/${v.replace('@', '')}`;
+    case 'twitter':    return `https://twitter.com/${v.replace('@', '')}`;
+    case 'linkedin':   return `https://linkedin.com/in/${v.replace('@', '')}`;
+    case 'tiktok':     return `https://tiktok.com/@${v.replace('@', '')}`;
+    case 'youtube':    return `https://youtube.com/@${v.replace('@', '')}`;
     case 'facebook':   return `https://facebook.com/${v.replace('@', '')}`;
     case 'whatsapp':   return `https://wa.me/${v.replace(/\D/g, '')}`;
     case 'spotify':    return `https://open.spotify.com/user/${v.replace('@', '')}`;
@@ -78,68 +82,69 @@ export function CardPreview({ card, user, analytics }: Props) {
   const backRotate  = flipAnim.interpolate({ inputRange: [0, 1], outputRange: ['180deg', '360deg'] });
 
   return (
-    <View style={[styles.card, cardHeight ? { height: cardHeight } : {}]}>
+    <View style={[styles.card, cardHeight ? { height: cardHeight } : { maxHeight: MAX_CARD_H }]}>
       {/* ── Front face ── */}
       <Animated.View
         style={[styles.face, { transform: [{ rotateY: frontRotate }] }]}
-        onLayout={(e) => { if (!cardHeight) setCardHeight(e.nativeEvent.layout.height); }}
+        onLayout={(e) => {
+          if (!cardHeight) setCardHeight(Math.min(e.nativeEvent.layout.height, MAX_CARD_H));
+        }}
       >
-        {/* Banner */}
-        <View style={styles.banner}>
-          {user.profilePhoto ? (
-            <Image source={{ uri: user.profilePhoto }} style={styles.bannerImg} />
-          ) : (
-            <View style={[styles.bannerPlaceholder, { backgroundColor: accent + '22' }]}>
-              <Text style={[styles.bannerInitial, { color: accent }]}>{initial}</Text>
-            </View>
-          )}
-          <View style={styles.labelPill}>
-            <Text style={styles.labelText}>{card.name.toUpperCase()}</Text>
-          </View>
-          {/* Stats flip button */}
-          <Pressable style={styles.flipBtn} onPress={flip} hitSlop={8}>
-            <Ionicons name="stats-chart-outline" size={14} color="rgba(255,255,255,0.75)" />
-          </Pressable>
-        </View>
-
-        {/* Identity */}
-        <View style={styles.identity}>
-          <Text style={styles.name}>{user.displayName ?? user.username ?? ''}</Text>
-          {(() => {
-            const title = card.fields.find(f => f.type === 'title')?.value;
-            const company = card.fields.find(f => f.type === 'company')?.value;
-            const headline = card.fields.find(f => f.type === 'headline')?.value;
-            return (
-              <>
-                {title ? <Text style={styles.jobTitle}>{title}</Text> : null}
-                {company ? <Text style={styles.company}>{company}</Text> : null}
-                {headline ? <Text style={styles.headline}>{headline}</Text> : null}
-              </>
-            );
-          })()}
-        </View>
-
-        {/* Fields */}
-        <View style={styles.fields}>
-          {card.fields.filter(f => !['title', 'company', 'department', 'headline'].includes(f.type)).map((field) => (
-            <Pressable
-              key={field.id}
-              style={({ pressed }) => [styles.fieldRow, pressed && styles.fieldRowPressed]}
-              onPress={() => { const url = fieldUrl(field); if (url) Linking.openURL(url).catch(() => {}); }}
-            >
-              <View style={[styles.fieldIcon, { backgroundColor: accent }]}>
-                <Ionicons
-                  name={FIELD_ICONS[field.type] ?? FIELD_ICONS.custom}
-                  size={16}
-                  color="#fff"
-                />
+        <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
+          {/* Banner */}
+          <View style={styles.banner}>
+            {user.profilePhoto ? (
+              <Image source={{ uri: user.profilePhoto }} style={styles.bannerImg} />
+            ) : (
+              <View style={[styles.bannerPlaceholder, { backgroundColor: accent + '22' }]}>
+                <Text style={[styles.bannerInitial, { color: accent }]}>{initial}</Text>
               </View>
-              <Text style={styles.fieldValue} numberOfLines={1}>
-                {fieldDisplayValue(field)}
-              </Text>
+            )}
+            <View style={styles.labelPill}>
+              <Text style={styles.labelText}>{card.name.toUpperCase()}</Text>
+            </View>
+            <Pressable style={styles.flipBtn} onPress={flip} hitSlop={8}>
+              <Ionicons name="stats-chart-outline" size={14} color="rgba(255,255,255,0.75)" />
             </Pressable>
-          ))}
-        </View>
+          </View>
+
+          {/* Identity */}
+          <View style={styles.identity}>
+            <Text style={styles.name}>{user.displayName ?? user.username ?? ''}</Text>
+            {(() => {
+              const title   = card.fields.find(f => f.type === 'title')?.value;
+              const company = card.fields.find(f => f.type === 'company')?.value;
+              const headline = card.fields.find(f => f.type === 'headline')?.value;
+              return (
+                <>
+                  {title   ? <Text style={styles.jobTitle}>{title}</Text>   : null}
+                  {company ? <Text style={styles.company}>{company}</Text>   : null}
+                  {headline ? <Text style={styles.headline}>{headline}</Text> : null}
+                </>
+              );
+            })()}
+          </View>
+
+          {/* Fields */}
+          <View style={styles.fields}>
+            {card.fields
+              .filter(f => !['title', 'company', 'department', 'headline'].includes(f.type))
+              .map((field) => (
+                <Pressable
+                  key={field.id}
+                  style={({ pressed }) => [styles.fieldRow, pressed && styles.fieldRowPressed]}
+                  onPress={() => { const url = fieldUrl(field); if (url) Linking.openURL(url).catch(() => {}); }}
+                >
+                  <View style={[styles.fieldIcon, { backgroundColor: accent }]}>
+                    <Ionicons name={FIELD_ICONS[field.type] ?? FIELD_ICONS.custom} size={16} color="#fff" />
+                  </View>
+                  <Text style={styles.fieldValue} numberOfLines={1}>
+                    {fieldDisplayValue(field)}
+                  </Text>
+                </Pressable>
+              ))}
+          </View>
+        </ScrollView>
       </Animated.View>
 
       {/* ── Back face ── */}
@@ -147,7 +152,6 @@ export function CardPreview({ card, user, analytics }: Props) {
         <Animated.View
           style={[styles.face, styles.backFace, StyleSheet.absoluteFill, { transform: [{ rotateY: backRotate }] }]}
         >
-          {/* Card label pill */}
           <View style={[styles.backHeader, { backgroundColor: accent + '22', borderBottomColor: accent + '33' }]}>
             <Text style={[styles.backCardName, { color: accent }]}>{card.name.toUpperCase()}</Text>
             <Pressable style={styles.flipBtn} onPress={flip} hitSlop={8}>
@@ -169,7 +173,6 @@ export function CardPreview({ card, user, analytics }: Props) {
                 </Text>
               </View>
             )}
-
             {!analytics && (
               <Text style={styles.backEmpty}>No analytics data yet</Text>
             )}
@@ -301,7 +304,7 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
 
-  // Back face styles
+  // Back face
   backHeader: {
     flexDirection: 'row',
     alignItems: 'center',
