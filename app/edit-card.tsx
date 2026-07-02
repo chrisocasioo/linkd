@@ -20,10 +20,7 @@ import { CardFieldSheet } from '../components/Card/CardFieldSheet';
 import { useApi, Card, CardField, User } from '../lib/api';
 import { COLORS, FONTS } from '../constants/colors';
 
-const ACCENT_COLORS = [
-  '#C9A84C', '#7C3AED', '#22C55E', '#F43F5E',
-  '#0EA5E9', '#F97316', '#EC4899', '#14B8A6',
-];
+const ACCENT_COLORS = ['#C9A84C', '#7C3AED', '#22C55E', '#F43F5E', '#0EA5E9', '#EC4899'];
 
 const INFO_TYPES = new Set(['title', 'company', 'department', 'headline']);
 
@@ -85,6 +82,8 @@ export default function EditCardScreen() {
 
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [showHexInput, setShowHexInput] = useState(false);
+  const [hexDraft, setHexDraft] = useState('');
 
   const [showFieldSheet, setShowFieldSheet] = useState(false);
   const [fieldSheetCtx, setFieldSheetCtx] = useState<{ field: CardField | null; initialType?: string } | null>(null);
@@ -303,16 +302,51 @@ export default function EditCardScreen() {
 
                 <Text style={[styles.label, { marginTop: 20 }]}>Accent Color</Text>
                 <View style={styles.colorRow}>
+                  {/* Color picker swatch */}
+                  <Pressable
+                    style={[
+                      styles.colorDot, styles.colorPickerDot,
+                      !ACCENT_COLORS.includes(accent) && styles.colorDotActive,
+                      !ACCENT_COLORS.includes(accent) && { borderColor: accent },
+                    ]}
+                    onPress={() => {
+                      setHexDraft(accent);
+                      setShowHexInput((v) => !v);
+                    }}
+                  >
+                    <Ionicons name="color-palette-outline" size={16} color={!ACCENT_COLORS.includes(accent) ? accent : 'rgba(255,255,255,0.6)'} />
+                  </Pressable>
+
                   {ACCENT_COLORS.map((c) => (
                     <Pressable
                       key={c}
                       style={[styles.colorDot, { backgroundColor: c }, accent === c && styles.colorDotActive]}
-                      onPress={() => setAccent(c)}
+                      onPress={() => { setAccent(c); setShowHexInput(false); }}
                     >
                       {accent === c && <Ionicons name="checkmark" size={14} color="#fff" />}
                     </Pressable>
                   ))}
                 </View>
+
+                {showHexInput && (
+                  <View style={styles.hexRow}>
+                    <View style={[styles.hexPreview, { backgroundColor: /^#[0-9A-Fa-f]{6}$/.test(hexDraft) ? hexDraft : COLORS.border }]} />
+                    <TextInput
+                      style={styles.hexInput}
+                      value={hexDraft}
+                      onChangeText={(v) => {
+                        const clean = v.startsWith('#') ? v : '#' + v;
+                        setHexDraft(clean);
+                        if (/^#[0-9A-Fa-f]{6}$/.test(clean)) setAccent(clean);
+                      }}
+                      placeholder="#C9A84C"
+                      placeholderTextColor={COLORS.textTertiary}
+                      autoCapitalize="characters"
+                      maxLength={7}
+                      autoFocus
+                    />
+                  </View>
+                )}
               </View>
             </>
           )}
@@ -554,13 +588,24 @@ const styles = StyleSheet.create({
   },
   inputMultiline: { height: 72, paddingTop: 14 },
 
-  colorRow: { flexDirection: 'row', gap: 10, flexWrap: 'wrap' },
+  colorRow: { flexDirection: 'row', gap: 10 },
   colorDot: {
     width: 36, height: 36, borderRadius: 18,
     alignItems: 'center', justifyContent: 'center',
     borderWidth: 2, borderColor: 'transparent',
   },
+  colorPickerDot: { backgroundColor: 'rgba(255,255,255,0.08)' },
   colorDotActive: { borderColor: '#fff' },
+  hexRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 12,
+  },
+  hexPreview: { width: 32, height: 32, borderRadius: 16 },
+  hexInput: {
+    flex: 1, height: 42, backgroundColor: COLORS.surface2, borderRadius: 10,
+    borderWidth: 1, borderColor: COLORS.border,
+    paddingHorizontal: 12, fontSize: 15, fontFamily: FONTS.regular, color: COLORS.text,
+    letterSpacing: 1,
+  },
 
   sectionHeader: {
     fontSize: 11, fontFamily: FONTS.medium, color: COLORS.textSecondary,
