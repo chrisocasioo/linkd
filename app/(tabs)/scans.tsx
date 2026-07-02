@@ -1,17 +1,18 @@
 import { Ionicons } from '@expo/vector-icons';
-import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
+import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
+  Animated,
+  Easing,
   Pressable,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Camera, useCameraDevice, useCameraPermission } from 'react-native-vision-camera';
 import TextRecognition from '@react-native-ml-kit/text-recognition';
 import { ContactReviewSheet } from '../../components/Contacts/ContactReviewSheet';
 import { useApi, ScanResult } from '../../lib/api';
@@ -68,53 +69,91 @@ function parseBusinessCard(rawText: string): Partial<ScanResult> {
   };
 }
 
+function hasEnoughInfo(r: Partial<ScanResult>): boolean {
+  return !!((r.firstName || r.lastName) && (r.email || r.phone || r.website || r.company));
+}
+
 const BRACKET = 28;
 const BRACKET_THICKNESS = 3;
 
 export default function ScansScreen() {
   const api = useApi();
   const router = useRouter();
-  const [permission, requestPermission] = useCameraPermissions();
-  const cameraRef = useRef<CameraView>(null);
+  const { hasPermission, requestPermission } = useCameraPermission();
+  const device = useCameraDevice('back');
+  const cameraRef = useRef<Camera>(null);
+  const detectingRef = useRef(false);
+  const intervalRef = useRef<ReturnType<typeof setInterval>>();
 
   const [flash, setFlash] = useState<'off' | 'on'>('off');
-  const [scanning, setScanning] = useState(false);
+  const [detected, setDetected] = useState(false);
   const [scanResult, setScanResult] = useState<Partial<ScanResult> | null>(null);
   const [showReview, setShowReview] = useState(false);
 
-  const handleCapture = async () => {
-    if (!cameraRef.current || scanning) return;
-    try {
-      const photo = await cameraRef.current.takePictureAsync({ quality: 0.85 });
-      await processImage(photo!.uri);
-    } catch (err: any) {
-      Alert.alert('Scan failed', err.message ?? 'Could not take photo.');
+  // Pulsing bracket animation
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, { toValue: 1.04, duration: 800, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1, duration: 800, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, []);
+
+  // Live scan loop
+  useEffect(() => {
+    if (!hasPermission || !device || showReview) {
+      clearInterval(intervalRef.current);
+      return;
     }
-  };
+
+    intervalRef.current = setInterval(async () => {
+      if (detectingRef.current || !cameraRef.current) return;
+      detectingRef.current = true;
+      try {
+        const snapshot = await cameraRef.current.takeSnapshot({ quality: 50 });
+        const uri = snapshot.path.startsWith('file://') ? snapshot.path : `file://${snapshot.path}`;
+        const result = await TextRecognition.recognize(uri);
+        const parsed = parseBusinessCard(result.text);
+        if (hasEnoughInfo(parsed)) {
+          clearInterval(intervalRef.current);
+          setDetected(true);
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          setTimeout(() => {
+            setScanResult(parsed);
+            setShowReview(true);
+            setDetected(false);
+          }, 400);
+        }
+      } catch {}
+      detectingRef.current = false;
+    }, 800);
+
+    return () => clearInterval(intervalRef.current);
+  }, [hasPermission, device, showReview]);
 
   const pickFromLibrary = async () => {
+    clearInterval(intervalRef.current);
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'] as any,
       allowsEditing: false,
       quality: 0.85,
     });
     if (!result.canceled && result.assets[0]) {
-      await processImage(result.assets[0].uri);
+      try {
+        const ocr = await TextRecognition.recognize(result.assets[0].uri);
+        setScanResult(parseBusinessCard(ocr.text));
+        setShowReview(true);
+      } catch {}
     }
   };
 
-  const processImage = async (uri: string) => {
-    setScanning(true);
-    try {
-      const result = await TextRecognition.recognize(uri);
-      const extracted = parseBusinessCard(result.text);
-      setScanResult(extracted);
-      setShowReview(true);
-    } catch (err: any) {
-      Alert.alert('Scan failed', err.message ?? 'Could not read the card.');
-    } finally {
-      setScanning(false);
-    }
+  const handleCloseReview = () => {
+    setShowReview(false);
+    setScanResult(null);
   };
 
   const handleSaveContact = async (fields: Partial<ScanResult>) => {
@@ -123,15 +162,9 @@ export default function ScansScreen() {
     router.push('/(tabs)/contacts');
   };
 
-  // Permission not yet determined
-  if (!permission) {
-    return <View style={styles.safe} />;
-  }
-
-  // Permission denied — show prompt
-  if (!permission.granted) {
+  if (!hasPermission) {
     return (
-      <SafeAreaView style={styles.safe} edges={['top']}>
+      <SafeAreaView style={[styles.safe, { backgroundColor: COLORS.bg }]} edges={['top']}>
         <View style={styles.permissionBox}>
           <Ionicons name="camera-outline" size={48} color={COLORS.accent} />
           <Text style={styles.permTitle}>Camera Access</Text>
@@ -144,55 +177,50 @@ export default function ScansScreen() {
     );
   }
 
+  if (!device) return <View style={styles.safe} />;
+
+  const bracketColor = detected ? '#22C55E' : COLORS.accent;
+
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      {/* Camera fills available space */}
       <View style={styles.cameraWrap}>
-        <CameraView
+        <Camera
           ref={cameraRef}
           style={StyleSheet.absoluteFill}
-          facing="back"
-          flash={flash}
+          device={device}
+          isActive={!showReview}
+          torch={flash}
+          photo
         />
 
-        {/* Viewfinder overlay */}
+        {/* Viewfinder */}
         <View style={styles.viewfinderWrap} pointerEvents="none">
-          <View style={styles.viewfinder}>
-            <View style={[styles.corner, styles.cornerTL]} />
-            <View style={[styles.corner, styles.cornerTR]} />
-            <View style={[styles.corner, styles.cornerBL]} />
-            <View style={[styles.corner, styles.cornerBR]} />
-            <Text style={styles.hint}>Align business card within the frame</Text>
-          </View>
+          <Animated.View style={[styles.viewfinder, { transform: [{ scale: pulseAnim }] }]}>
+            <View style={[styles.corner, styles.cornerTL, { borderColor: bracketColor }]} />
+            <View style={[styles.corner, styles.cornerTR, { borderColor: bracketColor }]} />
+            <View style={[styles.corner, styles.cornerBL, { borderColor: bracketColor }]} />
+            <View style={[styles.corner, styles.cornerBR, { borderColor: bracketColor }]} />
+            <Text style={[styles.hint, { color: detected ? '#22C55E' : 'rgba(255,255,255,0.65)' }]}>
+              {detected ? 'Card detected!' : 'Hold card steady in frame'}
+            </Text>
+          </Animated.View>
         </View>
-
-        {/* Scanning overlay */}
-        {scanning && (
-          <View style={styles.scanningOverlay} pointerEvents="none">
-            <ActivityIndicator color="#fff" size="large" />
-            <Text style={styles.scanningText}>Reading card…</Text>
-          </View>
-        )}
       </View>
 
-      {/* Controls below camera, above tab bar */}
+      {/* Controls */}
       <View style={styles.controls}>
-        <Pressable style={styles.secondaryBtn} onPress={pickFromLibrary} disabled={scanning}>
+        <Pressable style={styles.secondaryBtn} onPress={pickFromLibrary}>
           <Ionicons name="images-outline" size={22} color="#fff" />
         </Pressable>
 
-        <Pressable
-          style={[styles.shutter, scanning && { opacity: 0.4 }]}
-          onPress={handleCapture}
-          disabled={scanning}
-        >
-          <View style={styles.shutterInner} />
-        </Pressable>
+        <View style={styles.scanningIndicator}>
+          <View style={styles.scanDot} />
+          <Text style={styles.scanningText}>Scanning…</Text>
+        </View>
 
         <Pressable
           style={styles.secondaryBtn}
           onPress={() => setFlash((f) => (f === 'off' ? 'on' : 'off'))}
-          disabled={scanning}
         >
           <Ionicons
             name={flash === 'on' ? 'flash' : 'flash-off'}
@@ -205,7 +233,7 @@ export default function ScansScreen() {
       <ContactReviewSheet
         visible={showReview}
         initial={scanResult}
-        onClose={() => { setShowReview(false); setScanResult(null); }}
+        onClose={handleCloseReview}
         onSave={handleSaveContact}
         title="Review Contact"
       />
@@ -218,7 +246,7 @@ const styles = StyleSheet.create({
 
   permissionBox: {
     flex: 1, alignItems: 'center', justifyContent: 'center',
-    gap: 12, paddingHorizontal: 40, backgroundColor: COLORS.bg,
+    gap: 12, paddingHorizontal: 40,
   },
   permTitle: { fontSize: 20, fontFamily: FONTS.semiBold, color: COLORS.text },
   permSub: { fontSize: 13, fontFamily: FONTS.regular, color: COLORS.textSecondary, textAlign: 'center' },
@@ -236,34 +264,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  hint: {
-    position: 'absolute',
-    bottom: -36,
-    alignSelf: 'center',
-    fontSize: 12, fontFamily: FONTS.regular,
-    color: 'rgba(255,255,255,0.65)', textAlign: 'center',
-    backgroundColor: 'rgba(0,0,0,0.35)',
-    paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20,
-  },
   viewfinder: { width: 280, height: 180, position: 'relative' },
-  corner: { position: 'absolute', width: BRACKET, height: BRACKET, borderColor: COLORS.accent },
+  corner: { position: 'absolute', width: BRACKET, height: BRACKET },
   cornerTL: { top: 0, left: 0, borderTopWidth: BRACKET_THICKNESS, borderLeftWidth: BRACKET_THICKNESS },
   cornerTR: { top: 0, right: 0, borderTopWidth: BRACKET_THICKNESS, borderRightWidth: BRACKET_THICKNESS },
   cornerBL: { bottom: 0, left: 0, borderBottomWidth: BRACKET_THICKNESS, borderLeftWidth: BRACKET_THICKNESS },
   cornerBR: { bottom: 0, right: 0, borderBottomWidth: BRACKET_THICKNESS, borderRightWidth: BRACKET_THICKNESS },
-
-  scanningOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    alignItems: 'center', justifyContent: 'center', gap: 12,
+  hint: {
+    position: 'absolute',
+    bottom: -36,
+    alignSelf: 'center',
+    fontSize: 12, fontFamily: FONTS.medium,
+    textAlign: 'center',
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20,
   },
-  scanningText: { fontSize: 15, fontFamily: FONTS.medium, color: '#fff' },
 
   controls: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 56,
+    paddingHorizontal: 48,
     paddingVertical: 20,
     backgroundColor: '#000',
   },
@@ -272,11 +293,12 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.15)',
     alignItems: 'center', justifyContent: 'center',
   },
-  shutter: {
-    width: 72, height: 72, borderRadius: 36,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    borderWidth: 3, borderColor: '#fff',
-    alignItems: 'center', justifyContent: 'center',
+  scanningIndicator: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
   },
-  shutterInner: { width: 56, height: 56, borderRadius: 28, backgroundColor: '#fff' },
+  scanDot: {
+    width: 8, height: 8, borderRadius: 4,
+    backgroundColor: COLORS.accent,
+  },
+  scanningText: { fontSize: 13, fontFamily: FONTS.medium, color: 'rgba(255,255,255,0.6)' },
 });
