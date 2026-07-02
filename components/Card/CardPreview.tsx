@@ -94,11 +94,11 @@ export function CardPreview({ card, user, analytics, maxHeight, onPreview, refre
   const backRotate  = flipAnim.interpolate({ inputRange: [0, 1], outputRange: ['180deg', '360deg'] });
 
   return (
-    <View style={styles.card}>
-      {/* ── Front face ── */}
-      <Animated.View style={[styles.face, { transform: [{ rotateY: frontRotate }] }]}>
+    <View style={[styles.card, { height: capH }]}>
+      {/* ── Front face — absoluteFill so the ScrollView gets a bounded height ── */}
+      <Animated.View style={[styles.face, StyleSheet.absoluteFill, { transform: [{ rotateY: frontRotate }] }]}>
         <ScrollView
-          style={{ maxHeight: capH }}
+          style={{ flex: 1 }}
           showsVerticalScrollIndicator={false}
           bounces={!!refreshControl}
           refreshControl={refreshControl}
