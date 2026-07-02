@@ -85,7 +85,7 @@ export default function CardScreen() {
   };
 
   const handlePressAddCard = () => {
-    if (!isPro && cards.length >= 2) { setShowPaywall(true); return; }
+    if (!isPro && cards.length >= 3) { setShowPaywall(true); return; }
     setEditingCard(null);
     setShowCardEdit(true);
   };
