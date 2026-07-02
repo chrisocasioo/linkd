@@ -40,7 +40,7 @@ function parseBusinessCard(rawText: string): Partial<ScanResult> {
 
   // Strip common phone label prefixes ("Phone:", "Tel:", "Bus.", "Cel:", etc.)
   // and suffixes ("- Cell", "- Mobile", etc.) then validate what remains
-  const PHONE_PREFIX = /^(?:phone|tel(?:ephone)?|bus(?:iness)?|cel(?:l)?|mob(?:ile)?|ph|dir(?:ect)?|off(?:ice)?|work|home|main|direct|t|p|c|m)\s*[:\.\-]?\s*/i;
+  const PHONE_PREFIX = /^(?:phone|tel(?:ephone)?|bus(?:iness)?|cel(?:l)?|mob(?:ile)?|ph|dir(?:ect)?|off(?:ice)?|work|home|main|direct|p[&\/]f|t|p|c|m)\s*[:\.\-]?\s*/i;
   const PHONE_SUFFIX = /\s*[-–—|]\s*(?:cell|mobile|office|work|home|direct|bus(?:iness)?|main|ph(?:one)?)\s*$/i;
 
   function stripPhoneLabel(line: string): string {
