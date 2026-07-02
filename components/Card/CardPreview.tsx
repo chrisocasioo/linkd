@@ -87,18 +87,18 @@ export function CardPreview({ card, user, analytics, maxHeight, onPreview, refre
   const flip = () => {
     const toValue = isFlipped ? 0 : 1;
     setIsFlipped(!isFlipped);
-    Animated.spring(flipAnim, { toValue, useNativeDriver: true, friction: 8, tension: 10 }).start();
+    Animated.spring(flipAnim, { toValue, useNativeDriver: false, friction: 8, tension: 10 }).start();
   };
 
   const frontRotate = flipAnim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '180deg'] });
   const backRotate  = flipAnim.interpolate({ inputRange: [0, 1], outputRange: ['180deg', '360deg'] });
 
   return (
-    <View style={[styles.card, { height: capH }]}>
+    <View style={styles.card}>
       {/* ── Front face ── */}
-      <Animated.View style={[styles.face, StyleSheet.absoluteFill, { transform: [{ rotateY: frontRotate }] }]}>
+      <Animated.View style={[styles.face, { transform: [{ rotateY: frontRotate }] }]}>
         <ScrollView
-          style={{ height: capH }}
+          style={{ maxHeight: capH }}
           showsVerticalScrollIndicator={false}
           bounces={!!refreshControl}
           refreshControl={refreshControl}
