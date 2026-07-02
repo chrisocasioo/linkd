@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useRef, useState } from 'react';
-import { Animated, Dimensions, Image, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Animated, Dimensions, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Card, CardAnalytics, CardField, User } from '../../lib/api';
 import { FONTS } from '../../constants/colors';
 
@@ -136,7 +136,7 @@ export function CardPreview({ card, user, analytics, maxHeight, onPreview }: Pro
                 <Pressable
                   key={field.id}
                   style={({ pressed }) => [styles.fieldRow, pressed && styles.fieldRowPressed]}
-                  onPress={() => { const url = fieldUrl(field); if (url) Linking.openURL(url).catch(() => {}); }}
+                  onPress={onPreview}
                 >
                   <View style={[styles.fieldIcon, { backgroundColor: accent }]}>
                     <Ionicons name={FIELD_ICONS[field.type] ?? FIELD_ICONS.custom} size={16} color="#fff" />
