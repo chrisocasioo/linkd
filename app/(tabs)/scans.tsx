@@ -30,11 +30,23 @@ function parseBusinessCard(rawText: string): Partial<ScanResult> {
     (l) => /^[\+]?[\d\s\.\-\(\)]{7,}$/.test(l.trim()) && (l.match(/\d/g) ?? []).length >= 7
   );
 
-  const websiteMatch = lines.find(
-    (l) => !l.includes('@') && (/^(https?:\/\/|www\.)/i.test(l) || /\.(com|io|co|net|org|app|me|dev)\/?$/i.test(l))
-  );
+  // Extract all URLs from lines — handles www., http://, bare domains
+  const URL_RE = /(?:https?:\/\/[^\s,;]+|www\.[^\s,;]+|[a-zA-Z0-9](?:[a-zA-Z0-9\-]*[a-zA-Z0-9])?\.(?:com|io|co|net|org|app|me|dev|biz|info)[^\s,;]*)/gi;
+  const allWebsites: string[] = [];
+  const websiteLineSet = new Set<string>();
+  for (const l of lines) {
+    if (l.includes('@')) continue;
+    const matches = l.match(URL_RE);
+    if (matches) {
+      websiteLineSet.add(l);
+      for (const m of matches) {
+        const clean = m.replace(/[.,;:!?)"'\]}>]+$/, '');
+        if (clean && !allWebsites.includes(clean)) allWebsites.push(clean);
+      }
+    }
+  }
 
-  const used = new Set([emailMatch, phoneMatch, websiteMatch].filter(Boolean) as string[]);
+  const used = new Set([emailMatch, phoneMatch, ...websiteLineSet].filter(Boolean) as string[]);
   const remaining = lines.filter((l) => !used.has(l));
 
   const nameLine = remaining.find((l) => {
@@ -82,7 +94,8 @@ function parseBusinessCard(rawText: string): Partial<ScanResult> {
     phone: phoneMatch ?? null,
     company: companyLine ?? null,
     jobTitle: jobTitleLine ?? null,
-    website: websiteMatch ?? null,
+    website: allWebsites[0] ?? null,
+    websites: allWebsites,
     address,
   };
 }

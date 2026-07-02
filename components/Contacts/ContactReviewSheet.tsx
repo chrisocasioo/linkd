@@ -48,16 +48,23 @@ function toItems(initial: Partial<ScanResult> | null): Item[] {
   add('phone',     initial?.phone);
   add('company',   initial?.company);
   add('jobTitle',  initial?.jobTitle);
-  add('website',   initial?.website);
+  // Add all detected websites as separate rows (falls back to single website field)
+  const urls = initial?.websites?.length ? initial.websites : (initial?.website ? [initial.website] : []);
+  for (const url of urls) add('website', url);
   add('address',   initial?.address);
   return items;
 }
 
 function toResult(items: Item[]): Partial<ScanResult> {
   const r: Partial<ScanResult> = {};
+  const seen = new Set<string>();
   for (const item of items) {
     const v = item.value.trim();
-    if (v) (r as any)[item.field] = v;
+    if (!v) continue;
+    if (!seen.has(item.field)) {
+      (r as any)[item.field] = v;
+      seen.add(item.field);
+    }
   }
   return r;
 }
