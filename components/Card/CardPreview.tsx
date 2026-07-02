@@ -85,7 +85,7 @@ export function CardPreview({ card, user, analytics }: Props) {
     <View style={[styles.card, cardHeight ? { height: cardHeight } : { maxHeight: MAX_CARD_H }]}>
       {/* ── Front face ── */}
       <Animated.View
-        style={[styles.face, { transform: [{ rotateY: frontRotate }] }]}
+        style={[styles.face, { transform: [{ rotateY: frontRotate }] }, cardHeight ? { height: cardHeight } : {}]}
         onLayout={(e) => {
           if (!cardHeight) setCardHeight(Math.min(e.nativeEvent.layout.height, MAX_CARD_H));
         }}
