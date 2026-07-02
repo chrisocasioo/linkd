@@ -158,7 +158,7 @@ export function CardPreview({ card, user, analytics, maxHeight }: Props) {
             <Text style={styles.backViews}>
               {analytics ? analytics.views.toLocaleString() : '—'}
             </Text>
-            <Text style={styles.backViewsLabel}>profile views</Text>
+            <Text style={styles.backViewsLabel}>card views</Text>
 
             {analytics && (
               <View style={[styles.backDeltaPill, { backgroundColor: accent + '22' }]}>

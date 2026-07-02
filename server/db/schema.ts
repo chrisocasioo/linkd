@@ -77,6 +77,14 @@ export const cardFields = pgTable('card_fields', {
   displayOrder: integer('display_order').default(0),
 });
 
+export const fieldClicks = pgTable('field_clicks', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  fieldId: uuid('field_id').notNull().references(() => cardFields.id, { onDelete: 'cascade' }),
+  cardId: uuid('card_id').notNull().references(() => cards.id, { onDelete: 'cascade' }),
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  clickedAt: timestamp('clicked_at').defaultNow(),
+});
+
 export const contacts = pgTable('contacts', {
   id: uuid('id').defaultRandom().primaryKey(),
   userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
@@ -97,4 +105,5 @@ export type Link = typeof links.$inferSelect;
 export type Card = typeof cards.$inferSelect;
 export type CardView = typeof cardViews.$inferSelect;
 export type CardField = typeof cardFields.$inferSelect;
+export type FieldClick = typeof fieldClicks.$inferSelect;
 export type Contact = typeof contacts.$inferSelect;

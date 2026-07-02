@@ -54,7 +54,7 @@ function buildCardHtml(user: UserRow, card: CardRow, fields: FieldRow[], usernam
     const url  = fieldUrl(f.type, f.value);
     const icon = ICON_NAME[f.type] ?? 'ellipsis-horizontal';
     const display = esc(f.label ?? f.value);
-    return `<a href="${esc(url)}" class="field-row">
+    return `<a href="${esc(url)}" onclick="trackField('${esc(f.id)}')" class="field-row">
       <span class="field-icon" style="background:${accent}"><ion-icon name="${icon}"></ion-icon></span>
       <span class="field-value">${display}</span>
     </a>`;
@@ -153,6 +153,11 @@ function buildCardHtml(user: UserRow, card: CardRow, fields: FieldRow[], usernam
     ${fieldRowsHtml}
   </div>
   ${!user.isPro ? '<div class="footer"><a href="https://linkd-production-fdce.up.railway.app">Get Linkd</a></div>' : ''}
+<script>
+function trackField(fieldId) {
+  try { fetch('/api/analytics/field-click/' + fieldId, { method: 'POST', keepalive: true }).catch(function(){}); } catch(e) {}
+}
+</script>
 </body>
 </html>`;
 }

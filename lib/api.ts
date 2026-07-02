@@ -77,17 +77,27 @@ export interface SavedQR {
   createdAt: string;
 }
 
+export interface FieldClickStat {
+  fieldId: string;
+  fieldType: string;
+  fieldValue: string;
+  label: string | null;
+  clicks: number;
+  prevClicks: number;
+}
+
 export interface CardAnalytics {
   cardId: string;
   cardName: string;
   accentColor: string;
   views: number;
   prevViews: number;
+  fieldClicks: FieldClickStat[];
 }
 
 export interface AnalyticsData {
-  profileViews: number;
-  prevProfileViews: number;
+  totalCardViews: number;
+  prevTotalCardViews: number;
   trackingSince: string | null;
   cardBreakdown: CardAnalytics[];
 }

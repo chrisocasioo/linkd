@@ -91,5 +91,14 @@ export async function runMigrations() {
     ALTER TABLE cards ADD COLUMN IF NOT EXISTS slug TEXT UNIQUE;
     UPDATE cards SET slug = LEFT(MD5(id::TEXT), 8) WHERE slug IS NULL;
   `);
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS field_clicks (
+      id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+      field_id UUID NOT NULL REFERENCES card_fields(id) ON DELETE CASCADE,
+      card_id UUID NOT NULL REFERENCES cards(id) ON DELETE CASCADE,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      clicked_at TIMESTAMP DEFAULT NOW()
+    );
+  `);
   console.log('✓ Database tables ready');
 }
