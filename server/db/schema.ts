@@ -44,15 +44,6 @@ export const links = pgTable('links', {
   createdAt: timestamp('created_at').defaultNow(),
 });
 
-export const cardViews = pgTable('card_views', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  userId: text('user_id')
-    .notNull()
-    .references(() => users.id, { onDelete: 'cascade' }),
-  linkId: uuid('link_id').references(() => links.id),
-  viewedAt: timestamp('viewed_at').defaultNow(),
-});
-
 export const cards = pgTable('cards', {
   id: uuid('id').defaultRandom().primaryKey(),
   userId: text('user_id')
@@ -62,6 +53,16 @@ export const cards = pgTable('cards', {
   accentColor: text('accent_color').notNull().default('#C9A84C'),
   displayOrder: integer('display_order').default(0),
   createdAt: timestamp('created_at').defaultNow(),
+});
+
+export const cardViews = pgTable('card_views', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  linkId: uuid('link_id').references(() => links.id),
+  cardId: uuid('card_id').references(() => cards.id, { onDelete: 'set null' }),
+  viewedAt: timestamp('viewed_at').defaultNow(),
 });
 
 export const cardFields = pgTable('card_fields', {
@@ -92,7 +93,7 @@ export const contacts = pgTable('contacts', {
 export type User = typeof users.$inferSelect;
 export type SavedQr = typeof savedQrs.$inferSelect;
 export type Link = typeof links.$inferSelect;
-export type CardView = typeof cardViews.$inferSelect;
 export type Card = typeof cards.$inferSelect;
+export type CardView = typeof cardViews.$inferSelect;
 export type CardField = typeof cardFields.$inferSelect;
 export type Contact = typeof contacts.$inferSelect;

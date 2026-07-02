@@ -77,10 +77,19 @@ export interface SavedQR {
   createdAt: string;
 }
 
+export interface CardAnalytics {
+  cardId: string;
+  cardName: string;
+  accentColor: string;
+  views: number;
+  prevViews: number;
+}
+
 export interface AnalyticsData {
   profileViews: number;
   prevProfileViews: number;
   trackingSince: string | null;
+  cardBreakdown: CardAnalytics[];
 }
 
 export interface CardField {

@@ -1,8 +1,8 @@
-import { and, count, eq, gt, isNull, lt } from 'drizzle-orm';
+import { and, asc, count, eq, gt, isNull, lt } from 'drizzle-orm';
 import { Router } from 'express';
 import { db } from '../db';
 import { requireAuth } from '../middleware/auth';
-import { cardViews, users } from '../db/schema';
+import { cards, cardViews, users } from '../db/schema';
 
 const router = Router();
 
@@ -43,10 +43,37 @@ router.get('/me', requireAuth, async (req, res) => {
       orderBy: (cv, { asc }) => [asc(cv.viewedAt)],
     });
 
+    const userCards = await db
+      .select()
+      .from(cards)
+      .where(eq(cards.userId, userId))
+      .orderBy(asc(cards.displayOrder));
+
+    const cardViewsCurrent = await db
+      .select({ cardId: cardViews.cardId, count: count() })
+      .from(cardViews)
+      .where(and(eq(cardViews.userId, userId), gt(cardViews.viewedAt, thirtyDaysAgo)))
+      .groupBy(cardViews.cardId);
+
+    const cardViewsPrev = await db
+      .select({ cardId: cardViews.cardId, count: count() })
+      .from(cardViews)
+      .where(and(eq(cardViews.userId, userId), gt(cardViews.viewedAt, sixtyDaysAgo), lt(cardViews.viewedAt, thirtyDaysAgo)))
+      .groupBy(cardViews.cardId);
+
+    const cardBreakdown = userCards.map((card) => ({
+      cardId: card.id,
+      cardName: card.name,
+      accentColor: card.accentColor,
+      views: Number(cardViewsCurrent.find((cv) => cv.cardId === card.id)?.count ?? 0),
+      prevViews: Number(cardViewsPrev.find((cv) => cv.cardId === card.id)?.count ?? 0),
+    }));
+
     res.json({
       profileViews: Number(profileViewsResult?.count ?? 0),
       prevProfileViews: Number(prevProfileViewsResult?.count ?? 0),
       trackingSince: earliestView?.viewedAt ?? null,
+      cardBreakdown,
     });
   } catch (err: any) {
     res.status(500).json({ error: err.message });

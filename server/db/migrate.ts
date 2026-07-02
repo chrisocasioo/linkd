@@ -84,5 +84,8 @@ export async function runMigrations() {
       created_at TIMESTAMP DEFAULT NOW()
     );
   `);
+  await db.execute(sql`
+    ALTER TABLE card_views ADD COLUMN IF NOT EXISTS card_id UUID REFERENCES cards(id) ON DELETE SET NULL;
+  `);
   console.log('✓ Database tables ready');
 }

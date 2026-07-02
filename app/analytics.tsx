@@ -1,8 +1,8 @@
 import { useFocusEffect } from 'expo-router';
 import React, { useCallback, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useApi, AnalyticsData } from '../lib/api';
+import { useApi, AnalyticsData, CardAnalytics } from '../lib/api';
 import { COLORS, FONTS } from '../constants/colors';
 
 function delta(current: number, prev: number): string {
@@ -17,6 +17,23 @@ function formatTrackingSince(iso: string | null): string {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
+function CardStat({ card }: { card: CardAnalytics }) {
+  return (
+    <View style={[styles.statCard, { borderLeftColor: card.accentColor, borderLeftWidth: 3 }]}>
+      <Text style={[styles.cardName, { color: card.accentColor }]}>{card.cardName.toUpperCase()}</Text>
+      <View style={styles.statRow}>
+        <View>
+          <Text style={styles.statLabel}>Views (30 days)</Text>
+          <Text style={styles.statNumber}>{card.views.toLocaleString()}</Text>
+        </View>
+        <Text style={[styles.statDelta, card.views === 0 && { color: COLORS.textTertiary }]}>
+          {delta(card.views, card.prevViews)}
+        </Text>
+      </View>
+    </View>
+  );
+}
+
 export default function AnalyticsScreen() {
   const api = useApi();
   const [data, setData] = useState<AnalyticsData | null>(null);
@@ -24,6 +41,7 @@ export default function AnalyticsScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      setLoading(true);
       api.getAnalytics().then(setData).catch(() => {}).finally(() => setLoading(false));
     }, [])
   );
@@ -40,20 +58,33 @@ export default function AnalyticsScreen() {
           <ActivityIndicator color={COLORS.accent} size="large" />
         </View>
       ) : data ? (
-        <View style={styles.content}>
+        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+          {/* Total profile views */}
           <View style={styles.statCard}>
-            <Text style={styles.statLabel}>Profile Views</Text>
-            <Text style={styles.statNumber}>{data.profileViews.toLocaleString()}</Text>
-            <Text style={styles.statDelta}>{delta(data.profileViews, data.prevProfileViews)}</Text>
+            <Text style={styles.statLabel}>Total Profile Views</Text>
+            <View style={styles.statRow}>
+              <Text style={styles.statNumberLarge}>{data.profileViews.toLocaleString()}</Text>
+              <Text style={styles.statDelta}>{delta(data.profileViews, data.prevProfileViews)}</Text>
+            </View>
           </View>
+
+          {/* Per-card breakdown */}
+          {data.cardBreakdown.length > 0 && (
+            <>
+              <Text style={styles.sectionHeader}>BY CARD</Text>
+              {data.cardBreakdown.map((card) => (
+                <CardStat key={card.cardId} card={card} />
+              ))}
+            </>
+          )}
+
           {data.trackingSince && (
             <Text style={styles.trackingNote}>
               Tracking since {formatTrackingSince(data.trackingSince)}
             </Text>
           )}
-        </View>
+        </ScrollView>
       ) : null}
-
     </SafeAreaView>
   );
 }
@@ -67,13 +98,20 @@ const styles = StyleSheet.create({
   heading: { fontSize: 18, fontFamily: FONTS.semiBold, color: COLORS.text, letterSpacing: -0.36 },
   period: { fontSize: 10, fontFamily: FONTS.medium, color: COLORS.textSecondary, letterSpacing: 0.5, textTransform: 'uppercase' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  content: { paddingHorizontal: 18, paddingTop: 8, gap: 12 },
+  content: { paddingHorizontal: 18, paddingTop: 8, paddingBottom: 40, gap: 10 },
   statCard: {
     backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border,
-    borderRadius: 14, padding: 18, gap: 4,
+    borderRadius: 14, padding: 18, gap: 8,
   },
-  statLabel: { fontSize: 10, fontFamily: FONTS.medium, color: COLORS.textSecondary, letterSpacing: 0.6, textTransform: 'uppercase' },
-  statNumber: { fontSize: 40, fontFamily: FONTS.semiBold, color: COLORS.text, letterSpacing: -1.2, lineHeight: 44 },
-  statDelta: { fontSize: 11, fontFamily: FONTS.regular, color: COLORS.accent, marginTop: 2 },
-  trackingNote: { fontSize: 11, fontFamily: FONTS.regular, color: COLORS.textTertiary, textAlign: 'center' },
+  statRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
+  cardName: { fontSize: 10, fontFamily: FONTS.semiBold, letterSpacing: 1 },
+  statLabel: { fontSize: 10, fontFamily: FONTS.medium, color: COLORS.textSecondary, letterSpacing: 0.6, textTransform: 'uppercase', marginBottom: 4 },
+  statNumberLarge: { fontSize: 40, fontFamily: FONTS.semiBold, color: COLORS.text, letterSpacing: -1.2, lineHeight: 44 },
+  statNumber: { fontSize: 28, fontFamily: FONTS.semiBold, color: COLORS.text, letterSpacing: -0.8 },
+  statDelta: { fontSize: 11, fontFamily: FONTS.regular, color: COLORS.accent, marginBottom: 4 },
+  sectionHeader: {
+    fontSize: 11, fontFamily: FONTS.medium, color: COLORS.textSecondary,
+    letterSpacing: 0.8, marginTop: 6,
+  },
+  trackingNote: { fontSize: 11, fontFamily: FONTS.regular, color: COLORS.textTertiary, textAlign: 'center', marginTop: 4 },
 });

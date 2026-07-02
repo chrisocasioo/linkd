@@ -140,7 +140,7 @@ router.get('/:username', async (req, res) => {
       .from(cardFields)
       .where(eq(cardFields.cardId, firstCard.id))
       .orderBy(asc(cardFields.displayOrder));
-    db.insert(cardViews).values({ userId: user.id, linkId: null }).catch(() => {});
+    db.insert(cardViews).values({ userId: user.id, linkId: null, cardId: firstCard.id }).catch(() => {});
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.send(buildCardHtml(user, firstCard, fields, username));
   } catch (err: any) {
