@@ -95,10 +95,10 @@ export function CardPreview({ card, user, analytics, maxHeight, onPreview, refre
 
   return (
     <View style={[styles.card, { height: capH }]}>
-      {/* ── Front face — absoluteFill so the ScrollView gets a bounded height ── */}
+      {/* ── Front face ── */}
       <Animated.View style={[styles.face, StyleSheet.absoluteFill, { transform: [{ rotateY: frontRotate }] }]}>
         <ScrollView
-          style={{ flex: 1 }}
+          style={{ height: capH }}
           showsVerticalScrollIndicator={false}
           bounces={!!refreshControl}
           refreshControl={refreshControl}
