@@ -142,10 +142,6 @@ export function CardPreview({ card, user, analytics }: Props) {
               ))}
           </View>
         </ScrollView>
-        {/* Flip button outside ScrollView so scroll gesture doesn't eat the tap */}
-        <Pressable style={styles.flipBtn} onPress={flip} hitSlop={8}>
-          <Ionicons name="stats-chart-outline" size={14} color="rgba(255,255,255,0.75)" />
-        </Pressable>
       </Animated.View>
 
       {/* ── Back face ── */}
@@ -155,9 +151,6 @@ export function CardPreview({ card, user, analytics }: Props) {
         >
           <View style={[styles.backHeader, { backgroundColor: accent + '22', borderBottomColor: accent + '33' }]}>
             <Text style={[styles.backCardName, { color: accent }]}>{card.name.toUpperCase()}</Text>
-            <Pressable style={styles.flipBtn} onPress={flip} hitSlop={8}>
-              <Ionicons name="card-outline" size={14} color="rgba(255,255,255,0.75)" />
-            </Pressable>
           </View>
 
           <View style={styles.backContent}>
@@ -180,6 +173,15 @@ export function CardPreview({ card, user, analytics }: Props) {
           </View>
         </Animated.View>
       )}
+
+      {/* Flip button on outer card — above both animated faces, never blocked */}
+      <Pressable style={styles.flipBtn} onPress={flip} hitSlop={8}>
+        <Ionicons
+          name={isFlipped ? 'card-outline' : 'stats-chart-outline'}
+          size={14}
+          color="rgba(255,255,255,0.75)"
+        />
+      </Pressable>
     </View>
   );
 }
