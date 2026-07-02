@@ -26,13 +26,18 @@ function parseBusinessCard(rawText: string): Partial<ScanResult> {
   );
   const email = emailMatch ? emailMatch.replace(/\s/g, '') : null;
 
-  // Mark fax lines so they aren't picked up as the phone number
+  // Mark fax lines (and P&F lines) so they don't bleed into other parsing
   const faxSet = new Set<string>();
+  const pfSet = new Set<string>(); // P&F = phone AND fax — still yields a phone number
   for (let i = 0; i < lines.length; i++) {
-    if (/\bfax\b/i.test(lines[i])) {
-      faxSet.add(lines[i]);
+    const l = lines[i];
+    if (/\bp[&\/]f\b/i.test(l)) {
+      faxSet.add(l);
+      pfSet.add(l);
+    } else if (/\bfax\b/i.test(l)) {
+      faxSet.add(l);
       // "Fax:" label on its own line — skip the following number line too
-      if (/^fax:?\s*$/i.test(lines[i].trim()) && i + 1 < lines.length) {
+      if (/^fax:?\s*$/i.test(l.trim()) && i + 1 < lines.length) {
         faxSet.add(lines[i + 1]);
       }
     }
@@ -50,7 +55,7 @@ function parseBusinessCard(rawText: string): Partial<ScanResult> {
   let phoneLine: string | null = null;
   let phone: string | null = null;
   for (const l of lines) {
-    if (faxSet.has(l)) continue;
+    if (faxSet.has(l) && !pfSet.has(l)) continue; // skip pure-fax lines; P&F still yields a phone
     const stripped = stripPhoneLabel(l);
     if (/^[\+]?[\d\s\.\-\(\)x]{7,}$/.test(stripped) && (stripped.match(/\d/g) ?? []).length >= 7) {
       phoneLine = l;
