@@ -26,8 +26,20 @@ function parseBusinessCard(rawText: string): Partial<ScanResult> {
   );
   const email = emailMatch ? emailMatch.replace(/\s/g, '') : null;
 
+  // Mark fax lines so they aren't picked up as the phone number
+  const faxSet = new Set<string>();
+  for (let i = 0; i < lines.length; i++) {
+    if (/\bfax\b/i.test(lines[i])) {
+      faxSet.add(lines[i]);
+      // "Fax:" label on its own line — skip the following number line too
+      if (/^fax:?\s*$/i.test(lines[i].trim()) && i + 1 < lines.length) {
+        faxSet.add(lines[i + 1]);
+      }
+    }
+  }
+
   const phoneMatch = lines.find(
-    (l) => /^[\+]?[\d\s\.\-\(\)]{7,}$/.test(l.trim()) && (l.match(/\d/g) ?? []).length >= 7
+    (l) => !faxSet.has(l) && /^[\+]?[\d\s\.\-\(\)]{7,}$/.test(l.trim()) && (l.match(/\d/g) ?? []).length >= 7
   );
 
   // Extract all URLs from lines — handles www., http://, bare domains
@@ -46,7 +58,7 @@ function parseBusinessCard(rawText: string): Partial<ScanResult> {
     }
   }
 
-  const used = new Set([emailMatch, phoneMatch, ...websiteLineSet].filter(Boolean) as string[]);
+  const used = new Set([emailMatch, phoneMatch, ...websiteLineSet, ...faxSet].filter(Boolean) as string[]);
   const remaining = lines.filter((l) => !used.has(l));
 
   const nameLine = remaining.find((l) => {
