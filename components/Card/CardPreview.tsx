@@ -115,14 +115,16 @@ export function CardPreview({ card, user, analytics, maxHeight, onPreview }: Pro
           <Pressable style={styles.identity} onPress={onPreview}>
             <Text style={styles.name}>{user.displayName ?? user.username ?? ''}</Text>
             {(() => {
-              const title    = card.fields.find(f => f.type === 'title')?.value;
-              const company  = card.fields.find(f => f.type === 'company')?.value;
-              const headline = card.fields.find(f => f.type === 'headline')?.value;
+              const title      = card.fields.find(f => f.type === 'title')?.value;
+              const department = card.fields.find(f => f.type === 'department')?.value;
+              const company    = card.fields.find(f => f.type === 'company')?.value;
+              const headline   = card.fields.find(f => f.type === 'headline')?.value;
               return (
                 <>
-                  {title    ? <Text style={styles.jobTitle}>{title}</Text>    : null}
-                  {company  ? <Text style={styles.company}>{company}</Text>   : null}
-                  {headline ? <Text style={styles.headline}>{headline}</Text> : null}
+                  {title      ? <Text style={styles.jobTitle}>{title}</Text>      : null}
+                  {department ? <Text style={styles.department}>{department}</Text> : null}
+                  {company    ? <Text style={styles.company}>{company}</Text>      : null}
+                  {headline   ? <Text style={styles.headline}>{headline}</Text>    : null}
                 </>
               );
             })()}
@@ -270,6 +272,12 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.semiBold,
     color: 'rgba(255,255,255,0.85)',
     marginTop: 3,
+  },
+  department: {
+    fontSize: 13,
+    fontFamily: FONTS.regular,
+    color: 'rgba(255,255,255,0.6)',
+    marginTop: 2,
   },
   company: {
     fontSize: 14,
