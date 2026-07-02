@@ -94,11 +94,11 @@ export function CardPreview({ card, user, analytics, maxHeight, onPreview, refre
   const backRotate  = flipAnim.interpolate({ inputRange: [0, 1], outputRange: ['180deg', '360deg'] });
 
   return (
-    <View style={styles.card}>
+    <View style={[styles.card, { height: capH }]}>
       {/* ── Front face ── */}
-      <Animated.View style={[styles.face, { transform: [{ rotateY: frontRotate }] }]}>
+      <Animated.View style={[styles.face, { flex: 1, transform: [{ rotateY: frontRotate }] }]}>
         <ScrollView
-          style={{ maxHeight: capH }}
+          style={{ flex: 1 }}
           showsVerticalScrollIndicator={false}
           bounces={!!refreshControl}
           refreshControl={refreshControl}
@@ -160,10 +160,9 @@ export function CardPreview({ card, user, analytics, maxHeight, onPreview, refre
       </Animated.View>
 
       {/* ── Back face ── */}
-      {maxHeight && (
-        <Animated.View
-          style={[styles.face, styles.backFace, StyleSheet.absoluteFill, { transform: [{ rotateY: backRotate }] }]}
-        >
+      <Animated.View
+        style={[styles.face, styles.backFace, StyleSheet.absoluteFill, { transform: [{ rotateY: backRotate }] }]}
+      >
           <View style={[styles.backHeader, { backgroundColor: accent + '22', borderBottomColor: accent + '33' }]}>
             <Text style={[styles.backCardName, { color: accent }]}>{card.name.toUpperCase()}</Text>
           </View>
@@ -186,8 +185,7 @@ export function CardPreview({ card, user, analytics, maxHeight, onPreview, refre
               <Text style={styles.backEmpty}>No analytics data yet</Text>
             )}
           </View>
-        </Animated.View>
-      )}
+      </Animated.View>
 
       {/* Flip button — top-right */}
       <Pressable style={styles.flipBtn} onPress={flip} hitSlop={8}>
