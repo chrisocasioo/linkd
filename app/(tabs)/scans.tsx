@@ -38,9 +38,26 @@ function parseBusinessCard(rawText: string): Partial<ScanResult> {
     }
   }
 
-  const phoneMatch = lines.find(
-    (l) => !faxSet.has(l) && /^[\+]?[\d\s\.\-\(\)]{7,}$/.test(l.trim()) && (l.match(/\d/g) ?? []).length >= 7
-  );
+  // Strip common phone label prefixes ("Phone:", "Tel:", "Bus.", "Cel:", etc.)
+  // and suffixes ("- Cell", "- Mobile", etc.) then validate what remains
+  const PHONE_PREFIX = /^(?:phone|tel(?:ephone)?|bus(?:iness)?|cel(?:l)?|mob(?:ile)?|ph|dir(?:ect)?|off(?:ice)?|work|home|main|direct|t|p|c|m)\s*[:\.\-]?\s*/i;
+  const PHONE_SUFFIX = /\s*[-–—|]\s*(?:cell|mobile|office|work|home|direct|bus(?:iness)?|main|ph(?:one)?)\s*$/i;
+
+  function stripPhoneLabel(line: string): string {
+    return line.replace(PHONE_PREFIX, '').replace(PHONE_SUFFIX, '').trim();
+  }
+
+  let phoneLine: string | null = null;
+  let phone: string | null = null;
+  for (const l of lines) {
+    if (faxSet.has(l)) continue;
+    const stripped = stripPhoneLabel(l);
+    if (/^[\+]?[\d\s\.\-\(\)x]{7,}$/.test(stripped) && (stripped.match(/\d/g) ?? []).length >= 7) {
+      phoneLine = l;
+      phone = stripped;
+      break;
+    }
+  }
 
   // Extract all URLs from lines — handles www., http://, bare domains
   const URL_RE = /(?:https?:\/\/[^\s,;]+|www\.[^\s,;]+|[a-zA-Z0-9](?:[a-zA-Z0-9\-]*[a-zA-Z0-9])?\.(?:com|io|co|net|org|app|me|dev|biz|info)[^\s,;]*)/gi;
@@ -58,7 +75,7 @@ function parseBusinessCard(rawText: string): Partial<ScanResult> {
     }
   }
 
-  const used = new Set([emailMatch, phoneMatch, ...websiteLineSet, ...faxSet].filter(Boolean) as string[]);
+  const used = new Set([emailMatch, phoneLine, ...websiteLineSet, ...faxSet].filter(Boolean) as string[]);
   const remaining = lines.filter((l) => !used.has(l));
 
   const nameLine = remaining.find((l) => {
@@ -103,7 +120,7 @@ function parseBusinessCard(rawText: string): Partial<ScanResult> {
     firstName,
     lastName,
     email,
-    phone: phoneMatch ?? null,
+    phone: phone ?? null,
     company: companyLine ?? null,
     jobTitle: jobTitleLine ?? null,
     website: allWebsites[0] ?? null,
