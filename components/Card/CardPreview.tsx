@@ -175,7 +175,7 @@ export function CardPreview({ card, user, analytics, maxHeight, onPreview, refre
               {analytics ? analytics.views.toLocaleString() : '—'}
             </Text>
             <Text style={styles.backViewsLabel}>card views</Text>
-            {analytics && (
+            {analytics && analytics.prevViews > 0 && (
               <View style={[styles.backDeltaPill, { backgroundColor: accent + '22' }]}>
                 <Text style={[styles.backDelta, { color: accent }]}>
                   {deltaText(analytics.views, analytics.prevViews)}
