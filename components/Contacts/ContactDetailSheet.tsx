@@ -52,6 +52,7 @@ export function ContactDetailSheet({ visible, contact, onClose, onDelete }: Prop
   const rows: FieldRow[] = [
     contact.email   ? { icon: 'mail-outline',      label: 'Email',   value: contact.email,   url: `mailto:${contact.email}` }   : null,
     contact.phone   ? { icon: 'call-outline',      label: 'Phone',   value: formatPhone(contact.phone),   url: `tel:${contact.phone}` }   : null,
+    contact.fax     ? { icon: 'print-outline',     label: 'Fax',     value: formatPhone(contact.fax),     url: `tel:${contact.fax}` }     : null,
     contact.website ? { icon: 'globe-outline',     label: 'Website', value: contact.website, url: contact.website.startsWith('http') ? contact.website : `https://${contact.website}` } : null,
     contact.company ? { icon: 'business-outline',  label: 'Company', value: contact.company, url: '' } : null,
     contact.jobTitle ? { icon: 'briefcase-outline', label: 'Title',  value: contact.jobTitle, url: '' } : null,

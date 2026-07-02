@@ -98,6 +98,9 @@ export async function runMigrations() {
     ALTER TABLE contacts ADD COLUMN IF NOT EXISTS address TEXT;
   `);
   await db.execute(sql`
+    ALTER TABLE contacts ADD COLUMN IF NOT EXISTS fax TEXT;
+  `);
+  await db.execute(sql`
     CREATE TABLE IF NOT EXISTS field_clicks (
       id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
       field_id UUID NOT NULL REFERENCES card_fields(id) ON DELETE CASCADE,

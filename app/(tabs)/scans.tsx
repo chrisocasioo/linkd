@@ -64,6 +64,17 @@ function parseBusinessCard(rawText: string): Partial<ScanResult> {
     }
   }
 
+  // Extract fax number from faxSet lines
+  const FAX_LABEL = /^(?:fax(?:simile)?|f|p[&\/]f)\s*[:\.\-]?\s*/i;
+  let fax: string | null = null;
+  for (const l of [...faxSet]) {
+    const stripped = l.replace(FAX_LABEL, '').replace(PHONE_SUFFIX, '').trim();
+    if (/^[\+]?[\d\s\.\-\(\)x]{7,}$/.test(stripped) && (stripped.match(/\d/g) ?? []).length >= 7) {
+      fax = stripped;
+      break;
+    }
+  }
+
   // Extract all URLs from lines — handles www., http://, bare domains
   const URL_RE = /(?:https?:\/\/[^\s,;]+|www\.[^\s,;]+|[a-zA-Z0-9](?:[a-zA-Z0-9\-]*[a-zA-Z0-9])?\.(?:com|io|co|net|org|app|me|dev|biz|info)[^\s,;]*)/gi;
   const allWebsites: string[] = [];
@@ -126,6 +137,7 @@ function parseBusinessCard(rawText: string): Partial<ScanResult> {
     lastName,
     email,
     phone: phone ?? null,
+    fax: fax ?? null,
     company: companyLine ?? null,
     jobTitle: jobTitleLine ?? null,
     website: allWebsites[0] ?? null,

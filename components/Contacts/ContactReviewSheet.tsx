@@ -19,13 +19,14 @@ import { COLORS, FONTS } from '../../constants/colors';
 
 const { height: SCREEN_H } = Dimensions.get('window');
 
-type FieldKey = 'firstName' | 'lastName' | 'email' | 'phone' | 'company' | 'jobTitle' | 'website' | 'address';
+type FieldKey = 'firstName' | 'lastName' | 'email' | 'phone' | 'fax' | 'company' | 'jobTitle' | 'website' | 'address';
 
 const FIELD_OPTS: Array<{ key: FieldKey; label: string; icon: keyof typeof Ionicons.glyphMap }> = [
   { key: 'firstName', label: 'First Name',  icon: 'person-outline' },
   { key: 'lastName',  label: 'Last Name',   icon: 'person-outline' },
   { key: 'email',     label: 'Email',       icon: 'mail-outline' },
   { key: 'phone',     label: 'Phone',       icon: 'call-outline' },
+  { key: 'fax',       label: 'Fax',         icon: 'print-outline' },
   { key: 'company',   label: 'Company',     icon: 'business-outline' },
   { key: 'jobTitle',  label: 'Job Title',   icon: 'briefcase-outline' },
   { key: 'website',   label: 'Website',     icon: 'globe-outline' },
@@ -46,6 +47,7 @@ function toItems(initial: Partial<ScanResult> | null): Item[] {
   add('lastName',  initial?.lastName);
   add('email',     initial?.email);
   add('phone',     initial?.phone);
+  add('fax',       initial?.fax);
   add('company',   initial?.company);
   add('jobTitle',  initial?.jobTitle);
   // Add all detected websites as separate rows (falls back to single website field)

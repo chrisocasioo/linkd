@@ -96,6 +96,7 @@ export const contacts = pgTable('contacts', {
   company: text('company'),
   jobTitle: text('job_title'),
   website: text('website'),
+  fax: text('fax'),
   address: text('address'),
   notes: text('notes'),
   createdAt: timestamp('created_at').defaultNow(),

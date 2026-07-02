@@ -27,6 +27,7 @@ export interface ContactMeta {
   lastName?: string;
   email?: string;
   phone?: string;
+  fax?: string;
   company?: string;
   jobTitle?: string;
   website?: string;
@@ -39,6 +40,7 @@ export interface Contact {
   lastName: string | null;
   email: string | null;
   phone: string | null;
+  fax: string | null;
   company: string | null;
   jobTitle: string | null;
   website: string | null;
@@ -52,6 +54,7 @@ export interface ScanResult {
   lastName: string | null;
   email: string | null;
   phone: string | null;
+  fax: string | null;
   company: string | null;
   jobTitle: string | null;
   website: string | null;
