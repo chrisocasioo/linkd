@@ -12,63 +12,147 @@ type FieldRow = typeof cardFields.$inferSelect;
 const esc = (s: string) =>
   s.replace(/[<>&"]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c] ?? c));
 
-const FIELD_ICONS: Record<string, string> = {
-  email: '✉', phone: '📞', website: '🌐',
-  instagram: '📸', twitter: '𝕏', linkedin: '💼',
-  tiktok: '🎵', youtube: '▶', custom: '•',
+const ICON_NAME: Record<string, string> = {
+  email: 'mail', phone: 'call', website: 'globe-outline',
+  instagram: 'logo-instagram', twitter: 'logo-twitter', linkedin: 'logo-linkedin',
+  tiktok: 'logo-tiktok', youtube: 'logo-youtube', facebook: 'logo-facebook',
+  whatsapp: 'logo-whatsapp', spotify: 'musical-notes-outline', custom: 'ellipsis-horizontal',
 };
 
-function fieldAction(field: FieldRow): string {
-  const v = esc(field.value);
-  switch (field.type) {
-    case 'email':    return `<a href="mailto:${v}" class="field-row">${FIELD_ICONS.email} ${v}</a>`;
-    case 'phone':    return `<a href="tel:${v}" class="field-row">${FIELD_ICONS.phone} ${v}</a>`;
-    case 'instagram': return `<a href="https://instagram.com/${v.replace('@','')}" class="field-row">${FIELD_ICONS.instagram} ${v}</a>`;
-    case 'twitter':  return `<a href="https://twitter.com/${v.replace('@','')}" class="field-row">${FIELD_ICONS.twitter} ${v}</a>`;
-    case 'linkedin': return `<a href="https://linkedin.com/in/${v.replace('@','')}" class="field-row">${FIELD_ICONS.linkedin} ${v}</a>`;
-    case 'tiktok':   return `<a href="https://tiktok.com/@${v.replace('@','')}" class="field-row">${FIELD_ICONS.tiktok} ${v}</a>`;
-    case 'youtube':  return `<a href="https://youtube.com/@${v.replace('@','')}" class="field-row">${FIELD_ICONS.youtube} ${v}</a>`;
-    default:         return `<a href="${v.startsWith('http') ? v : 'https://'+v}" class="field-row">${FIELD_ICONS[field.type] ?? FIELD_ICONS.custom} ${v}</a>`;
+function fieldUrl(type: string, value: string): string {
+  const v = value.trim();
+  switch (type) {
+    case 'email':     return `mailto:${v}`;
+    case 'phone':     return `tel:${v}`;
+    case 'instagram': return `https://instagram.com/${v.replace('@', '')}`;
+    case 'twitter':   return `https://twitter.com/${v.replace('@', '')}`;
+    case 'linkedin':  return `https://linkedin.com/in/${v.replace('@', '')}`;
+    case 'tiktok':    return `https://tiktok.com/@${v.replace('@', '')}`;
+    case 'youtube':   return `https://youtube.com/@${v.replace('@', '')}`;
+    case 'facebook':  return `https://facebook.com/${v.replace('@', '')}`;
+    case 'whatsapp':  return `https://wa.me/${v.replace(/\D/g, '')}`;
+    case 'spotify':   return `https://open.spotify.com/user/${v.replace('@', '')}`;
+    default:          return v.startsWith('http') ? v : `https://${v}`;
   }
 }
 
 function buildCardHtml(user: UserRow, card: CardRow, fields: FieldRow[], username: string): string {
   const name = esc(user.displayName ?? username);
-  const fieldRows = fields.map(fieldAction).join('\n');
+  const accent = card.accentColor ?? '#C9A84C';
+  const initial = esc((user.displayName ?? username ?? '?')[0].toUpperCase());
+
+  const titleVal   = fields.find(f => f.type === 'title')?.value;
+  const companyVal = fields.find(f => f.type === 'company')?.value;
+  const headlineVal = fields.find(f => f.type === 'headline')?.value;
+  const linkFields = fields.filter(f => !['title', 'company', 'department', 'headline'].includes(f.type));
+
+  const bannerHtml = user.profilePhoto
+    ? `<img class="banner-img" src="${esc(user.profilePhoto)}" alt="${name}" />`
+    : `<div class="banner-placeholder" style="background:${accent}22"><span class="banner-initial" style="color:${accent}">${initial}</span></div>`;
+
+  const fieldRowsHtml = linkFields.map(f => {
+    const url  = fieldUrl(f.type, f.value);
+    const icon = ICON_NAME[f.type] ?? 'ellipsis-horizontal';
+    const display = esc(f.label ?? f.value);
+    return `<a href="${esc(url)}" class="field-row">
+      <span class="field-icon" style="background:${accent}"><ion-icon name="${icon}"></ion-icon></span>
+      <span class="field-value">${display}</span>
+    </a>`;
+  }).join('\n');
 
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
   <title>${name} | Linkd</title>
   <meta property="og:title" content="${name}" />
   ${user.profilePhoto ? `<meta property="og:image" content="${esc(user.profilePhoto)}" />` : ''}
+  <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+  <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
   <style>
-    *{box-sizing:border-box;margin:0;padding:0}
-    body{background:#0C0C0E;color:#fff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:32px 20px 80px}
-    .card{width:100%;max-width:420px;background:#1A1A1A;border-radius:24px;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,0.5)}
-    .banner{position:relative;width:100%;height:200px;background:#222}
-    .banner img{width:100%;height:100%;object-fit:cover}
-    .card-label{position:absolute;top:12px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.6);color:#fff;font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:5px 12px;border-radius:20px;white-space:nowrap}
-    .info{padding:20px 20px 8px}
-    .name{font-size:22px;font-weight:700;margin-bottom:4px}
-    .field-row{display:flex;align-items:center;gap:12px;padding:12px 20px;color:#fff;text-decoration:none;font-size:15px;border-top:1px solid rgba(255,255,255,0.06)}
-    .field-row:hover{background:rgba(255,255,255,0.04)}
-    .footer{position:fixed;bottom:0;left:0;right:0;padding:12px;text-align:center;font-size:12px;opacity:.4}
-    .footer a{color:inherit;text-decoration:none}
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #0C0C0E;
+      color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 32px 20px 80px;
+    }
+    .card {
+      width: 100%;
+      max-width: 420px;
+      background: #161616;
+      border-radius: 22px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    .banner {
+      position: relative;
+      width: 100%;
+      height: 190px;
+    }
+    .banner-img {
+      width: 100%; height: 100%;
+      object-fit: cover; display: block;
+    }
+    .banner-placeholder {
+      width: 100%; height: 100%;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .banner-initial {
+      font-size: 64px; font-weight: 600; line-height: 1;
+    }
+    .card-label {
+      position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+      background: rgba(0,0,0,0.55); color: #fff;
+      font-size: 10px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase;
+      padding: 5px 12px; border-radius: 20px; white-space: nowrap;
+    }
+    .identity { padding: 16px 18px 8px; }
+    .name { font-size: 20px; font-weight: 600; color: #fff; letter-spacing: -0.3px; }
+    .job-title { font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.85); margin-top: 3px; }
+    .company { font-size: 14px; font-style: italic; color: rgba(255,255,255,0.65); margin-top: 1px; }
+    .headline { font-size: 12px; color: rgba(255,255,255,0.5); margin-top: 5px; line-height: 16px; }
+    .field-row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 11px 18px; color: #fff; text-decoration: none;
+      border-top: 1px solid rgba(255,255,255,0.06);
+      transition: background 0.15s;
+    }
+    .field-row:hover { background: rgba(255,255,255,0.04); }
+    .field-icon {
+      width: 32px; height: 32px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .field-icon ion-icon { font-size: 16px; color: #fff; }
+    .field-value { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .footer {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      padding: 12px; text-align: center; font-size: 12px; color: rgba(255,255,255,0.4);
+    }
+    .footer a { color: inherit; text-decoration: none; }
   </style>
 </head>
 <body>
   <div class="card">
     <div class="banner">
-      ${user.profilePhoto ? `<img src="${esc(user.profilePhoto)}" alt="${name}" />` : ''}
+      ${bannerHtml}
       <div class="card-label">${esc(card.name)}</div>
     </div>
-    <div class="info"><div class="name">${name}</div></div>
-    <div class="fields">${fieldRows}</div>
+    <div class="identity">
+      <div class="name">${name}</div>
+      ${titleVal   ? `<div class="job-title">${esc(titleVal)}</div>`   : ''}
+      ${companyVal ? `<div class="company">${esc(companyVal)}</div>`   : ''}
+      ${headlineVal ? `<div class="headline">${esc(headlineVal)}</div>` : ''}
+    </div>
+    ${fieldRowsHtml}
   </div>
-  ${!user.isPro ? '<div class="footer"><a href="https://linkd.tattoo">Get Linkd</a></div>' : ''}
+  ${!user.isPro ? '<div class="footer"><a href="https://linkd-production-fdce.up.railway.app">Get Linkd</a></div>' : ''}
 </body>
 </html>`;
 }
