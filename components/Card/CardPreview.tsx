@@ -167,7 +167,7 @@ export function CardPreview({ card, user, analytics, maxHeight, onPreview, refre
           <Text style={[styles.backCardName, { color: accent }]}>{card.name.toUpperCase()}</Text>
         </View>
 
-        <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
+        <ScrollView style={styles.backScroll} showsVerticalScrollIndicator={false} bounces={false}>
           {/* Views summary */}
           <View style={styles.backViewsSection}>
             <Text style={styles.backPeriod}>LAST 30 DAYS</Text>
@@ -365,6 +365,9 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontFamily: FONTS.semiBold,
     letterSpacing: 1.2,
+  },
+  backScroll: {
+    flex: 1,
   },
   backViewsSection: {
     alignItems: 'center',
