@@ -3,6 +3,7 @@ import React, { useRef, useState } from 'react';
 import { Animated, Dimensions, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Card, CardAnalytics, CardField, User } from '../../lib/api';
 import { FONTS } from '../../constants/colors';
+import { formatPhone } from '../../lib/format';
 
 const CARD_FONTS: Record<string, { regular: string; medium: string; semiBold: string }> = {
   'dm-sans':       { regular: 'DMSans-Regular',          medium: 'DMSans-Medium',          semiBold: 'DMSans-SemiBold' },
@@ -55,7 +56,9 @@ function fieldUrl(field: CardField): string {
 }
 
 function fieldDisplayValue(field: CardField): string {
-  return field.label ?? field.value;
+  if (field.label) return field.label;
+  if (field.type === 'phone') return formatPhone(field.value);
+  return field.value;
 }
 
 function deltaText(views: number, prevViews: number): string {
