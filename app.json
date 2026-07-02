@@ -22,7 +22,8 @@
         "NSPhotoLibraryUsageDescription": "Linkd needs access to your photos to set your profile picture.",
         "NSPhotoLibraryAddUsageDescription": "Linkd saves content to your photo library.",
         "NSContactsUsageDescription": "Linkd adds card details to your address book.",
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSLocationWhenInUseUsageDescription": "This app does not use your location."
       }
     },
     "android": {
