@@ -8,6 +8,7 @@ import {
   FlatList,
   Pressable,
   RefreshControl,
+  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -26,8 +27,6 @@ const BASE = 'linkd-production-fdce.up.railway.app';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 const SIDE_INSET = 24;
-const CARD_GAP = 12;
-const CARD_WIDTH = SCREEN_W - SIDE_INSET * 2;
 
 // Fixed UI heights (top bar + dots + action row)
 const FIXED_UI_H = 60 + 34 + 68;
@@ -115,8 +114,12 @@ export default function CardScreen() {
         </View>
       </View>
 
-      {/* Card carousel */}
-      <View style={{ flex: 1 }}>
+      {/* Card carousel — vertical ScrollView gives pull-to-refresh; horizontal FlatList gives page-snap */}
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ flex: 1 }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.accent} />}
+      >
         {cards.length === 0 ? (
           <View style={styles.emptyState}>
             <Text style={styles.emptyTitle}>No cards yet</Text>
@@ -129,14 +132,11 @@ export default function CardScreen() {
             keyExtractor={(c) => c.id}
             horizontal
             showsHorizontalScrollIndicator={false}
-            snapToInterval={CARD_WIDTH + CARD_GAP}
-            snapToAlignment="start"
+            pagingEnabled
             decelerationRate="fast"
             contentContainerStyle={styles.carousel}
-            ItemSeparatorComponent={() => <View style={{ width: CARD_GAP }} />}
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.accent} />}
             onMomentumScrollEnd={(e) => {
-              const idx = Math.round(e.nativeEvent.contentOffset.x / (CARD_WIDTH + CARD_GAP));
+              const idx = Math.round(e.nativeEvent.contentOffset.x / SCREEN_W);
               setActiveIndex(Math.min(idx, cards.length - 1));
             }}
             renderItem={({ item }) => {
@@ -145,7 +145,7 @@ export default function CardScreen() {
                 ? `https://${BASE}/${username}/${item.slug}`
                 : `https://${BASE}/${username}`;
               return (
-                <View style={{ width: CARD_WIDTH }}>
+                <View style={{ width: SCREEN_W, paddingHorizontal: SIDE_INSET }}>
                   <CardPreview
                     card={item}
                     user={user!}
@@ -158,7 +158,7 @@ export default function CardScreen() {
             }}
           />
         )}
-      </View>
+      </ScrollView>
 
       {/* Dots */}
       <View style={styles.dotsRow}>
@@ -218,7 +218,7 @@ const styles = StyleSheet.create({
     width: 36, height: 36, alignItems: 'center', justifyContent: 'center',
     backgroundColor: COLORS.surface, borderRadius: 10, borderWidth: 1, borderColor: COLORS.border,
   },
-  carousel: { paddingHorizontal: SIDE_INSET, paddingBottom: 8, alignItems: 'flex-start' },
+  carousel: { alignItems: 'flex-start' },
   emptyState: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8 },
   emptyTitle: { fontSize: 18, fontFamily: FONTS.semiBold, color: COLORS.text },
   emptySub: { fontSize: 13, fontFamily: FONTS.regular, color: COLORS.textSecondary },
