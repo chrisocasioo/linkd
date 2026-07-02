@@ -103,9 +103,6 @@ export function CardPreview({ card, user, analytics }: Props) {
             <View style={styles.labelPill}>
               <Text style={styles.labelText}>{card.name.toUpperCase()}</Text>
             </View>
-            <Pressable style={styles.flipBtn} onPress={flip} hitSlop={8}>
-              <Ionicons name="stats-chart-outline" size={14} color="rgba(255,255,255,0.75)" />
-            </Pressable>
           </View>
 
           {/* Identity */}
@@ -145,6 +142,10 @@ export function CardPreview({ card, user, analytics }: Props) {
               ))}
           </View>
         </ScrollView>
+        {/* Flip button outside ScrollView so scroll gesture doesn't eat the tap */}
+        <Pressable style={styles.flipBtn} onPress={flip} hitSlop={8}>
+          <Ionicons name="stats-chart-outline" size={14} color="rgba(255,255,255,0.75)" />
+        </Pressable>
       </Animated.View>
 
       {/* ── Back face ── */}
