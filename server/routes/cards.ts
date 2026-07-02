@@ -78,10 +78,11 @@ router.patch('/:id', async (req, res) => {
   try {
     const userId = (req as any).userId as string;
     const { id } = req.params;
-    const { name, accentColor } = req.body as { name?: string; accentColor?: string };
+    const { name, accentColor, font } = req.body as { name?: string; accentColor?: string; font?: string };
     const update: Partial<typeof cards.$inferInsert> = {};
     if (name !== undefined) update.name = name;
     if (accentColor !== undefined) update.accentColor = accentColor;
+    if (font !== undefined) update.font = font;
     const [updated] = await db
       .update(cards)
       .set(update)

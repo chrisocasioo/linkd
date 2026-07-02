@@ -22,6 +22,13 @@ import { COLORS, FONTS } from '../constants/colors';
 
 const ACCENT_COLORS = ['#C9A84C', '#7C3AED', '#22C55E', '#F43F5E', '#0EA5E9', '#EC4899'];
 
+const FONT_OPTIONS = [
+  { id: 'dm-sans',       label: 'Modern',   preview: 'Aa', family: 'DMSans-SemiBold' },
+  { id: 'playfair',      label: 'Elegant',  preview: 'Aa', family: 'PlayfairDisplay-SemiBold' },
+  { id: 'space-grotesk', label: 'Techy',    preview: 'Aa', family: 'SpaceGrotesk-SemiBold' },
+  { id: 'nunito',        label: 'Friendly', preview: 'Aa', family: 'Nunito-SemiBold' },
+];
+
 const INFO_TYPES = new Set(['title', 'company', 'department', 'headline']);
 
 const MOST_POPULAR: Array<{ type: string; label: string; icon: keyof typeof Ionicons.glyphMap }> = [
@@ -71,6 +78,7 @@ export default function EditCardScreen() {
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [cardName, setCardName] = useState('');
   const [accent, setAccent] = useState('');
+  const [cardFont, setCardFont] = useState('dm-sans');
 
   const [firstName, setFirstName] = useState('');
   const [middleName, setMiddleName] = useState('');
@@ -98,6 +106,7 @@ export default function EditCardScreen() {
         setCard(found);
         setCardName(found.name);
         setAccent(found.accentColor);
+        setCardFont(found.font ?? 'dm-sans');
         const nameParts = (u.displayName ?? '').split(' ');
         setFirstName(nameParts[0] ?? '');
         if (nameParts.length === 2) { setLastName(nameParts[1]); }
@@ -140,7 +149,7 @@ export default function EditCardScreen() {
       const displayName = [firstName.trim(), middleName.trim(), lastName.trim()].filter(Boolean).join(' ');
       if (displayName) await api.updateMe({ displayName });
 
-      await api.updateCard(cardId, { name: cardName.trim() || 'Card', accentColor: accent });
+      await api.updateCard(cardId, { name: cardName.trim() || 'Card', accentColor: accent, font: cardFont });
 
       const infoFieldDefs = [
         { type: 'title',      value: infoTitle  },
@@ -347,6 +356,20 @@ export default function EditCardScreen() {
                     />
                   </View>
                 )}
+
+                <Text style={[styles.label, { marginTop: 20 }]}>Font</Text>
+                <View style={styles.fontRow}>
+                  {FONT_OPTIONS.map((f) => (
+                    <Pressable
+                      key={f.id}
+                      style={[styles.fontOption, cardFont === f.id && { borderColor: accent, backgroundColor: accent + '18' }]}
+                      onPress={() => setCardFont(f.id)}
+                    >
+                      <Text style={[styles.fontPreview, { fontFamily: f.family }]}>{f.preview}</Text>
+                      <Text style={[styles.fontLabel, cardFont === f.id && { color: accent }]}>{f.label}</Text>
+                    </Pressable>
+                  ))}
+                </View>
               </View>
             </>
           )}
@@ -606,6 +629,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12, fontSize: 15, fontFamily: FONTS.regular, color: COLORS.text,
     letterSpacing: 1,
   },
+
+  fontRow: { flexDirection: 'row', gap: 8, marginTop: 4 },
+  fontOption: {
+    flex: 1, alignItems: 'center', paddingVertical: 12,
+    backgroundColor: COLORS.surface2, borderRadius: 12,
+    borderWidth: 1.5, borderColor: COLORS.border,
+    gap: 4,
+  },
+  fontPreview: { fontSize: 20, color: COLORS.text },
+  fontLabel: { fontSize: 10, fontFamily: FONTS.medium, color: COLORS.textSecondary, letterSpacing: 0.4 },
 
   sectionHeader: {
     fontSize: 11, fontFamily: FONTS.medium, color: COLORS.textSecondary,

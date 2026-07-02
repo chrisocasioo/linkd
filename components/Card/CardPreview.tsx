@@ -4,6 +4,13 @@ import { Animated, Dimensions, Image, Pressable, ScrollView, StyleSheet, Text, V
 import { Card, CardAnalytics, CardField, User } from '../../lib/api';
 import { FONTS } from '../../constants/colors';
 
+const CARD_FONTS: Record<string, { regular: string; medium: string; semiBold: string }> = {
+  'dm-sans':       { regular: 'DMSans-Regular',          medium: 'DMSans-Medium',          semiBold: 'DMSans-SemiBold' },
+  'playfair':      { regular: 'PlayfairDisplay-Regular',  medium: 'PlayfairDisplay-Medium',  semiBold: 'PlayfairDisplay-SemiBold' },
+  'space-grotesk': { regular: 'SpaceGrotesk-Regular',     medium: 'SpaceGrotesk-Medium',     semiBold: 'SpaceGrotesk-SemiBold' },
+  'nunito':        { regular: 'Nunito-Regular',           medium: 'Nunito-Medium',           semiBold: 'Nunito-SemiBold' },
+};
+
 const { height: SCREEN_H } = Dimensions.get('window');
 const MAX_CARD_H = SCREEN_H - 350; // fallback only — cards.tsx passes an accurate maxHeight
 
@@ -67,6 +74,7 @@ interface Props {
 
 export function CardPreview({ card, user, analytics, maxHeight, onPreview }: Props) {
   const accent = card.accentColor;
+  const fonts = CARD_FONTS[card.font ?? 'dm-sans'] ?? CARD_FONTS['dm-sans'];
   const initial = (user.displayName ?? user.username ?? '?')[0].toUpperCase();
   const [cardHeight, setCardHeight] = useState<number | undefined>();
   const effectiveHeight = maxHeight ?? cardHeight;
@@ -113,7 +121,7 @@ export function CardPreview({ card, user, analytics, maxHeight, onPreview }: Pro
 
           {/* Identity — tapping opens the public card */}
           <Pressable style={styles.identity} onPress={onPreview}>
-            <Text style={styles.name}>{user.displayName ?? user.username ?? ''}</Text>
+            <Text style={[styles.name, { fontFamily: fonts.semiBold }]}>{user.displayName ?? user.username ?? ''}</Text>
             {(() => {
               const title      = card.fields.find(f => f.type === 'title')?.value;
               const department = card.fields.find(f => f.type === 'department')?.value;
@@ -121,10 +129,10 @@ export function CardPreview({ card, user, analytics, maxHeight, onPreview }: Pro
               const headline   = card.fields.find(f => f.type === 'headline')?.value;
               return (
                 <>
-                  {title      ? <Text style={styles.jobTitle}>{title}</Text>      : null}
-                  {department ? <Text style={styles.department}>{department}</Text> : null}
-                  {company    ? <Text style={styles.company}>{company}</Text>      : null}
-                  {headline   ? <Text style={styles.headline}>{headline}</Text>    : null}
+                  {title      ? <Text style={[styles.jobTitle,   { fontFamily: fonts.semiBold }]}>{title}</Text>      : null}
+                  {department ? <Text style={[styles.department, { fontFamily: fonts.regular  }]}>{department}</Text> : null}
+                  {company    ? <Text style={[styles.company,    { fontFamily: fonts.regular  }]}>{company}</Text>    : null}
+                  {headline   ? <Text style={[styles.headline,   { fontFamily: fonts.regular  }]}>{headline}</Text>   : null}
                 </>
               );
             })()}
@@ -143,7 +151,7 @@ export function CardPreview({ card, user, analytics, maxHeight, onPreview }: Pro
                   <View style={[styles.fieldIcon, { backgroundColor: accent }]}>
                     <Ionicons name={FIELD_ICONS[field.type] ?? FIELD_ICONS.custom} size={16} color="#fff" />
                   </View>
-                  <Text style={styles.fieldValue} numberOfLines={1}>
+                  <Text style={[styles.fieldValue, { fontFamily: fonts.regular }]} numberOfLines={1}>
                     {fieldDisplayValue(field)}
                   </Text>
                 </Pressable>

@@ -116,6 +116,7 @@ export interface Card {
   userId: string;
   name: string;
   accentColor: string;
+  font: string | null;
   slug: string | null;
   displayOrder: number;
   createdAt: string;
@@ -204,7 +205,7 @@ export function useApi() {
     getMyCards: () => withToken((t) => request<Card[]>('/api/cards', t)),
     addCard: (body: { name: string; accentColor: string }) =>
       withToken((t) => request<Card>('/api/cards', t, { method: 'POST', body: JSON.stringify(body) })),
-    updateCard: (id: string, body: Partial<{ name: string; accentColor: string }>) =>
+    updateCard: (id: string, body: Partial<{ name: string; accentColor: string; font: string }>) =>
       withToken((t) => request<Card>(`/api/cards/${id}`, t, { method: 'PATCH', body: JSON.stringify(body) })),
     deleteCard: (id: string) =>
       withToken((t) => request<{ success: boolean }>(`/api/cards/${id}`, t, { method: 'DELETE' })),

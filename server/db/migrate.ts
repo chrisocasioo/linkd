@@ -92,6 +92,9 @@ export async function runMigrations() {
     UPDATE cards SET slug = LEFT(MD5(id::TEXT), 8) WHERE slug IS NULL;
   `);
   await db.execute(sql`
+    ALTER TABLE cards ADD COLUMN IF NOT EXISTS font TEXT DEFAULT 'dm-sans';
+  `);
+  await db.execute(sql`
     CREATE TABLE IF NOT EXISTS field_clicks (
       id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
       field_id UUID NOT NULL REFERENCES card_fields(id) ON DELETE CASCADE,
