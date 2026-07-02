@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import { useAuth } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
@@ -21,6 +22,7 @@ import { COLORS, FONTS } from '../constants/colors';
 
 export default function OnboardingScreen() {
   const router = useRouter();
+  const { signOut } = useAuth();
   const api = useApi();
 
   const [step, setStep] = useState(0);
@@ -290,12 +292,14 @@ export default function OnboardingScreen() {
             ))}
           </View>
 
-          {/* Back arrow for steps 1+ */}
-          {step > 0 && (
-            <Pressable style={styles.backBtn} onPress={() => setStep((s) => s - 1)} hitSlop={12}>
-              <Ionicons name="arrow-back" size={22} color={COLORS.text} />
-            </Pressable>
-          )}
+          {/* Back arrow — step 0 signs out and returns to auth; steps 1+ go to previous step */}
+          <Pressable
+            style={styles.backBtn}
+            onPress={step === 0 ? async () => { await signOut(); router.replace('/(auth)/sign-up'); } : () => setStep((s) => s - 1)}
+            hitSlop={12}
+          >
+            <Ionicons name="arrow-back" size={22} color={COLORS.text} />
+          </Pressable>
 
           <View style={styles.stepContent}>
             {steps[step]()}
