@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
-import { Image, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Card, CardField, User } from '../../lib/api';
 import { FONTS } from '../../constants/colors';
 
@@ -59,7 +59,6 @@ export function CardPreview({ card, user }: Props) {
 
   return (
     <View style={styles.card}>
-      <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
         {/* Banner */}
         <View style={styles.banner}>
           {user.profilePhoto ? (
@@ -112,14 +111,12 @@ export function CardPreview({ card, user }: Props) {
             </Pressable>
           ))}
         </View>
-      </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    flex: 1,
     backgroundColor: '#161616',
     borderRadius: 22,
     overflow: 'hidden',
