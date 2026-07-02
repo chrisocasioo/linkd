@@ -76,8 +76,7 @@ export function CardPreview({ card, user, analytics, maxHeight, onPreview }: Pro
   const accent = card.accentColor;
   const fonts = CARD_FONTS[card.font ?? 'dm-sans'] ?? CARD_FONTS['dm-sans'];
   const initial = (user.displayName ?? user.username ?? '?')[0].toUpperCase();
-  const [cardHeight, setCardHeight] = useState<number | undefined>();
-  const effectiveHeight = maxHeight ?? cardHeight;
+  const capH = maxHeight ?? MAX_CARD_H;
   const [isFlipped, setIsFlipped] = useState(false);
   const flipAnim = useRef(new Animated.Value(0)).current;
 
@@ -91,16 +90,11 @@ export function CardPreview({ card, user, analytics, maxHeight, onPreview }: Pro
   const backRotate  = flipAnim.interpolate({ inputRange: [0, 1], outputRange: ['180deg', '360deg'] });
 
   return (
-    <View style={[styles.card, effectiveHeight ? { height: effectiveHeight } : { maxHeight: MAX_CARD_H }]}>
+    <View style={styles.card}>
       {/* ── Front face ── */}
-      <Animated.View
-        style={[styles.face, { transform: [{ rotateY: frontRotate }] }, effectiveHeight ? { height: effectiveHeight } : {}]}
-        onLayout={(e) => {
-          if (!maxHeight && !cardHeight) setCardHeight(Math.min(e.nativeEvent.layout.height, MAX_CARD_H));
-        }}
-      >
+      <Animated.View style={[styles.face, { transform: [{ rotateY: frontRotate }] }]}>
         <ScrollView
-          style={effectiveHeight ? { flex: 1 } : undefined}
+          style={{ maxHeight: capH }}
           showsVerticalScrollIndicator={false}
           bounces={false}
           scrollEventThrottle={16}
@@ -161,7 +155,7 @@ export function CardPreview({ card, user, analytics, maxHeight, onPreview }: Pro
       </Animated.View>
 
       {/* ── Back face ── */}
-      {effectiveHeight && (
+      {maxHeight && (
         <Animated.View
           style={[styles.face, styles.backFace, StyleSheet.absoluteFill, { transform: [{ rotateY: backRotate }] }]}
         >

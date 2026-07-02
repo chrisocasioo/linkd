@@ -204,7 +204,7 @@ const styles = StyleSheet.create({
     width: 36, height: 36, alignItems: 'center', justifyContent: 'center',
     backgroundColor: COLORS.surface, borderRadius: 10, borderWidth: 1, borderColor: COLORS.border,
   },
-  carousel: { paddingHorizontal: SIDE_INSET, paddingBottom: 8 },
+  carousel: { paddingHorizontal: SIDE_INSET, paddingBottom: 8, alignItems: 'flex-start' },
   emptyState: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8 },
   emptyTitle: { fontSize: 18, fontFamily: FONTS.semiBold, color: COLORS.text },
   emptySub: { fontSize: 13, fontFamily: FONTS.regular, color: COLORS.textSecondary },
