@@ -121,15 +121,23 @@ function parseBusinessCard(rawText: string): Partial<ScanResult> {
   const zipPattern = /\b\d{5}(-\d{4})?\b/;
   const streetNumPattern = /^\d+\s+\w/;
 
-  const addressLines: string[] = [];
+  const allAddresses: string[] = [];
+  let currentAddrLines: string[] = [];
   for (const l of lines) {
-    if (used.has(l)) continue;
+    if (used.has(l)) {
+      if (currentAddrLines.length > 0) { allAddresses.push(currentAddrLines.join(', ')); currentAddrLines = []; }
+      continue;
+    }
     if (addrKw.test(l) || zipPattern.test(l) || streetNumPattern.test(l)) {
-      addressLines.push(l);
+      currentAddrLines.push(l);
       used.add(l);
+    } else if (currentAddrLines.length > 0) {
+      allAddresses.push(currentAddrLines.join(', '));
+      currentAddrLines = [];
     }
   }
-  const address = addressLines.length > 0 ? addressLines.join(', ') : null;
+  if (currentAddrLines.length > 0) allAddresses.push(currentAddrLines.join(', '));
+  const address = allAddresses[0] ?? null;
 
   return {
     firstName,
@@ -143,6 +151,7 @@ function parseBusinessCard(rawText: string): Partial<ScanResult> {
     website: allWebsites[0] ?? null,
     websites: allWebsites,
     address,
+    addresses: allAddresses,
   };
 }
 

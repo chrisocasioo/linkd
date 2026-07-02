@@ -61,6 +61,7 @@ export interface ScanResult {
   website: string | null;
   websites: string[];
   address: string | null;
+  addresses: string[];
 }
 
 export interface Link {

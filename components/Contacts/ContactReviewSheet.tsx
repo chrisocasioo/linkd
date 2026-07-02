@@ -54,7 +54,8 @@ function toItems(initial: Partial<ScanResult> | null): Item[] {
   // Add all detected websites as separate rows (falls back to single website field)
   const urls = initial?.websites?.length ? initial.websites : (initial?.website ? [initial.website] : []);
   for (const url of urls) add('website', url);
-  add('address',   initial?.address);
+  const addrs = initial?.addresses?.length ? initial.addresses : (initial?.address ? [initial.address] : []);
+  for (const a of addrs) add('address', a);
   return items;
 }
 
