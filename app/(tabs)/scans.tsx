@@ -57,6 +57,23 @@ function parseBusinessCard(rawText: string): Partial<ScanResult> {
   const companyLine = afterName.find(
     (l) => !used.has(l) && (coKw.test(l) || l === l.toUpperCase() || l.split(/\s+/).length <= 4)
   );
+  if (companyLine) used.add(companyLine);
+
+  // Address: look for lines with street numbers, suite/floor keywords, city/state/zip patterns,
+  // or multi-line sequences that together form an address. Collect consecutive address lines.
+  const addrKw = /\b(St\.?|Street|Ave\.?|Avenue|Blvd\.?|Boulevard|Rd\.?|Road|Dr\.?|Drive|Ln\.?|Lane|Ct\.?|Court|Pl\.?|Place|Pkwy|Hwy|Suite|Ste\.?|Floor|Fl\.?|Unit|Apt\.?|Building|Bldg\.?)\b/i;
+  const zipPattern = /\b\d{5}(-\d{4})?\b/;
+  const streetNumPattern = /^\d+\s+\w/;
+
+  const addressLines: string[] = [];
+  for (const l of lines) {
+    if (used.has(l)) continue;
+    if (addrKw.test(l) || zipPattern.test(l) || streetNumPattern.test(l)) {
+      addressLines.push(l);
+      used.add(l);
+    }
+  }
+  const address = addressLines.length > 0 ? addressLines.join(', ') : null;
 
   return {
     firstName,
@@ -66,6 +83,7 @@ function parseBusinessCard(rawText: string): Partial<ScanResult> {
     company: companyLine ?? null,
     jobTitle: jobTitleLine ?? null,
     website: websiteMatch ?? null,
+    address,
   };
 }
 

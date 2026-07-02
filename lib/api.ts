@@ -42,6 +42,7 @@ export interface Contact {
   company: string | null;
   jobTitle: string | null;
   website: string | null;
+  address: string | null;
   notes: string | null;
   createdAt: string;
 }
@@ -54,6 +55,7 @@ export interface ScanResult {
   company: string | null;
   jobTitle: string | null;
   website: string | null;
+  address: string | null;
 }
 
 export interface Link {

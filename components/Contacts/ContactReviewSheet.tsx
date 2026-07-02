@@ -19,7 +19,7 @@ import { COLORS, FONTS } from '../../constants/colors';
 
 const { height: SCREEN_H } = Dimensions.get('window');
 
-type FieldKey = 'firstName' | 'lastName' | 'email' | 'phone' | 'company' | 'jobTitle' | 'website';
+type FieldKey = 'firstName' | 'lastName' | 'email' | 'phone' | 'company' | 'jobTitle' | 'website' | 'address';
 
 const FIELD_OPTS: Array<{ key: FieldKey; label: string; icon: keyof typeof Ionicons.glyphMap }> = [
   { key: 'firstName', label: 'First Name',  icon: 'person-outline' },
@@ -29,6 +29,7 @@ const FIELD_OPTS: Array<{ key: FieldKey; label: string; icon: keyof typeof Ionic
   { key: 'company',   label: 'Company',     icon: 'business-outline' },
   { key: 'jobTitle',  label: 'Job Title',   icon: 'briefcase-outline' },
   { key: 'website',   label: 'Website',     icon: 'globe-outline' },
+  { key: 'address',   label: 'Address',     icon: 'location-outline' },
 ];
 
 interface Item { id: string; value: string; field: FieldKey; }
@@ -48,6 +49,7 @@ function toItems(initial: Partial<ScanResult> | null): Item[] {
   add('company',   initial?.company);
   add('jobTitle',  initial?.jobTitle);
   add('website',   initial?.website);
+  add('address',   initial?.address);
   return items;
 }
 

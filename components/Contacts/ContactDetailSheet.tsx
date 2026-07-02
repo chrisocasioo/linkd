@@ -49,11 +49,12 @@ export function ContactDetailSheet({ visible, contact, onClose, onDelete }: Prop
   if (!contact) return null;
 
   const rows: FieldRow[] = [
-    contact.email   ? { icon: 'mail-outline',   label: 'Email',   value: contact.email,   url: `mailto:${contact.email}` }   : null,
-    contact.phone   ? { icon: 'call-outline',   label: 'Phone',   value: contact.phone,   url: `tel:${contact.phone}` }   : null,
-    contact.website ? { icon: 'globe-outline',  label: 'Website', value: contact.website, url: contact.website.startsWith('http') ? contact.website : `https://${contact.website}` } : null,
-    contact.company ? { icon: 'business-outline', label: 'Company', value: contact.company, url: '' } : null,
-    contact.jobTitle ? { icon: 'briefcase-outline', label: 'Title', value: contact.jobTitle, url: '' } : null,
+    contact.email   ? { icon: 'mail-outline',      label: 'Email',   value: contact.email,   url: `mailto:${contact.email}` }   : null,
+    contact.phone   ? { icon: 'call-outline',      label: 'Phone',   value: contact.phone,   url: `tel:${contact.phone}` }   : null,
+    contact.website ? { icon: 'globe-outline',     label: 'Website', value: contact.website, url: contact.website.startsWith('http') ? contact.website : `https://${contact.website}` } : null,
+    contact.company ? { icon: 'business-outline',  label: 'Company', value: contact.company, url: '' } : null,
+    contact.jobTitle ? { icon: 'briefcase-outline', label: 'Title',  value: contact.jobTitle, url: '' } : null,
+    contact.address ? { icon: 'location-outline',  label: 'Address', value: contact.address, url: `https://maps.apple.com/?q=${encodeURIComponent(contact.address)}` } : null,
   ].filter(Boolean) as FieldRow[];
 
   const handleDelete = () => {
