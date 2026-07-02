@@ -40,6 +40,7 @@ export default function CardScreen() {
   const [showShare, setShowShare] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
+  const [carouselHeight, setCarouselHeight] = useState<number | undefined>();
 
   const flatListRef = useRef<FlatList>(null);
 
@@ -95,38 +96,41 @@ export default function CardScreen() {
       </View>
 
       {/* Card carousel */}
-      {cards.length === 0 ? (
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyTitle}>No cards yet</Text>
-          <Text style={styles.emptySub}>Tap + to create your first card</Text>
-        </View>
-      ) : (
-        <FlatList
-          ref={flatListRef}
-          data={cards}
-          keyExtractor={(c) => c.id}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          snapToInterval={CARD_WIDTH + CARD_GAP}
-          snapToAlignment="start"
-          decelerationRate="fast"
-          contentContainerStyle={styles.carousel}
-          ItemSeparatorComponent={() => <View style={{ width: CARD_GAP }} />}
-          onMomentumScrollEnd={(e) => {
-            const idx = Math.round(e.nativeEvent.contentOffset.x / (CARD_WIDTH + CARD_GAP));
-            setActiveIndex(Math.min(idx, cards.length - 1));
-          }}
-          renderItem={({ item }) => (
-            <View style={{ width: CARD_WIDTH }}>
-              <CardPreview
-                card={item}
-                user={user!}
-                analytics={cardAnalytics.find((a) => a.cardId === item.id)}
-              />
-            </View>
-          )}
-        />
-      )}
+      <View style={{ flex: 1 }} onLayout={(e) => setCarouselHeight(e.nativeEvent.layout.height)}>
+        {cards.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyTitle}>No cards yet</Text>
+            <Text style={styles.emptySub}>Tap + to create your first card</Text>
+          </View>
+        ) : (
+          <FlatList
+            ref={flatListRef}
+            data={cards}
+            keyExtractor={(c) => c.id}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            snapToInterval={CARD_WIDTH + CARD_GAP}
+            snapToAlignment="start"
+            decelerationRate="fast"
+            contentContainerStyle={styles.carousel}
+            ItemSeparatorComponent={() => <View style={{ width: CARD_GAP }} />}
+            onMomentumScrollEnd={(e) => {
+              const idx = Math.round(e.nativeEvent.contentOffset.x / (CARD_WIDTH + CARD_GAP));
+              setActiveIndex(Math.min(idx, cards.length - 1));
+            }}
+            renderItem={({ item }) => (
+              <View style={{ width: CARD_WIDTH }}>
+                <CardPreview
+                  card={item}
+                  user={user!}
+                  analytics={cardAnalytics.find((a) => a.cardId === item.id)}
+                  maxHeight={carouselHeight}
+                />
+              </View>
+            )}
+          />
+        )}
+      </View>
 
       {/* Dots */}
       <View style={styles.dotsRow}>

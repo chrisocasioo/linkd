@@ -62,13 +62,14 @@ interface Props {
   card: Card;
   user: User;
   analytics?: CardAnalytics;
+  maxHeight?: number;
 }
 
-export function CardPreview({ card, user, analytics }: Props) {
+export function CardPreview({ card, user, analytics, maxHeight }: Props) {
   const accent = card.accentColor;
   const initial = (user.displayName ?? user.username ?? '?')[0].toUpperCase();
-
   const [cardHeight, setCardHeight] = useState<number | undefined>();
+  const effectiveHeight = maxHeight ?? cardHeight;
   const [isFlipped, setIsFlipped] = useState(false);
   const flipAnim = useRef(new Animated.Value(0)).current;
 
@@ -82,15 +83,15 @@ export function CardPreview({ card, user, analytics }: Props) {
   const backRotate  = flipAnim.interpolate({ inputRange: [0, 1], outputRange: ['180deg', '360deg'] });
 
   return (
-    <View style={[styles.card, cardHeight ? { height: cardHeight } : { maxHeight: MAX_CARD_H }]}>
+    <View style={[styles.card, effectiveHeight ? { height: effectiveHeight } : { maxHeight: MAX_CARD_H }]}>
       {/* ── Front face ── */}
       <Animated.View
-        style={[styles.face, { transform: [{ rotateY: frontRotate }] }, cardHeight ? { height: cardHeight } : {}]}
+        style={[styles.face, { transform: [{ rotateY: frontRotate }] }, effectiveHeight ? { height: effectiveHeight } : {}]}
         onLayout={(e) => {
-          if (!cardHeight) setCardHeight(Math.min(e.nativeEvent.layout.height, MAX_CARD_H));
+          if (!maxHeight && !cardHeight) setCardHeight(Math.min(e.nativeEvent.layout.height, MAX_CARD_H));
         }}
       >
-        <ScrollView style={cardHeight ? { flex: 1 } : undefined} showsVerticalScrollIndicator={false} bounces={false}>
+        <ScrollView style={effectiveHeight ? { flex: 1 } : undefined} showsVerticalScrollIndicator={false} bounces={false}>
           {/* Banner */}
           <View style={styles.banner}>
             {user.profilePhoto ? (
@@ -145,7 +146,7 @@ export function CardPreview({ card, user, analytics }: Props) {
       </Animated.View>
 
       {/* ── Back face ── */}
-      {cardHeight && (
+      {effectiveHeight && (
         <Animated.View
           style={[styles.face, styles.backFace, StyleSheet.absoluteFill, { transform: [{ rotateY: backRotate }] }]}
         >
