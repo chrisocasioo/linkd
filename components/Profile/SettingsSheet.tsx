@@ -14,7 +14,6 @@ import {
   View,
 } from 'react-native';
 
-import { useRevenueCat } from '../../lib/RevenueCatContext';
 import { useApi } from '../../lib/api';
 import { COLORS, FONTS } from '../../constants/colors';
 
@@ -38,7 +37,6 @@ export function SettingsSheet({ visible, onClose, onShowPaywall }: Props) {
   const { user } = useClerk();
   const api = useApi();
   const router = useRouter();
-  const { isPro } = useRevenueCat();
   const translateY = useRef(new Animated.Value(500)).current;
 
   useEffect(() => {
@@ -167,24 +165,6 @@ export function SettingsSheet({ visible, onClose, onShowPaywall }: Props) {
                 );
               }}
             />
-          </View>
-
-          {/* Analytics */}
-          <View style={styles.group}>
-            <Pressable
-              style={styles.row}
-              onPress={() => {
-                onClose();
-                if (isPro) setTimeout(() => router.push('/analytics'), 300);
-                else setTimeout(onShowPaywall, 300);
-              }}
-            >
-              <Text style={styles.rowLabel}>Analytics</Text>
-              <View style={styles.rowRight}>
-                {!isPro && <Text style={styles.proBadge}>Pro</Text>}
-                <Text style={styles.chevron}>›</Text>
-              </View>
-            </Pressable>
           </View>
 
           {/* Support */}
