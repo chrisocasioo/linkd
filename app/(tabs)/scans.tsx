@@ -6,7 +6,6 @@ import React, { useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  Modal,
   Pressable,
   StyleSheet,
   Text,
@@ -69,39 +68,27 @@ function parseBusinessCard(rawText: string): Partial<ScanResult> {
   };
 }
 
+const BRACKET = 28;
+const BRACKET_THICKNESS = 3;
+
 export default function ScansScreen() {
   const api = useApi();
   const router = useRouter();
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
 
-  const [showCamera, setShowCamera] = useState(false);
   const [flash, setFlash] = useState<'off' | 'on'>('off');
   const [scanning, setScanning] = useState(false);
   const [scanResult, setScanResult] = useState<Partial<ScanResult> | null>(null);
   const [showReview, setShowReview] = useState(false);
 
-  const openCamera = async () => {
-    if (!permission?.granted) {
-      const { granted } = await requestPermission();
-      if (!granted) {
-        Alert.alert('Permission required', 'Allow camera access to scan a business card.');
-        return;
-      }
-    }
-    setShowCamera(true);
-  };
-
   const handleCapture = async () => {
     if (!cameraRef.current || scanning) return;
-    setScanning(true);
-    setShowCamera(false);
     try {
       const photo = await cameraRef.current.takePictureAsync({ quality: 0.85 });
-      await processImage(photo.uri);
+      await processImage(photo!.uri);
     } catch (err: any) {
       Alert.alert('Scan failed', err.message ?? 'Could not take photo.');
-      setScanning(false);
     }
   };
 
@@ -136,110 +123,84 @@ export default function ScansScreen() {
     router.push('/(tabs)/contacts');
   };
 
-  return (
-    <SafeAreaView style={styles.safe}>
-      <View style={styles.topBar}>
-        <Text style={styles.heading}>Scan</Text>
-      </View>
+  // Permission not yet determined
+  if (!permission) {
+    return <View style={styles.safe} />;
+  }
 
-      <View style={styles.hero}>
-        <View style={styles.circleOuter}>
-          <View style={styles.circleMiddle}>
-            <View style={styles.circleInner}>
-              {scanning ? (
-                <ActivityIndicator color={COLORS.accent} size="large" />
-              ) : (
-                <Ionicons name="scan-outline" size={48} color={COLORS.accent} />
-              )}
-            </View>
+  // Permission denied — show prompt
+  if (!permission.granted) {
+    return (
+      <SafeAreaView style={styles.safe} edges={['top']}>
+        <View style={styles.permissionBox}>
+          <Ionicons name="camera-outline" size={48} color={COLORS.accent} />
+          <Text style={styles.permTitle}>Camera Access</Text>
+          <Text style={styles.permSub}>Allow camera access to scan business cards</Text>
+          <Pressable style={styles.permBtn} onPress={requestPermission}>
+            <Text style={styles.permBtnText}>Allow Camera</Text>
+          </Pressable>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <SafeAreaView style={styles.safe} edges={['top']}>
+      {/* Camera fills available space */}
+      <View style={styles.cameraWrap}>
+        <CameraView
+          ref={cameraRef}
+          style={StyleSheet.absoluteFill}
+          facing="back"
+          flash={flash}
+        />
+
+        {/* Viewfinder overlay */}
+        <View style={styles.viewfinderWrap} pointerEvents="none">
+          <Text style={styles.hint}>Align business card within the frame</Text>
+          <View style={styles.viewfinder}>
+            <View style={[styles.corner, styles.cornerTL]} />
+            <View style={[styles.corner, styles.cornerTR]} />
+            <View style={[styles.corner, styles.cornerBL]} />
+            <View style={[styles.corner, styles.cornerBR]} />
           </View>
         </View>
 
-        <Text style={styles.heroTitle}>
-          {scanning ? 'Reading card…' : 'Scan a business card'}
-        </Text>
-        <Text style={styles.heroSub}>
-          {scanning
-            ? 'Extracting contact info on-device'
-            : 'Point your camera at any business card to instantly save the contact'}
-        </Text>
+        {/* Scanning overlay */}
+        {scanning && (
+          <View style={styles.scanningOverlay} pointerEvents="none">
+            <ActivityIndicator color="#fff" size="large" />
+            <Text style={styles.scanningText}>Reading card…</Text>
+          </View>
+        )}
       </View>
 
-      <View style={styles.btnWrapper}>
+      {/* Controls below camera, above tab bar */}
+      <View style={styles.controls}>
+        <Pressable style={styles.secondaryBtn} onPress={pickFromLibrary} disabled={scanning}>
+          <Ionicons name="images-outline" size={22} color="#fff" />
+        </Pressable>
+
         <Pressable
-          style={[styles.scanBtn, scanning && styles.scanBtnDim]}
-          onPress={openCamera}
+          style={[styles.shutter, scanning && { opacity: 0.4 }]}
+          onPress={handleCapture}
           disabled={scanning}
         >
-          <Ionicons name="camera-outline" size={20} color="#0C0C0E" />
-          <Text style={styles.scanBtnText}>Scan</Text>
+          <View style={styles.shutterInner} />
         </Pressable>
-        <Pressable style={styles.libraryBtn} onPress={pickFromLibrary} disabled={scanning}>
-          <Text style={styles.libraryBtnText}>Choose from library</Text>
+
+        <Pressable
+          style={styles.secondaryBtn}
+          onPress={() => setFlash((f) => (f === 'off' ? 'on' : 'off'))}
+          disabled={scanning}
+        >
+          <Ionicons
+            name={flash === 'on' ? 'flash' : 'flash-off'}
+            size={22}
+            color={flash === 'on' ? COLORS.accent : '#fff'}
+          />
         </Pressable>
       </View>
-
-      {/* In-app camera modal */}
-      <Modal visible={showCamera} animationType="slide" statusBarTranslucent>
-        <View style={styles.cameraContainer}>
-          <CameraView
-            ref={cameraRef}
-            style={StyleSheet.absoluteFill}
-            facing="back"
-            flash={flash}
-          />
-
-          {/* Top bar */}
-          <SafeAreaView style={styles.cameraTopBar}>
-            <Pressable style={styles.cameraIconBtn} onPress={() => setShowCamera(false)}>
-              <Ionicons name="close" size={22} color="#fff" />
-            </Pressable>
-            <Text style={styles.cameraTitle}>Scan Card</Text>
-            <View style={{ width: 40 }} />
-          </SafeAreaView>
-
-          {/* Corner bracket viewfinder */}
-          <View style={styles.viewfinderWrap} pointerEvents="none">
-            <View style={styles.viewfinder}>
-              <View style={[styles.corner, styles.cornerTL]} />
-              <View style={[styles.corner, styles.cornerTR]} />
-              <View style={[styles.corner, styles.cornerBL]} />
-              <View style={[styles.corner, styles.cornerBR]} />
-            </View>
-            <Text style={styles.viewfinderHint}>Align business card within the frame</Text>
-          </View>
-
-          {/* Bottom controls */}
-          <SafeAreaView edges={['bottom']} style={styles.cameraBottomBar}>
-            <View style={styles.cameraControls}>
-              {/* Library picker */}
-              <Pressable
-                style={styles.cameraSecondaryBtn}
-                onPress={() => { setShowCamera(false); pickFromLibrary(); }}
-              >
-                <Ionicons name="images-outline" size={22} color="#fff" />
-              </Pressable>
-
-              {/* Shutter */}
-              <Pressable style={styles.shutter} onPress={handleCapture}>
-                <View style={styles.shutterInner} />
-              </Pressable>
-
-              {/* Flash */}
-              <Pressable
-                style={styles.cameraSecondaryBtn}
-                onPress={() => setFlash(f => f === 'off' ? 'on' : 'off')}
-              >
-                <Ionicons
-                  name={flash === 'on' ? 'flash' : 'flash-off'}
-                  size={22}
-                  color={flash === 'on' ? COLORS.accent : '#fff'}
-                />
-              </Pressable>
-            </View>
-          </SafeAreaView>
-        </View>
-      </Modal>
 
       <ContactReviewSheet
         visible={showReview}
@@ -252,96 +213,68 @@ export default function ScansScreen() {
   );
 }
 
-const BRACKET = 28;
-const BRACKET_THICKNESS = 3;
-
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: COLORS.bg },
-  topBar: { paddingHorizontal: 20, paddingTop: 10, paddingBottom: 14 },
-  heading: { fontSize: 22, fontFamily: FONTS.semiBold, color: COLORS.text },
-  hero: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 40, gap: 16 },
-  circleOuter: {
-    width: 200, height: 200, borderRadius: 100,
-    borderWidth: 1.5, borderStyle: 'dashed', borderColor: COLORS.border,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  circleMiddle: {
-    width: 148, height: 148, borderRadius: 74,
-    borderWidth: 1.5, borderStyle: 'dashed', borderColor: COLORS.border,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  circleInner: {
-    width: 96, height: 96, borderRadius: 48,
-    borderWidth: 1.5, borderStyle: 'dashed', borderColor: COLORS.accent + '55',
-    alignItems: 'center', justifyContent: 'center',
-    backgroundColor: COLORS.accentDim,
-  },
-  heroTitle: { fontSize: 20, fontFamily: FONTS.semiBold, color: COLORS.text, textAlign: 'center', letterSpacing: -0.4 },
-  heroSub: { fontSize: 13, fontFamily: FONTS.regular, color: COLORS.textSecondary, textAlign: 'center', lineHeight: 19 },
-  btnWrapper: { paddingHorizontal: 20, paddingBottom: 28, gap: 10 },
-  scanBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-    height: 52, borderRadius: 16, backgroundColor: COLORS.accent,
-  },
-  scanBtnDim: { opacity: 0.5 },
-  scanBtnText: { fontSize: 15, fontFamily: FONTS.semiBold, color: '#0C0C0E' },
-  libraryBtn: { alignItems: 'center', paddingVertical: 8 },
-  libraryBtnText: { fontSize: 13, fontFamily: FONTS.regular, color: COLORS.textSecondary },
+  safe: { flex: 1, backgroundColor: '#000' },
 
-  // Camera
-  cameraContainer: { flex: 1, backgroundColor: '#000' },
-  cameraTopBar: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 16, paddingTop: 8,
+  permissionBox: {
+    flex: 1, alignItems: 'center', justifyContent: 'center',
+    gap: 12, paddingHorizontal: 40, backgroundColor: COLORS.bg,
   },
-  cameraTitle: { fontSize: 16, fontFamily: FONTS.semiBold, color: '#fff' },
-  cameraIconBtn: {
-    width: 40, height: 40, borderRadius: 20,
-    backgroundColor: 'rgba(0,0,0,0.4)',
+  permTitle: { fontSize: 20, fontFamily: FONTS.semiBold, color: COLORS.text },
+  permSub: { fontSize: 13, fontFamily: FONTS.regular, color: COLORS.textSecondary, textAlign: 'center' },
+  permBtn: {
+    marginTop: 8, height: 48, paddingHorizontal: 28,
+    borderRadius: 14, backgroundColor: COLORS.accent,
     alignItems: 'center', justifyContent: 'center',
   },
+  permBtnText: { fontSize: 14, fontFamily: FONTS.semiBold, color: '#0C0C0E' },
 
-  // Viewfinder
+  cameraWrap: { flex: 1, overflow: 'hidden' },
+
   viewfinderWrap: {
     ...StyleSheet.absoluteFillObject,
-    alignItems: 'center', justifyContent: 'center', gap: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 20,
   },
-  viewfinder: {
-    width: 280, height: 180,
-    position: 'relative',
+  hint: {
+    fontSize: 12, fontFamily: FONTS.regular,
+    color: 'rgba(255,255,255,0.65)', textAlign: 'center',
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20,
   },
-  corner: {
-    position: 'absolute',
-    width: BRACKET, height: BRACKET,
-    borderColor: COLORS.accent,
-  },
+  viewfinder: { width: 280, height: 180, position: 'relative' },
+  corner: { position: 'absolute', width: BRACKET, height: BRACKET, borderColor: COLORS.accent },
   cornerTL: { top: 0, left: 0, borderTopWidth: BRACKET_THICKNESS, borderLeftWidth: BRACKET_THICKNESS },
   cornerTR: { top: 0, right: 0, borderTopWidth: BRACKET_THICKNESS, borderRightWidth: BRACKET_THICKNESS },
   cornerBL: { bottom: 0, left: 0, borderBottomWidth: BRACKET_THICKNESS, borderLeftWidth: BRACKET_THICKNESS },
   cornerBR: { bottom: 0, right: 0, borderBottomWidth: BRACKET_THICKNESS, borderRightWidth: BRACKET_THICKNESS },
-  viewfinderHint: {
-    fontSize: 13, fontFamily: FONTS.regular, color: 'rgba(255,255,255,0.7)', textAlign: 'center',
-  },
 
-  // Bottom controls
-  cameraBottomBar: { position: 'absolute', bottom: 0, left: 0, right: 0 },
-  cameraControls: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 48, paddingBottom: 24, paddingTop: 16,
+  scanningOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    alignItems: 'center', justifyContent: 'center', gap: 12,
   },
-  cameraSecondaryBtn: {
+  scanningText: { fontSize: 15, fontFamily: FONTS.medium, color: '#fff' },
+
+  controls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 56,
+    paddingVertical: 20,
+    backgroundColor: '#000',
+  },
+  secondaryBtn: {
     width: 48, height: 48, borderRadius: 24,
-    backgroundColor: 'rgba(0,0,0,0.45)',
+    backgroundColor: 'rgba(255,255,255,0.15)',
     alignItems: 'center', justifyContent: 'center',
   },
   shutter: {
-    width: 76, height: 76, borderRadius: 38,
-    backgroundColor: 'rgba(255,255,255,0.25)',
+    width: 72, height: 72, borderRadius: 36,
+    backgroundColor: 'rgba(255,255,255,0.2)',
     borderWidth: 3, borderColor: '#fff',
     alignItems: 'center', justifyContent: 'center',
   },
-  shutterInner: {
-    width: 58, height: 58, borderRadius: 29,
-    backgroundColor: '#fff',
-  },
+  shutterInner: { width: 56, height: 56, borderRadius: 28, backgroundColor: '#fff' },
 });
