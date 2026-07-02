@@ -1,9 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Alert, Animated, Dimensions, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRevenueCat } from '../../lib/RevenueCatContext';
 import { COLORS, FONTS } from '../../constants/colors';
-
-const SHEET_HEIGHT = Dimensions.get('window').height * 0.75;
 
 const PRO_FEATURES = [
   { emoji: '🌐', title: 'Custom Domain', sub: 'Your own domain points to your card' },
@@ -18,14 +16,14 @@ interface Props {
 
 export function PaywallSheet({ visible, onClose }: Props) {
   const { purchasePro } = useRevenueCat();
-  const slideAnim = useRef(new Animated.Value(SHEET_HEIGHT)).current;
+  const slideAnim = useRef(new Animated.Value(600)).current;
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (visible) {
       Animated.spring(slideAnim, { toValue: 0, useNativeDriver: true, damping: 20, stiffness: 200 }).start();
     } else {
-      Animated.timing(slideAnim, { toValue: SHEET_HEIGHT, duration: 250, useNativeDriver: true }).start();
+      Animated.timing(slideAnim, { toValue: 600, duration: 250, useNativeDriver: true }).start();
     }
   }, [visible]);
 
@@ -111,13 +109,13 @@ export function PaywallSheet({ visible, onClose }: Props) {
 const styles = StyleSheet.create({
   backdrop: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(0,0,0,0.7)' },
   sheet: {
-    position: 'absolute', bottom: 0, left: 0, right: 0, height: SHEET_HEIGHT,
+    position: 'absolute', bottom: 0, left: 0, right: 0,
     backgroundColor: '#161618',
     borderTopLeftRadius: 26, borderTopRightRadius: 26,
     borderTopWidth: 1, borderColor: 'rgba(255,255,255,0.08)',
   },
   handle: { width: 36, height: 4, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 2, alignSelf: 'center', marginTop: 16 },
-  content: { padding: 18, gap: 16 },
+  content: { padding: 18, paddingBottom: 44, gap: 16 },
   headerBlock: { alignItems: 'center', gap: 10 },
   iconBox: {
     width: 52, height: 52, borderRadius: 18,
