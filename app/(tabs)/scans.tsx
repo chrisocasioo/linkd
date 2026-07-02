@@ -190,7 +190,7 @@ export default function ScansScreen() {
           device={device}
           isActive={!showReview}
           torch={flash}
-          photo
+          video
         />
 
         {/* Viewfinder */}
