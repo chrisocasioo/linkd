@@ -18,7 +18,25 @@ import { ContactReviewSheet } from '../../components/Contacts/ContactReviewSheet
 import { useApi, ScanResult } from '../../lib/api';
 import { COLORS, FONTS } from '../../constants/colors';
 
-function parseBusinessCard(rawText: string): Partial<ScanResult> {
+function extractLargeTextLines(result: any): Set<string> {
+  const lineSizes: Array<{ text: string; height: number }> = [];
+  for (const block of result.blocks ?? []) {
+    for (const line of block.lines ?? []) {
+      const h = line.frame?.height ?? 0;
+      const t = (line.text ?? '').trim();
+      if (h > 0 && t) lineSizes.push({ text: t, height: h });
+    }
+  }
+  if (lineSizes.length === 0) return new Set();
+  const sorted = [...lineSizes].sort((a, b) => a.height - b.height);
+  const mid = Math.floor(sorted.length / 2);
+  const median = sorted.length % 2 === 0
+    ? (sorted[mid - 1].height + sorted[mid].height) / 2
+    : sorted[mid].height;
+  return new Set(lineSizes.filter((s) => s.height >= median * 1.5).map((s) => s.text));
+}
+
+function parseBusinessCard(rawText: string, largeTextLines: Set<string> = new Set()): Partial<ScanResult> {
   const lines = rawText.split('\n').map((l) => l.trim()).filter(Boolean);
 
   const emailMatch = lines.find((l) =>
@@ -110,9 +128,10 @@ function parseBusinessCard(rawText: string): Partial<ScanResult> {
   if (jobTitleLine) used.add(jobTitleLine);
 
   const coKw = /\b(Inc\.?|LLC|Ltd\.?|Corp\.?|Group|Studio|Agency|Labs?|Technologies?|Solutions?|Services?|Consulting|Co\.?|International|Global|Holdings?)\b/i;
-  const companyLine = afterName.find(
-    (l) => !used.has(l) && (coKw.test(l) || l === l.toUpperCase() || l.split(/\s+/).length <= 4)
-  );
+  // Large/prominent text (logo text) is most likely the company name — use it first
+  const companyLine =
+    afterName.find((l) => !used.has(l) && largeTextLines.has(l)) ??
+    afterName.find((l) => !used.has(l) && (coKw.test(l) || l === l.toUpperCase() || l.split(/\s+/).length <= 4));
   if (companyLine) used.add(companyLine);
 
   // Address: look for lines with street numbers, suite/floor keywords, city/state/zip patterns,
@@ -204,7 +223,7 @@ export default function ScansScreen() {
         const snapshot = await cameraRef.current.takeSnapshot({ quality: 50 });
         const uri = snapshot.path.startsWith('file://') ? snapshot.path : `file://${snapshot.path}`;
         const result = await TextRecognition.recognize(uri);
-        const parsed = parseBusinessCard(result.text);
+        const parsed = parseBusinessCard(result.text, extractLargeTextLines(result));
         if (hasEnoughInfo(parsed)) {
           consecutiveHitsRef.current += 1;
           if (consecutiveHitsRef.current === 2) setDetected(true);
@@ -239,7 +258,7 @@ export default function ScansScreen() {
     if (!result.canceled && result.assets[0]) {
       try {
         const ocr = await TextRecognition.recognize(result.assets[0].uri);
-        setScanResult(parseBusinessCard(ocr.text));
+        setScanResult(parseBusinessCard(ocr.text, extractLargeTextLines(ocr)));
         setShowReview(true);
       } catch {}
     }
