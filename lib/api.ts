@@ -55,6 +55,7 @@ export interface ScanResult {
   email: string | null;
   phone: string | null;
   fax: string | null;
+  faxes: string[];
   company: string | null;
   jobTitle: string | null;
   website: string | null;

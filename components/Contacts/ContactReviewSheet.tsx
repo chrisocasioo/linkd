@@ -47,7 +47,8 @@ function toItems(initial: Partial<ScanResult> | null): Item[] {
   add('lastName',  initial?.lastName);
   add('email',     initial?.email);
   add('phone',     initial?.phone);
-  add('fax',       initial?.fax);
+  const faxNums = initial?.faxes?.length ? initial.faxes : (initial?.fax ? [initial.fax] : []);
+  for (const f of faxNums) add('fax', f);
   add('company',   initial?.company);
   add('jobTitle',  initial?.jobTitle);
   // Add all detected websites as separate rows (falls back to single website field)

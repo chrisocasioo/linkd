@@ -64,14 +64,13 @@ function parseBusinessCard(rawText: string): Partial<ScanResult> {
     }
   }
 
-  // Extract fax number from faxSet lines
+  // Extract all fax numbers from faxSet lines
   const FAX_LABEL = /^(?:fax(?:simile)?|f|p[&\/]f)\s*[:\.\-]?\s*/i;
-  let fax: string | null = null;
+  const allFaxes: string[] = [];
   for (const l of [...faxSet]) {
     const stripped = l.replace(FAX_LABEL, '').replace(PHONE_SUFFIX, '').trim();
     if (/^[\+]?[\d\s\.\-\(\)x]{7,}$/.test(stripped) && (stripped.match(/\d/g) ?? []).length >= 7) {
-      fax = stripped;
-      break;
+      if (!allFaxes.includes(stripped)) allFaxes.push(stripped);
     }
   }
 
@@ -137,7 +136,8 @@ function parseBusinessCard(rawText: string): Partial<ScanResult> {
     lastName,
     email,
     phone: phone ?? null,
-    fax: fax ?? null,
+    fax: allFaxes[0] ?? null,
+    faxes: allFaxes,
     company: companyLine ?? null,
     jobTitle: jobTitleLine ?? null,
     website: allWebsites[0] ?? null,
