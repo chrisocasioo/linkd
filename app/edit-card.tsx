@@ -182,6 +182,21 @@ export default function EditCardScreen() {
     setCard((c) => c ? { ...c, fields: c.fields.filter((f) => f.id !== fieldId) } : c);
   };
 
+  const handleMoveField = async (fieldId: string, direction: 'up' | 'down') => {
+    if (!card) return;
+    const contactFields = card.fields.filter((f) => !INFO_TYPES.has(f.type));
+    const infoFields = card.fields.filter((f) => INFO_TYPES.has(f.type));
+    const idx = contactFields.findIndex((f) => f.id === fieldId);
+    if (idx < 0) return;
+    const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
+    if (swapIdx < 0 || swapIdx >= contactFields.length) return;
+    const reordered = [...contactFields];
+    [reordered[idx], reordered[swapIdx]] = [reordered[swapIdx], reordered[idx]];
+    const items = reordered.map((f, i) => ({ id: f.id, order: i }));
+    setCard((c) => c ? { ...c, fields: [...infoFields, ...reordered] } : c);
+    try { await api.reorderFields(cardId, items); } catch {}
+  };
+
   const handleDeleteCard = () => {
     Alert.alert('Delete Card', 'This card and all its fields will be permanently deleted.', [
       { text: 'Cancel', style: 'cancel' },
@@ -399,20 +414,38 @@ export default function EditCardScreen() {
                           />
                         </View>
                         <Text style={styles.fieldValue} numberOfLines={1}>{field.label ?? field.value}</Text>
-                        <Pressable
-                          hitSlop={12}
-                          onPress={() =>
-                            Alert.alert('Delete field?', undefined, [
-                              { text: 'Cancel', style: 'cancel' },
-                              {
-                                text: 'Delete', style: 'destructive',
-                                onPress: () => handleFieldDelete(cardId, field.id),
-                              },
-                            ])
-                          }
-                        >
-                          <Ionicons name="close-circle" size={20} color={COLORS.textTertiary} />
-                        </Pressable>
+                        <View style={styles.fieldActions}>
+                          <Pressable
+                            hitSlop={10}
+                            onPress={() => handleMoveField(field.id, 'up')}
+                            style={[styles.reorderBtn, idx === 0 && { opacity: 0.2 }]}
+                            disabled={idx === 0}
+                          >
+                            <Ionicons name="chevron-up" size={16} color={COLORS.textSecondary} />
+                          </Pressable>
+                          <Pressable
+                            hitSlop={10}
+                            onPress={() => handleMoveField(field.id, 'down')}
+                            style={[styles.reorderBtn, idx === contactFields.length - 1 && { opacity: 0.2 }]}
+                            disabled={idx === contactFields.length - 1}
+                          >
+                            <Ionicons name="chevron-down" size={16} color={COLORS.textSecondary} />
+                          </Pressable>
+                          <Pressable
+                            hitSlop={12}
+                            onPress={() =>
+                              Alert.alert('Delete field?', undefined, [
+                                { text: 'Cancel', style: 'cancel' },
+                                {
+                                  text: 'Delete', style: 'destructive',
+                                  onPress: () => handleFieldDelete(cardId, field.id),
+                                },
+                              ])
+                            }
+                          >
+                            <Ionicons name="close-circle" size={20} color={COLORS.textTertiary} />
+                          </Pressable>
+                        </View>
                       </Pressable>
                     ))}
                   </View>
@@ -544,6 +577,8 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   fieldValue: { flex: 1, fontSize: 14, fontFamily: FONTS.regular, color: COLORS.text },
+  fieldActions: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  reorderBtn: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
 
   chipsWrap: {
     flexDirection: 'row', flexWrap: 'wrap', gap: 8,
