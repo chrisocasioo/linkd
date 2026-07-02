@@ -8,7 +8,6 @@ import {
   FlatList,
   Pressable,
   RefreshControl,
-  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -114,12 +113,8 @@ export default function CardScreen() {
         </View>
       </View>
 
-      {/* Card carousel — vertical ScrollView gives pull-to-refresh; horizontal FlatList gives page-snap */}
-      <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={{ flex: 1 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.accent} />}
-      >
+      {/* Card carousel */}
+      <View style={{ flex: 1 }}>
         {cards.length === 0 ? (
           <View style={styles.emptyState}>
             <Text style={styles.emptyTitle}>No cards yet</Text>
@@ -152,13 +147,16 @@ export default function CardScreen() {
                     analytics={cardAnalytics.find((a) => a.cardId === item.id)}
                     maxHeight={cardMaxH}
                     onPreview={() => WebBrowser.openBrowserAsync(publicUrl)}
+                    refreshControl={
+                      <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.accent} />
+                    }
                   />
                 </View>
               );
             }}
           />
         )}
-      </ScrollView>
+      </View>
 
       {/* Dots */}
       <View style={styles.dotsRow}>

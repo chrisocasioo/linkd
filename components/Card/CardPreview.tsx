@@ -73,9 +73,10 @@ interface Props {
   analytics?: CardAnalytics;
   maxHeight?: number;
   onPreview?: () => void;
+  refreshControl?: React.ReactElement;
 }
 
-export function CardPreview({ card, user, analytics, maxHeight, onPreview }: Props) {
+export function CardPreview({ card, user, analytics, maxHeight, onPreview, refreshControl }: Props) {
   const accent = card.accentColor;
   const fonts = CARD_FONTS[card.font ?? 'dm-sans'] ?? CARD_FONTS['dm-sans'];
   const initial = (user.displayName ?? user.username ?? '?')[0].toUpperCase();
@@ -99,7 +100,8 @@ export function CardPreview({ card, user, analytics, maxHeight, onPreview }: Pro
         <ScrollView
           style={{ maxHeight: capH }}
           showsVerticalScrollIndicator={false}
-          bounces={false}
+          bounces={!!refreshControl}
+          refreshControl={refreshControl}
           scrollEventThrottle={16}
         >
           {/* Banner — tapping opens the public card */}
