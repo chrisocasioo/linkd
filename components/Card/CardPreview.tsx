@@ -91,9 +91,14 @@ export function CardPreview({ card, user, analytics, maxHeight, onPreview }: Pro
           if (!maxHeight && !cardHeight) setCardHeight(Math.min(e.nativeEvent.layout.height, MAX_CARD_H));
         }}
       >
-        <ScrollView style={effectiveHeight ? { flex: 1 } : undefined} showsVerticalScrollIndicator={false} bounces={false}>
-          {/* Banner */}
-          <View style={styles.banner}>
+        <ScrollView
+          style={effectiveHeight ? { flex: 1 } : undefined}
+          showsVerticalScrollIndicator={false}
+          bounces={false}
+          scrollEventThrottle={16}
+        >
+          {/* Banner — tapping opens the public card */}
+          <Pressable style={styles.banner} onPress={onPreview}>
             {user.profilePhoto ? (
               <Image source={{ uri: user.profilePhoto }} style={styles.bannerImg} />
             ) : (
@@ -104,24 +109,24 @@ export function CardPreview({ card, user, analytics, maxHeight, onPreview }: Pro
             <View style={styles.labelPill}>
               <Text style={styles.labelText}>{card.name.toUpperCase()}</Text>
             </View>
-          </View>
+          </Pressable>
 
-          {/* Identity */}
-          <View style={styles.identity}>
+          {/* Identity — tapping opens the public card */}
+          <Pressable style={styles.identity} onPress={onPreview}>
             <Text style={styles.name}>{user.displayName ?? user.username ?? ''}</Text>
             {(() => {
-              const title   = card.fields.find(f => f.type === 'title')?.value;
-              const company = card.fields.find(f => f.type === 'company')?.value;
+              const title    = card.fields.find(f => f.type === 'title')?.value;
+              const company  = card.fields.find(f => f.type === 'company')?.value;
               const headline = card.fields.find(f => f.type === 'headline')?.value;
               return (
                 <>
-                  {title   ? <Text style={styles.jobTitle}>{title}</Text>   : null}
-                  {company ? <Text style={styles.company}>{company}</Text>   : null}
+                  {title    ? <Text style={styles.jobTitle}>{title}</Text>    : null}
+                  {company  ? <Text style={styles.company}>{company}</Text>   : null}
                   {headline ? <Text style={styles.headline}>{headline}</Text> : null}
                 </>
               );
             })()}
-          </View>
+          </Pressable>
 
           {/* Fields */}
           <View style={styles.fields}>
@@ -184,12 +189,6 @@ export function CardPreview({ card, user, analytics, maxHeight, onPreview }: Pro
         />
       </Pressable>
 
-      {/* Preview button — top-left */}
-      {onPreview && (
-        <Pressable style={styles.previewBtn} onPress={onPreview} hitSlop={8}>
-          <Ionicons name="eye-outline" size={14} color="rgba(255,255,255,0.75)" />
-        </Pressable>
-      )}
     </View>
   );
 }
@@ -213,17 +212,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 10,
     right: 10,
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  previewBtn: {
-    position: 'absolute',
-    top: 10,
-    left: 10,
     width: 30,
     height: 30,
     borderRadius: 15,
