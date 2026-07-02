@@ -5,6 +5,7 @@ import {
   ActivityIndicator,
   FlatList,
   Pressable,
+  RefreshControl,
   StyleSheet,
   Text,
   View,
@@ -29,6 +30,7 @@ export default function ContactsScreen() {
   const api = useApi();
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   const [showDetail, setShowDetail] = useState(false);
@@ -41,6 +43,15 @@ export default function ContactsScreen() {
       setContacts(data);
     } catch {}
     setLoading(false);
+  }, [api]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      const data = await api.getMyContacts();
+      setContacts(data);
+    } catch {}
+    setRefreshing(false);
   }, [api]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
@@ -68,18 +79,20 @@ export default function ContactsScreen() {
         <View style={styles.center}>
           <ActivityIndicator color={COLORS.accent} size="large" />
         </View>
-      ) : contacts.length === 0 ? (
-        <View style={styles.empty}>
-          <Ionicons name="people-outline" size={48} color={COLORS.border} />
-          <Text style={styles.emptyTitle}>No contacts yet</Text>
-          <Text style={styles.emptySub}>Scan a business card to add your first contact</Text>
-        </View>
       ) : (
         <FlatList
           data={contacts}
           keyExtractor={(c) => c.id}
-          contentContainerStyle={styles.list}
+          contentContainerStyle={[styles.list, contacts.length === 0 && styles.listEmpty]}
           ItemSeparatorComponent={() => <View style={styles.separator} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.accent} />}
+          ListEmptyComponent={
+            <View style={styles.empty}>
+              <Ionicons name="people-outline" size={48} color={COLORS.border} />
+              <Text style={styles.emptyTitle}>No contacts yet</Text>
+              <Text style={styles.emptySub}>Scan a business card to add your first contact</Text>
+            </View>
+          }
           renderItem={({ item }) => (
             <Pressable
               style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
@@ -136,6 +149,7 @@ const styles = StyleSheet.create({
   emptyTitle: { fontSize: 18, fontFamily: FONTS.semiBold, color: COLORS.text },
   emptySub: { fontSize: 13, fontFamily: FONTS.regular, color: COLORS.textSecondary, textAlign: 'center' },
   list: { paddingHorizontal: 16, paddingTop: 8 },
+  listEmpty: { flex: 1 },
   separator: { height: 1, backgroundColor: COLORS.border, marginLeft: 70 },
   row: {
     flexDirection: 'row', alignItems: 'center', gap: 14,

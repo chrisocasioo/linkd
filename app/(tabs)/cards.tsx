@@ -7,6 +7,7 @@ import {
   Dimensions,
   FlatList,
   Pressable,
+  RefreshControl,
   StyleSheet,
   Text,
   View,
@@ -43,6 +44,7 @@ export default function CardScreen() {
   const [cards, setCards] = useState<Card[]>([]);
   const [cardAnalytics, setCardAnalytics] = useState<CardAnalytics[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
 
   const [showShare, setShowShare] = useState(false);
@@ -59,6 +61,17 @@ export default function CardScreen() {
       setCardAnalytics(analytics.cardBreakdown ?? []);
     } catch {}
     setLoading(false);
+  }, [api]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      const [u, cs, analytics] = await Promise.all([api.getMe(), api.getMyCards(), api.getAnalytics()]);
+      setUser(u);
+      setCards(cs);
+      setCardAnalytics(analytics.cardBreakdown ?? []);
+    } catch {}
+    setRefreshing(false);
   }, [api]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
@@ -121,6 +134,7 @@ export default function CardScreen() {
             decelerationRate="fast"
             contentContainerStyle={styles.carousel}
             ItemSeparatorComponent={() => <View style={{ width: CARD_GAP }} />}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.accent} />}
             onMomentumScrollEnd={(e) => {
               const idx = Math.round(e.nativeEvent.contentOffset.x / (CARD_WIDTH + CARD_GAP));
               setActiveIndex(Math.min(idx, cards.length - 1));
