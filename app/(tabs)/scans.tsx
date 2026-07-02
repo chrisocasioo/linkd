@@ -157,12 +157,12 @@ export default function ScansScreen() {
 
         {/* Viewfinder overlay */}
         <View style={styles.viewfinderWrap} pointerEvents="none">
-          <Text style={styles.hint}>Align business card within the frame</Text>
           <View style={styles.viewfinder}>
             <View style={[styles.corner, styles.cornerTL]} />
             <View style={[styles.corner, styles.cornerTR]} />
             <View style={[styles.corner, styles.cornerBL]} />
             <View style={[styles.corner, styles.cornerBR]} />
+            <Text style={styles.hint}>Align business card within the frame</Text>
           </View>
         </View>
 
@@ -235,9 +235,11 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 20,
   },
   hint: {
+    position: 'absolute',
+    bottom: -36,
+    alignSelf: 'center',
     fontSize: 12, fontFamily: FONTS.regular,
     color: 'rgba(255,255,255,0.65)', textAlign: 'center',
     backgroundColor: 'rgba(0,0,0,0.35)',
