@@ -159,6 +159,7 @@ export default function CardScreen() {
       <ShareSheet
         visible={showShare}
         username={user?.username ?? ''}
+        card={activeCard}
         onClose={() => setShowShare(false)}
         onUsernameChange={(u) => setUser((prev) => prev ? { ...prev, username: u } : prev)}
       />

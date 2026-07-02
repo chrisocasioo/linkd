@@ -10,7 +10,7 @@ import {
   View,
 } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
-import { useApi } from '../../lib/api';
+import { useApi, Card } from '../../lib/api';
 import { COLORS, FONTS } from '../../constants/colors';
 
 const SHEET_HEIGHT = Dimensions.get('window').height * 0.52;
@@ -19,11 +19,12 @@ const BASE = 'linkd-production-fdce.up.railway.app';
 interface Props {
   visible: boolean;
   username: string;
+  card?: Card | null;
   onClose: () => void;
   onUsernameChange?: (username: string) => void;
 }
 
-export function ShareSheet({ visible, username, onClose, onUsernameChange }: Props) {
+export function ShareSheet({ visible, username, card, onClose, onUsernameChange }: Props) {
   const api = useApi();
   const slideAnim = useRef(new Animated.Value(SHEET_HEIGHT)).current;
 
@@ -78,7 +79,10 @@ export function ShareSheet({ visible, username, onClose, onUsernameChange }: Pro
     }
   };
 
-  const url = `https://${BASE}/${usernameValue || username}`;
+  const slug = card?.slug;
+  const url = slug
+    ? `https://${BASE}/${usernameValue || username}/${slug}`
+    : `https://${BASE}/${usernameValue || username}`;
 
   const handleShare = async () => {
     await Share.share({ message: url });
@@ -128,6 +132,7 @@ export function ShareSheet({ visible, username, onClose, onUsernameChange }: Pro
                 <Text style={styles.urlUsername}>{usernameValue || username}</Text>
               </Pressable>
             )}
+            {slug ? <Text style={styles.urlBase}>/{slug}</Text> : null}
           </View>
 
           {/* Share */}

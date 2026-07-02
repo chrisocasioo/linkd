@@ -87,5 +87,9 @@ export async function runMigrations() {
   await db.execute(sql`
     ALTER TABLE card_views ADD COLUMN IF NOT EXISTS card_id UUID REFERENCES cards(id) ON DELETE SET NULL;
   `);
+  await db.execute(sql`
+    ALTER TABLE cards ADD COLUMN IF NOT EXISTS slug TEXT UNIQUE;
+    UPDATE cards SET slug = LEFT(MD5(id::TEXT), 8) WHERE slug IS NULL;
+  `);
   console.log('✓ Database tables ready');
 }

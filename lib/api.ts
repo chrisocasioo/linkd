@@ -106,6 +106,7 @@ export interface Card {
   userId: string;
   name: string;
   accentColor: string;
+  slug: string | null;
   displayOrder: number;
   createdAt: string;
   fields: CardField[];

@@ -1,4 +1,4 @@
-import { asc, eq } from 'drizzle-orm';
+import { asc, eq, and } from 'drizzle-orm';
 import { Router } from 'express';
 import { db } from '../db';
 import { cardFields, cards, cardViews, users } from '../db/schema';
@@ -204,6 +204,26 @@ router.get('/:username/vcard', async (req, res) => {
     res.send(vcf);
   } catch {
     res.status(500).send('Error');
+  }
+});
+
+router.get('/:username/:slug', async (req, res) => {
+  try {
+    const { username, slug } = req.params;
+    const user = await db.query.users.findFirst({ where: eq(users.username, username) });
+    if (!user) return res.status(404).send('<!DOCTYPE html><html><body><h1>Card not found</h1></body></html>');
+    const card = await db.query.cards.findFirst({ where: and(eq(cards.userId, user.id), eq(cards.slug, slug)) });
+    if (!card) return res.status(404).send('<!DOCTYPE html><html><body><h1>Card not found</h1></body></html>');
+    const fields = await db
+      .select()
+      .from(cardFields)
+      .where(eq(cardFields.cardId, card.id))
+      .orderBy(asc(cardFields.displayOrder));
+    db.insert(cardViews).values({ userId: user.id, linkId: null, cardId: card.id }).catch(() => {});
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.send(buildCardHtml(user, card, fields, username));
+  } catch {
+    res.status(500).send('<!DOCTYPE html><html><body><h1>Server error</h1></body></html>');
   }
 });
 

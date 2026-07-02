@@ -46,9 +46,10 @@ router.post('/', async (req, res) => {
       return res.status(403).json({ error: 'Upgrade to Pro for unlimited cards' });
     }
 
+    const slug = Math.random().toString(36).slice(2, 10);
     const [created] = await db
       .insert(cards)
-      .values({ userId, name, accentColor: accentColor ?? '#C9A84C', displayOrder: existing.length })
+      .values({ userId, name, accentColor: accentColor ?? '#C9A84C', slug, displayOrder: existing.length })
       .returning();
     res.status(201).json({ ...created, fields: [] });
   } catch (err: any) {
