@@ -2,7 +2,7 @@
   "expo": {
     "name": "Linkd",
     "slug": "linkd",
-    "owner": "santricobackups-team",
+    "owner": "santrico",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -29,12 +29,15 @@
       "package": "com.santrico.linkd",
       "versionCode": 1,
       "permissions": [
-        "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
         "android.permission.READ_MEDIA_VISUAL_USER_SELECTED",
         "android.permission.READ_MEDIA_IMAGES",
         "android.permission.READ_CONTACTS",
-        "android.permission.WRITE_CONTACTS"
+        "android.permission.WRITE_CONTACTS",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.READ_MEDIA_VIDEO",
+        "android.permission.READ_MEDIA_AUDIO"
       ]
     },
     "plugins": [
@@ -65,7 +68,7 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "cf67efb6-9e6a-4df2-8d02-5d05a203bddd"
+        "projectId": "2b5e1c02-7f58-400c-bd6c-89ad13e4b236"
       },
       "router": {
         "origin": false
