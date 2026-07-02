@@ -10,7 +10,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CardPreview } from '../../components/Card/CardPreview';
 import { PaywallSheet } from '../../components/Card/PaywallSheet';
 import { ShareSheet } from '../../components/Card/ShareSheet';
@@ -21,15 +21,21 @@ import { COLORS, FONTS } from '../../constants/colors';
 
 const ACCENT_COLORS = ['#C9A84C', '#7C3AED', '#22C55E', '#F43F5E', '#0EA5E9', '#F97316', '#EC4899', '#14B8A6'];
 
-const { width: SCREEN_W } = Dimensions.get('window');
+const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 const SIDE_INSET = 24;
 const CARD_GAP = 12;
 const CARD_WIDTH = SCREEN_W - SIDE_INSET * 2;
+
+// Fixed UI heights (top bar + dots + action row)
+const FIXED_UI_H = 60 + 34 + 68;
 
 export default function CardScreen() {
   const api = useApi();
   const router = useRouter();
   const { isPro } = useRevenueCat();
+  const insets = useSafeAreaInsets();
+  // Tab bar is 49px + bottom home-indicator inset; subtract all fixed chrome to get card height
+  const cardMaxH = SCREEN_H - insets.top - 49 - insets.bottom - FIXED_UI_H - 8;
 
   const [user, setUser] = useState<User | null>(null);
   const [cards, setCards] = useState<Card[]>([]);
@@ -40,7 +46,6 @@ export default function CardScreen() {
   const [showShare, setShowShare] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
-  const [carouselHeight, setCarouselHeight] = useState<number | undefined>();
 
   const flatListRef = useRef<FlatList>(null);
 
@@ -96,7 +101,7 @@ export default function CardScreen() {
       </View>
 
       {/* Card carousel */}
-      <View style={{ flex: 1 }} onLayout={(e) => setCarouselHeight(e.nativeEvent.layout.height)}>
+      <View style={{ flex: 1 }}>
         {cards.length === 0 ? (
           <View style={styles.emptyState}>
             <Text style={styles.emptyTitle}>No cards yet</Text>
@@ -124,7 +129,7 @@ export default function CardScreen() {
                   card={item}
                   user={user!}
                   analytics={cardAnalytics.find((a) => a.cardId === item.id)}
-                  maxHeight={carouselHeight}
+                  maxHeight={cardMaxH}
                 />
               </View>
             )}

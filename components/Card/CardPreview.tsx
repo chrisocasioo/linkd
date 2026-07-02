@@ -5,8 +5,7 @@ import { Card, CardAnalytics, CardField, User } from '../../lib/api';
 import { FONTS } from '../../constants/colors';
 
 const { height: SCREEN_H } = Dimensions.get('window');
-// Leave room for top bar (~60px), dots (~34px), action row (~84px), safe area (~50px), padding
-const MAX_CARD_H = SCREEN_H - 250;
+const MAX_CARD_H = SCREEN_H - 350; // fallback only — cards.tsx passes an accurate maxHeight
 
 const FIELD_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
   email:      'mail',
