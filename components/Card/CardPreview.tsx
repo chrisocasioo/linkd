@@ -163,17 +163,18 @@ export function CardPreview({ card, user, analytics, maxHeight, onPreview, refre
       <Animated.View
         style={[styles.face, styles.backFace, StyleSheet.absoluteFill, { transform: [{ rotateY: backRotate }] }]}
       >
-          <View style={[styles.backHeader, { backgroundColor: accent + '22', borderBottomColor: accent + '33' }]}>
-            <Text style={[styles.backCardName, { color: accent }]}>{card.name.toUpperCase()}</Text>
-          </View>
+        <View style={[styles.backHeader, { backgroundColor: accent + '22', borderBottomColor: accent + '33' }]}>
+          <Text style={[styles.backCardName, { color: accent }]}>{card.name.toUpperCase()}</Text>
+        </View>
 
-          <View style={styles.backContent}>
+        <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
+          {/* Views summary */}
+          <View style={styles.backViewsSection}>
             <Text style={styles.backPeriod}>LAST 30 DAYS</Text>
             <Text style={styles.backViews}>
               {analytics ? analytics.views.toLocaleString() : '—'}
             </Text>
             <Text style={styles.backViewsLabel}>card views</Text>
-
             {analytics && (
               <View style={[styles.backDeltaPill, { backgroundColor: accent + '22' }]}>
                 <Text style={[styles.backDelta, { color: accent }]}>
@@ -185,6 +186,30 @@ export function CardPreview({ card, user, analytics, maxHeight, onPreview, refre
               <Text style={styles.backEmpty}>No analytics data yet</Text>
             )}
           </View>
+
+          {/* Field clicks breakdown */}
+          {analytics && analytics.fieldClicks.length > 0 && (
+            <>
+              <View style={[styles.backDivider, { backgroundColor: accent + '22' }]} />
+              <View style={styles.backFieldsSection}>
+                <Text style={styles.backSectionLabel}>FIELD CLICKS</Text>
+                {analytics.fieldClicks.map((fc) => (
+                  <View key={fc.fieldId} style={styles.backFieldRow}>
+                    <View style={[styles.backFieldIcon, { backgroundColor: accent + '22' }]}>
+                      <Ionicons name={FIELD_ICONS[fc.fieldType] ?? FIELD_ICONS.custom} size={13} color={accent} />
+                    </View>
+                    <Text style={styles.backFieldName} numberOfLines={1}>
+                      {fc.label ?? fc.fieldValue}
+                    </Text>
+                    <Text style={[styles.backFieldClicks, { color: accent }]}>
+                      {fc.clicks}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            </>
+          )}
+        </ScrollView>
       </Animated.View>
 
       {/* Flip button — top-right */}
@@ -341,11 +366,10 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.semiBold,
     letterSpacing: 1.2,
   },
-  backContent: {
-    flex: 1,
+  backViewsSection: {
     alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24,
+    paddingVertical: 24,
+    paddingHorizontal: 24,
     gap: 6,
   },
   backPeriod: {
@@ -366,7 +390,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: FONTS.regular,
     color: 'rgba(255,255,255,0.45)',
-    marginBottom: 16,
+    marginBottom: 8,
   },
   backDeltaPill: {
     paddingHorizontal: 14,
@@ -383,5 +407,45 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.regular,
     color: 'rgba(255,255,255,0.3)',
     marginTop: 8,
+  },
+  backDivider: {
+    height: 1,
+    marginHorizontal: 18,
+  },
+  backFieldsSection: {
+    paddingHorizontal: 18,
+    paddingTop: 16,
+    paddingBottom: 12,
+    gap: 4,
+  },
+  backSectionLabel: {
+    fontSize: 10,
+    fontFamily: FONTS.medium,
+    color: 'rgba(255,255,255,0.35)',
+    letterSpacing: 1,
+    marginBottom: 10,
+  },
+  backFieldRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 7,
+  },
+  backFieldIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  backFieldName: {
+    flex: 1,
+    fontSize: 13,
+    fontFamily: FONTS.regular,
+    color: 'rgba(255,255,255,0.75)',
+  },
+  backFieldClicks: {
+    fontSize: 14,
+    fontFamily: FONTS.semiBold,
   },
 });
