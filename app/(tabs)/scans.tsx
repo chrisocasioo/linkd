@@ -260,7 +260,7 @@ const styles = StyleSheet.create({
   cameraWrap: { flex: 1, overflow: 'hidden' },
 
   viewfinderWrap: {
-    ...StyleSheet.absoluteFillObject,
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
