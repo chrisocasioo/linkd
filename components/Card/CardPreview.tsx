@@ -83,6 +83,8 @@ export function CardPreview({ card, user, analytics, maxHeight, onPreview, refre
   const capH = maxHeight ?? MAX_CARD_H;
   const [isFlipped, setIsFlipped] = useState(false);
   const flipAnim = useRef(new Animated.Value(0)).current;
+  const [frontContentH, setFrontContentH] = useState<number | null>(null);
+  const frontBoxH = Math.min(frontContentH ?? capH, capH);
 
   const flip = () => {
     const toValue = isFlipped ? 0 : 1;
@@ -97,13 +99,15 @@ export function CardPreview({ card, user, analytics, maxHeight, onPreview, refre
     <View style={styles.card}>
       {/* ── Front face ── */}
       <Animated.View style={[styles.face, { transform: [{ rotateY: frontRotate }] }]}>
-        <ScrollView
-          style={{ maxHeight: capH }}
-          showsVerticalScrollIndicator={false}
-          bounces={!!refreshControl}
-          refreshControl={refreshControl}
-          scrollEventThrottle={16}
-        >
+        <View style={{ height: frontBoxH }}>
+          <ScrollView
+            style={styles.frontScroll}
+            onContentSizeChange={(_w, h) => setFrontContentH(h)}
+            showsVerticalScrollIndicator={false}
+            bounces={!!refreshControl}
+            refreshControl={refreshControl}
+            scrollEventThrottle={16}
+          >
           {/* Banner — tapping opens the public card */}
           <Pressable style={styles.banner} onPress={onPreview}>
             {user.profilePhoto ? (
@@ -157,6 +161,7 @@ export function CardPreview({ card, user, analytics, maxHeight, onPreview, refre
               ))}
           </View>
         </ScrollView>
+        </View>
       </Animated.View>
 
       {/* ── Back face ── */}
@@ -235,6 +240,9 @@ const styles = StyleSheet.create({
   },
   face: {
     backfaceVisibility: 'hidden',
+  },
+  frontScroll: {
+    flex: 1,
   },
   backFace: {
     backgroundColor: '#161616',
