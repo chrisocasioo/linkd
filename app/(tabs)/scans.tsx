@@ -84,6 +84,7 @@ export default function ScansScreen() {
   const cameraRef = useRef<Camera>(null);
   const detectingRef = useRef(false);
   const intervalRef = useRef<ReturnType<typeof setInterval>>();
+  const consecutiveHitsRef = useRef(0);
 
   const [flash, setFlash] = useState<'off' | 'on'>('off');
   const [detected, setDetected] = useState(false);
@@ -119,18 +120,25 @@ export default function ScansScreen() {
         const result = await TextRecognition.recognize(uri);
         const parsed = parseBusinessCard(result.text);
         if (hasEnoughInfo(parsed)) {
-          clearInterval(intervalRef.current);
-          setDetected(true);
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          setTimeout(() => {
-            setScanResult(parsed);
-            setShowReview(true);
-            setDetected(false);
-          }, 400);
+          consecutiveHitsRef.current += 1;
+          if (consecutiveHitsRef.current === 2) setDetected(true);
+          if (consecutiveHitsRef.current >= 3) {
+            clearInterval(intervalRef.current);
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            setTimeout(() => {
+              setScanResult(parsed);
+              setShowReview(true);
+              setDetected(false);
+              consecutiveHitsRef.current = 0;
+            }, 400);
+          }
+        } else {
+          consecutiveHitsRef.current = 0;
+          setDetected(false);
         }
       } catch {}
       detectingRef.current = false;
-    }, 800);
+    }, 1200);
 
     return () => clearInterval(intervalRef.current);
   }, [hasPermission, device, showReview]);
