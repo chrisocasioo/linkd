@@ -62,9 +62,10 @@ interface Props {
   user: User;
   analytics?: CardAnalytics;
   maxHeight?: number;
+  onPreview?: () => void;
 }
 
-export function CardPreview({ card, user, analytics, maxHeight }: Props) {
+export function CardPreview({ card, user, analytics, maxHeight, onPreview }: Props) {
   const accent = card.accentColor;
   const initial = (user.displayName ?? user.username ?? '?')[0].toUpperCase();
   const [cardHeight, setCardHeight] = useState<number | undefined>();
@@ -174,7 +175,7 @@ export function CardPreview({ card, user, analytics, maxHeight }: Props) {
         </Animated.View>
       )}
 
-      {/* Flip button on outer card — above both animated faces, never blocked */}
+      {/* Flip button — top-right */}
       <Pressable style={styles.flipBtn} onPress={flip} hitSlop={8}>
         <Ionicons
           name={isFlipped ? 'card-outline' : 'stats-chart-outline'}
@@ -182,6 +183,13 @@ export function CardPreview({ card, user, analytics, maxHeight }: Props) {
           color="rgba(255,255,255,0.75)"
         />
       </Pressable>
+
+      {/* Preview button — top-left */}
+      {onPreview && (
+        <Pressable style={styles.previewBtn} onPress={onPreview} hitSlop={8}>
+          <Ionicons name="eye-outline" size={14} color="rgba(255,255,255,0.75)" />
+        </Pressable>
+      )}
     </View>
   );
 }
@@ -205,6 +213,17 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 10,
     right: 10,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  previewBtn: {
+    position: 'absolute',
+    top: 10,
+    left: 10,
     width: 30,
     height: 30,
     borderRadius: 15,

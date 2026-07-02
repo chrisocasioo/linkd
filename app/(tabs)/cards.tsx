@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import * as WebBrowser from 'expo-web-browser';
 import { useFocusEffect, useRouter } from 'expo-router';
 import React, { useCallback, useRef, useState } from 'react';
 import {
@@ -20,6 +21,7 @@ import { useRevenueCat } from '../../lib/RevenueCatContext';
 import { COLORS, FONTS } from '../../constants/colors';
 
 const ACCENT_COLORS = ['#C9A84C', '#7C3AED', '#22C55E', '#F43F5E', '#0EA5E9', '#F97316', '#EC4899', '#14B8A6'];
+const BASE = 'linkd-production-fdce.up.railway.app';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 const SIDE_INSET = 24;
@@ -123,16 +125,23 @@ export default function CardScreen() {
               const idx = Math.round(e.nativeEvent.contentOffset.x / (CARD_WIDTH + CARD_GAP));
               setActiveIndex(Math.min(idx, cards.length - 1));
             }}
-            renderItem={({ item }) => (
-              <View style={{ width: CARD_WIDTH }}>
-                <CardPreview
-                  card={item}
-                  user={user!}
-                  analytics={cardAnalytics.find((a) => a.cardId === item.id)}
-                  maxHeight={cardMaxH}
-                />
-              </View>
-            )}
+            renderItem={({ item }) => {
+              const username = user?.username ?? '';
+              const publicUrl = item.slug
+                ? `https://${BASE}/${username}/${item.slug}`
+                : `https://${BASE}/${username}`;
+              return (
+                <View style={{ width: CARD_WIDTH }}>
+                  <CardPreview
+                    card={item}
+                    user={user!}
+                    analytics={cardAnalytics.find((a) => a.cardId === item.id)}
+                    maxHeight={cardMaxH}
+                    onPreview={() => WebBrowser.openBrowserAsync(publicUrl)}
+                  />
+                </View>
+              );
+            }}
           />
         )}
       </View>
