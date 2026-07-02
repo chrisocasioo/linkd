@@ -31,7 +31,7 @@ function parseBusinessCard(rawText: string): Partial<ScanResult> {
   );
 
   const websiteMatch = lines.find(
-    (l) => /^(https?:\/\/|www\.)/i.test(l) || /\.(com|io|co|net|org|app|me|dev)\/?$/i.test(l)
+    (l) => !l.includes('@') && (/^(https?:\/\/|www\.)/i.test(l) || /\.(com|io|co|net|org|app|me|dev)\/?$/i.test(l))
   );
 
   const used = new Set([emailMatch, phoneMatch, websiteMatch].filter(Boolean) as string[]);
