@@ -152,9 +152,23 @@ export function useApi() {
 
   const withToken = useCallback(
     async <T>(fn: (token: string) => Promise<T>): Promise<T> => {
-      const token = await getToken();
-      if (!token) throw new Error('Not authenticated');
-      return fn(token);
+      // Clerk's cached session can be stale after the app sits in the background;
+      // a null/expired token here surfaced as "unauthenticated" errors in the UI.
+      let token: string | null = null;
+      try { token = await getToken(); } catch {}
+      if (!token) {
+        try { token = await getToken({ skipCache: true }); } catch {}
+      }
+      if (!token) throw new Error('Not authenticated — check your connection and try again');
+      try {
+        return await fn(token);
+      } catch (err: any) {
+        if (typeof err?.message === 'string' && err.message.startsWith('[401]')) {
+          const fresh = await getToken({ skipCache: true });
+          if (fresh) return fn(fresh);
+        }
+        throw err;
+      }
     },
     [getToken]
   );
