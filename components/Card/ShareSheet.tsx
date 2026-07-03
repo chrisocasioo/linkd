@@ -166,7 +166,7 @@ export function ShareSheet({ visible, username, user, card, onClose }: Props) {
             <Text style={styles.qrCaption}>
               {qrMode === 'offline'
                 ? 'Scan to add contact — works without internet'
-                : 'Scan to open card'}
+                : 'Scan to open digital card'}
             </Text>
           </View>
 
