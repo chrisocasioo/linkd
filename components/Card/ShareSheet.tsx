@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Contacts from 'expo-contacts';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
+import * as WebBrowser from 'expo-web-browser';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Alert,
@@ -20,7 +21,7 @@ import { buildVcard, contactFromCard } from '../../lib/vcard';
 import { COLORS, FONTS } from '../../constants/colors';
 import { SHARE_BASE, publicCardUrl } from '../../constants/config';
 
-const SHEET_HEIGHT = Dimensions.get('window').height * 0.68;
+const SHEET_HEIGHT = Dimensions.get('window').height * 0.74;
 
 interface Props {
   visible: boolean;
@@ -129,6 +130,12 @@ export function ShareSheet({ visible, username, user, card, onClose, onUsernameC
         Alert.alert('Share failed', err.message);
       }
     });
+  };
+
+  const handleAddToWallet = async () => {
+    if (!card) return;
+    // Safari presents the signed .pkpass with the native "Add to Wallet" sheet
+    await WebBrowser.openBrowserAsync(`https://${SHARE_BASE}/pass/${card.id}`);
   };
 
   const handleContactPreview = async () => {
@@ -245,6 +252,16 @@ export function ShareSheet({ visible, username, user, card, onClose, onUsernameC
               <Text style={styles.btnSecondaryText}>Share QR</Text>
             </Pressable>
           </View>
+
+          {/* Apple Wallet */}
+          <Pressable
+            style={[styles.walletBtn, !card && { opacity: 0.4 }]}
+            onPress={handleAddToWallet}
+            disabled={!card}
+          >
+            <Ionicons name="wallet-outline" size={16} color="#fff" />
+            <Text style={styles.walletBtnText}>Add to Apple Wallet</Text>
+          </Pressable>
         </View>
       </Animated.View>
     </View>
@@ -297,4 +314,10 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   btnSecondaryText: { fontSize: 13, fontFamily: FONTS.semiBold, color: COLORS.text },
+  walletBtn: {
+    width: '100%', height: 46, borderRadius: 13, flexDirection: 'row', gap: 8,
+    backgroundColor: '#000', borderWidth: 1, borderColor: 'rgba(255,255,255,0.25)',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  walletBtnText: { fontSize: 13, fontFamily: FONTS.semiBold, color: '#fff' },
 });

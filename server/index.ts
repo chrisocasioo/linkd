@@ -11,6 +11,7 @@ import analyticsRouter from './routes/analytics';
 import cardsRouter from './routes/cards';
 import contactsRouter from './routes/contacts';
 import linksRouter from './routes/links';
+import passRouter from './routes/pass';
 import photoRouter from './routes/photo';
 import photoServeRouter from './routes/photoServe';
 import publicRouter from './routes/public';
@@ -97,7 +98,10 @@ app.use('/api/contacts', requireAuth, contactsRouter);
 // 7. Analytics routes (POST /view is public; GET /me applies requireAuth internally)
 app.use('/api/analytics', analyticsRouter);
 
-// 8. Public card pages — catch-all, must be last
+// 8. Apple Wallet passes — must precede the public catch-all (/:username/:slug)
+app.use('/', passRouter);
+
+// 9. Public card pages — catch-all, must be last
 app.use('/', publicRouter);
 
 app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
