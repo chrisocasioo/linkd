@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 
 import { useApi } from '../../lib/api';
+import { clearAllCaches } from '../../lib/cache';
 import { COLORS, FONTS } from '../../constants/colors';
 
 interface Props {
@@ -50,6 +51,7 @@ export function SettingsSheet({ visible, onClose, onShowPaywall }: Props) {
   const handleSignOut = async () => {
     onClose();
     try {
+      await clearAllCaches();
       await signOut();
       router.replace('/(auth)/sign-in');
     } catch {}
@@ -66,6 +68,7 @@ export function SettingsSheet({ visible, onClose, onShowPaywall }: Props) {
           style: 'destructive',
           onPress: async () => {
             try {
+              await clearAllCaches();
               await api.deleteMe().catch(() => {});
               await user?.delete();
               await signOut();

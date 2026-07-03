@@ -4,6 +4,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import React, { useCallback, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Dimensions,
   FlatList,
   Pressable,
@@ -19,11 +20,12 @@ import { PaywallSheet } from '../../components/Card/PaywallSheet';
 import { ShareSheet } from '../../components/Card/ShareSheet';
 import { SettingsSheet } from '../../components/Profile/SettingsSheet';
 import { useApi, Card, CardAnalytics, User } from '../../lib/api';
+import { loadHomeCache, saveHomeCache } from '../../lib/cache';
 import { useRevenueCat } from '../../lib/RevenueCatContext';
 import { COLORS, FONTS } from '../../constants/colors';
+import { publicCardUrl } from '../../constants/config';
 
 const ACCENT_COLORS = ['#C9A84C', '#7C3AED', '#22C55E', '#F43F5E', '#0EA5E9', '#F97316', '#EC4899', '#14B8A6'];
-const BASE = 'linkd-production-fdce.up.railway.app';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 const SIDE_INSET = 24;
@@ -47,6 +49,7 @@ export default function CardScreen() {
   const [cardAnalytics, setCardAnalytics] = useState<CardAnalytics[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [offline, setOffline] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
 
   const [showShare, setShowShare] = useState(false);
@@ -54,27 +57,42 @@ export default function CardScreen() {
   const [showPaywall, setShowPaywall] = useState(false);
 
   const flatListRef = useRef<FlatList>(null);
+  const hydratedRef = useRef(false);
 
-  const load = useCallback(async () => {
+  const fetchFresh = useCallback(async () => {
     try {
       const [u, cs, analytics] = await Promise.all([api.getMe(), api.getMyCards(), api.getAnalytics()]);
       setUser(u);
       setCards(cs);
       setCardAnalytics(analytics.cardBreakdown ?? []);
-    } catch {}
-    setLoading(false);
+      setOffline(false);
+      saveHomeCache({ user: u, cards: cs, cardAnalytics: analytics.cardBreakdown ?? [] });
+    } catch {
+      setOffline(true); // cached data (if any) stays on screen
+    }
   }, [api]);
+
+  const load = useCallback(async () => {
+    // Hydrate from disk once per mount: instant UI on cold start, works offline
+    if (!hydratedRef.current) {
+      hydratedRef.current = true;
+      const cached = await loadHomeCache();
+      if (cached) {
+        setUser(cached.user);
+        setCards(cached.cards);
+        setCardAnalytics(cached.cardAnalytics);
+        setLoading(false);
+      }
+    }
+    await fetchFresh();
+    setLoading(false);
+  }, [fetchFresh]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    try {
-      const [u, cs, analytics] = await Promise.all([api.getMe(), api.getMyCards(), api.getAnalytics()]);
-      setUser(u);
-      setCards(cs);
-      setCardAnalytics(analytics.cardBreakdown ?? []);
-    } catch {}
+    await fetchFresh();
     setRefreshing(false);
-  }, [api]);
+  }, [fetchFresh]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
@@ -85,9 +103,13 @@ export default function CardScreen() {
 
   const handlePressAddCard = async () => {
     if (!isPro && cards.length >= 2) { setShowPaywall(true); return; }
-    const created = await api.addCard({ name: 'New Card', accentColor: ACCENT_COLORS[0] });
-    setCards((cs) => [...cs, created]);
-    router.push({ pathname: '/edit-card', params: { cardId: created.id } });
+    try {
+      const created = await api.addCard({ name: 'New Card', accentColor: ACCENT_COLORS[0] });
+      setCards((cs) => [...cs, created]);
+      router.push({ pathname: '/edit-card', params: { cardId: created.id } });
+    } catch {
+      Alert.alert('No connection', 'Creating a card needs an internet connection.');
+    }
   };
 
   // ── Render ─────────────────────────────────────────────────────────────────
@@ -106,7 +128,15 @@ export default function CardScreen() {
     <SafeAreaView style={styles.safe}>
       {/* Top bar */}
       <View style={styles.topBar}>
-        <Text style={styles.heading}>Cards</Text>
+        <View style={styles.headingRow}>
+          <Text style={styles.heading}>Cards</Text>
+          {offline && (
+            <View style={styles.offlineChip}>
+              <Ionicons name="cloud-offline-outline" size={12} color={COLORS.textSecondary} />
+              <Text style={styles.offlineChipText}>Offline</Text>
+            </View>
+          )}
+        </View>
         <View style={styles.topRight}>
           <Pressable style={styles.iconBtn} onPress={handlePressAddCard}>
             <Ionicons name="add" size={22} color={COLORS.text} />
@@ -129,8 +159,10 @@ export default function CardScreen() {
         >
           {cards.length === 0 ? (
             <View style={styles.emptyState}>
-              <Text style={styles.emptyTitle}>No cards yet</Text>
-              <Text style={styles.emptySub}>Tap + to create your first card</Text>
+              <Text style={styles.emptyTitle}>{offline ? "You're offline" : 'No cards yet'}</Text>
+              <Text style={styles.emptySub}>
+                {offline ? 'Your cards will appear once you connect' : 'Tap + to create your first card'}
+              </Text>
             </View>
           ) : (
             <FlatList
@@ -148,9 +180,7 @@ export default function CardScreen() {
               }}
               renderItem={({ item }) => {
                 const username = user?.username ?? '';
-                const publicUrl = item.slug
-                  ? `https://${BASE}/${username}/${item.slug}`
-                  : `https://${BASE}/${username}`;
+                const publicUrl = publicCardUrl(username, item.slug);
                 return (
                   <View style={{ width: SCREEN_W, paddingHorizontal: SIDE_INSET }}>
                     <CardPreview
@@ -198,6 +228,7 @@ export default function CardScreen() {
       {/* Sheets */}
       <ShareSheet
         visible={showShare}
+        user={user}
         username={user?.username ?? ''}
         card={activeCard}
         onClose={() => setShowShare(false)}
@@ -221,6 +252,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20, paddingTop: 10, paddingBottom: 14,
   },
   heading: { fontSize: 22, fontFamily: FONTS.semiBold, color: COLORS.text },
+  headingRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  offlineChip: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12,
+    backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border,
+  },
+  offlineChipText: { fontSize: 10, fontFamily: FONTS.medium, color: COLORS.textSecondary, letterSpacing: 0.4 },
   topRight: { flexDirection: 'row', gap: 8 },
   iconBtn: {
     width: 36, height: 36, alignItems: 'center', justifyContent: 'center',
