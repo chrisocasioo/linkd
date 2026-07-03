@@ -2,7 +2,7 @@
   "expo": {
     "name": "Linkd",
     "slug": "linkd",
-    "owner": "santrico",
+    "owner": "goagettersupport",
     "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -17,7 +17,7 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.santrico.linkd",
       "minimumOsVersion": "16.0",
-      "buildNumber": "61",
+      "buildNumber": "62",
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "Linkd needs access to your photos to set your profile picture.",
         "NSPhotoLibraryAddUsageDescription": "Linkd saves content to your photo library.",
@@ -68,11 +68,11 @@
       "@react-native-community/datetimepicker"
     ],
     "extra": {
-      "eas": {
-        "projectId": "2b5e1c02-7f58-400c-bd6c-89ad13e4b236"
-      },
       "router": {
         "origin": false
+      },
+      "eas": {
+        "projectId": "0941d540-d29b-4849-8658-b6c7a405f76c"
       }
     }
   }
