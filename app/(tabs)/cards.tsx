@@ -8,6 +8,7 @@ import {
   FlatList,
   Pressable,
   RefreshControl,
+  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -116,49 +117,55 @@ export default function CardScreen() {
         </View>
       </View>
 
-      {/* Card carousel */}
+      {/* Card carousel — vertical ScrollView owns pull-to-refresh so the
+          spinner sits above the card and the whole card pulls down */}
       <View style={{ flex: 1 }} onLayout={(e) => setCarouselH(e.nativeEvent.layout.height)}>
-        {cards.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyTitle}>No cards yet</Text>
-            <Text style={styles.emptySub}>Tap + to create your first card</Text>
-          </View>
-        ) : (
-          <FlatList
-            ref={flatListRef}
-            data={cards}
-            keyExtractor={(c) => c.id}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            pagingEnabled
-            decelerationRate="fast"
-            contentContainerStyle={styles.carousel}
-            onMomentumScrollEnd={(e) => {
-              const idx = Math.round(e.nativeEvent.contentOffset.x / SCREEN_W);
-              setActiveIndex(Math.min(idx, cards.length - 1));
-            }}
-            renderItem={({ item }) => {
-              const username = user?.username ?? '';
-              const publicUrl = item.slug
-                ? `https://${BASE}/${username}/${item.slug}`
-                : `https://${BASE}/${username}`;
-              return (
-                <View style={{ width: SCREEN_W, paddingHorizontal: SIDE_INSET }}>
-                  <CardPreview
-                    card={item}
-                    user={user!}
-                    analytics={cardAnalytics.find((a) => a.cardId === item.id)}
-                    maxHeight={cardMaxH}
-                    onPreview={() => WebBrowser.openBrowserAsync(publicUrl)}
-                    refreshControl={
-                      <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.accent} />
-                    }
-                  />
-                </View>
-              );
-            }}
-          />
-        )}
+        <ScrollView
+          contentContainerStyle={{ flexGrow: 1 }}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.accent} />
+          }
+        >
+          {cards.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyTitle}>No cards yet</Text>
+              <Text style={styles.emptySub}>Tap + to create your first card</Text>
+            </View>
+          ) : (
+            <FlatList
+              ref={flatListRef}
+              data={cards}
+              keyExtractor={(c) => c.id}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              pagingEnabled
+              decelerationRate="fast"
+              contentContainerStyle={styles.carousel}
+              onMomentumScrollEnd={(e) => {
+                const idx = Math.round(e.nativeEvent.contentOffset.x / SCREEN_W);
+                setActiveIndex(Math.min(idx, cards.length - 1));
+              }}
+              renderItem={({ item }) => {
+                const username = user?.username ?? '';
+                const publicUrl = item.slug
+                  ? `https://${BASE}/${username}/${item.slug}`
+                  : `https://${BASE}/${username}`;
+                return (
+                  <View style={{ width: SCREEN_W, paddingHorizontal: SIDE_INSET }}>
+                    <CardPreview
+                      card={item}
+                      user={user!}
+                      analytics={cardAnalytics.find((a) => a.cardId === item.id)}
+                      maxHeight={cardMaxH}
+                      onPreview={() => WebBrowser.openBrowserAsync(publicUrl)}
+                    />
+                  </View>
+                );
+              }}
+            />
+          )}
+        </ScrollView>
       </View>
 
       {/* Dots */}
