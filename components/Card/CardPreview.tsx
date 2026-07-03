@@ -340,7 +340,7 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
   fields: {
-    paddingBottom: 16,
+    paddingBottom: 8,
   },
   fieldRow: {
     flexDirection: 'row',
