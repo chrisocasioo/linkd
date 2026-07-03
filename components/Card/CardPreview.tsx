@@ -73,13 +73,18 @@ interface Props {
   analytics?: CardAnalytics;
   maxHeight?: number;
   onPreview?: () => void;
+  /** Called when the user pulls down past the top of an overflowing card —
+      the inner scroller owns the gesture then, so the outer RefreshControl
+      never sees the pull and we must trigger the refresh ourselves. */
+  onPullRefresh?: () => void;
 }
 
-export function CardPreview({ card, user, analytics, maxHeight, onPreview }: Props) {
+export function CardPreview({ card, user, analytics, maxHeight, onPreview, onPullRefresh }: Props) {
   const accent = card.accentColor;
   const fonts = CARD_FONTS[card.font ?? 'dm-sans'] ?? CARD_FONTS['dm-sans'];
   const initial = (user.displayName ?? user.username ?? '?')[0].toUpperCase();
   const capH = maxHeight ?? MAX_CARD_H;
+  const [contentOverflows, setContentOverflows] = useState(false);
   const [isFlipped, setIsFlipped] = useState(false);
   const flipAnim = useRef(new Animated.Value(0)).current;
 
@@ -102,7 +107,16 @@ export function CardPreview({ card, user, analytics, maxHeight, onPreview }: Pro
         <ScrollView
           style={{ maxHeight: capH, borderRadius: 22 }}
           showsVerticalScrollIndicator={false}
-          bounces={false}
+          // Fits: bounces off so the pan never starts and the outer refresh
+          // layer gets the pull. Overflows: bounce at the top and detect the
+          // pull ourselves on release.
+          bounces={contentOverflows && !!onPullRefresh}
+          onContentSizeChange={(_, h) => setContentOverflows(h > capH + 1)}
+          onScrollEndDrag={(e) => {
+            if (contentOverflows && onPullRefresh && e.nativeEvent.contentOffset.y < -70) {
+              onPullRefresh();
+            }
+          }}
           scrollEventThrottle={16}
         >
           {/* Banner — tapping opens the public card */}

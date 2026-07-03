@@ -189,6 +189,7 @@ export default function CardScreen() {
                       analytics={cardAnalytics.find((a) => a.cardId === item.id)}
                       maxHeight={cardMaxH}
                       onPreview={() => WebBrowser.openBrowserAsync(publicUrl)}
+                      onPullRefresh={onRefresh}
                     />
                   </View>
                 );
