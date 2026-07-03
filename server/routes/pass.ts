@@ -1,6 +1,7 @@
 import { asc, eq } from 'drizzle-orm';
 import { Router } from 'express';
 import fs from 'fs';
+import Jimp from 'jimp';
 import path from 'path';
 import { PKPass } from 'passkit-generator';
 import { db } from '../db';
@@ -20,6 +21,36 @@ function hexToRgb(hex: string): string {
   if (!m) return 'rgb(201, 168, 76)';
   const n = parseInt(m[1], 16);
   return `rgb(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255})`;
+}
+
+// Banner strip across the top of the pass (like the in-app card's banner):
+// the profile photo cover-cropped and dimmed for text legibility, or a solid
+// accent block when there's no photo. Wallet wants 375x123pt at 1x/2x/3x.
+const STRIP_W = 375;
+const STRIP_H = 123;
+
+async function buildStripImages(photoUrl: string | null, accentHex: string): Promise<Record<string, Buffer>> {
+  let base: Jimp | null = null;
+  if (photoUrl && /^https?:\/\//.test(photoUrl)) {
+    try {
+      const resp = await (globalThis as any).fetch(photoUrl);
+      if (resp.ok) {
+        base = await Jimp.read(Buffer.from(await resp.arrayBuffer()));
+      }
+    } catch {}
+  }
+  const m = /^#?([0-9a-f]{6})$/i.exec(accentHex.trim());
+  // >>> 0 must come last: bitwise ops re-sign to int32, and Jimp needs uint32
+  const accentNum = ((parseInt(m ? m[1] : 'C9A84C', 16) << 8) | 0xff) >>> 0;
+
+  const out: Record<string, Buffer> = {};
+  for (const [name, scale] of [['strip.png', 1], ['strip@2x.png', 2], ['strip@3x.png', 3]] as const) {
+    const img = base
+      ? base.clone().cover(STRIP_W * scale, STRIP_H * scale).brightness(-0.25)
+      : new Jimp(STRIP_W * scale, STRIP_H * scale, accentNum);
+    out[name] = await img.getBufferAsync(Jimp.MIME_PNG);
+  }
+  return out;
 }
 
 
@@ -123,7 +154,10 @@ router.get('/pass/:cardId', async (req, res) => {
       backgroundColor: 'rgb(22, 22, 22)',
       foregroundColor: 'rgb(255, 255, 255)',
       labelColor: hexToRgb(accent),
-      generic: {
+      // storeCard style: name renders on the banner strip, secondary +
+      // auxiliary merge into one row beneath it — fills the dead zone the
+      // generic layout left above the QR
+      storeCard: {
         headerFields: [{ key: 'cardName', value: card.name.toUpperCase() }],
         primaryFields: [{ key: 'name', value: displayName }],
         secondaryFields,
@@ -147,6 +181,7 @@ router.get('/pass/:cardId', async (req, res) => {
     for (const asset of ['icon.png', 'icon@2x.png', 'icon@3x.png']) {
       files[asset] = fs.readFileSync(path.join(ASSETS_DIR, asset));
     }
+    Object.assign(files, await buildStripImages(user.profilePhoto ?? null, accent));
 
     const pass = new PKPass(files, {
       wwdr: fs.readFileSync(WWDR_PATH),
