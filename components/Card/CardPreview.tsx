@@ -101,7 +101,7 @@ export function CardPreview({ card, user, analytics, maxHeight, onPreview, refre
         style={[styles.face, { transform: [{ rotateY: frontRotate }] }]}
       >
         <ScrollView
-          style={{ maxHeight: capH }}
+          style={{ maxHeight: capH, borderRadius: 22 }}
           showsVerticalScrollIndicator={false}
           bounces={!!refreshControl}
           refreshControl={refreshControl}
@@ -328,7 +328,7 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
   fields: {
-    paddingBottom: 8,
+    paddingBottom: 16,
   },
   fieldRow: {
     flexDirection: 'row',
