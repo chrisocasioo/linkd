@@ -8,6 +8,7 @@ import {
   Alert,
   Animated,
   Dimensions,
+  Linking,
   Pressable,
   Share,
   StyleSheet,
@@ -134,8 +135,13 @@ export function ShareSheet({ visible, username, user, card, onClose, onUsernameC
 
   const handleAddToWallet = async () => {
     if (!card) return;
-    // Safari presents the signed .pkpass with the native "Add to Wallet" sheet
-    await WebBrowser.openBrowserAsync(`https://${SHARE_BASE}/pass/${card.id}`);
+    // Must open in REAL Safari — the in-app browser (SFSafariViewController)
+    // can't handle .pkpass downloads, so the add sheet never appears
+    try {
+      await Linking.openURL(`https://${SHARE_BASE}/pass/${card.id}`);
+    } catch (err: any) {
+      Alert.alert('Could not open pass', err.message ?? 'Try again.');
+    }
   };
 
   const handleContactPreview = async () => {
