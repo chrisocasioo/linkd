@@ -94,13 +94,9 @@ router.get('/pass/:cardId', async (req, res) => {
       ? `https://${SHARE_BASE}/${user.username}/${card.slug}`
       : `https://${SHARE_BASE}/${user.username}`;
 
-    // Apple ignores textAlignment on primaryFields, so the name lives in the
-    // secondary row (single field = full width, centered) with title/company
-    // centered beneath it in the auxiliary row.
-    const CENTER = 'PKTextAlignmentCenter';
-    const auxiliaryFields: Array<{ key: string; label: string; value: string; textAlignment: string }> = [];
-    if (title) auxiliaryFields.push({ key: 'title', label: 'TITLE', value: title, textAlignment: CENTER });
-    if (company) auxiliaryFields.push({ key: 'company', label: 'COMPANY', value: company, textAlignment: CENTER });
+    const secondaryFields: Array<{ key: string; label: string; value: string }> = [];
+    if (title) secondaryFields.push({ key: 'title', label: 'TITLE', value: title });
+    if (company) secondaryFields.push({ key: 'company', label: 'COMPANY', value: company });
 
     const accent = card.accentColor ?? '#C9A84C';
     const passJson = {
@@ -117,8 +113,8 @@ router.get('/pass/:cardId', async (req, res) => {
       labelColor: hexToRgb(accent),
       generic: {
         headerFields: [{ key: 'cardName', value: card.name.toUpperCase() }],
-        secondaryFields: [{ key: 'name', value: displayName, textAlignment: CENTER }],
-        auxiliaryFields,
+        primaryFields: [{ key: 'name', value: displayName }],
+        secondaryFields,
       },
       barcodes: [
         {
