@@ -21,16 +21,26 @@ const { height: SCREEN_H } = Dimensions.get('window');
 
 type FieldKey = 'firstName' | 'lastName' | 'email' | 'phone' | 'fax' | 'company' | 'jobTitle' | 'website' | 'address';
 
-const FIELD_OPTS: Array<{ key: FieldKey; label: string; icon: keyof typeof Ionicons.glyphMap }> = [
+const FIELD_OPTS: Array<{
+  key: FieldKey;
+  label: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  keyboard?: 'email-address' | 'phone-pad' | 'url';
+}> = [
   { key: 'firstName', label: 'First Name',  icon: 'person-outline' },
   { key: 'lastName',  label: 'Last Name',   icon: 'person-outline' },
-  { key: 'email',     label: 'Email',       icon: 'mail-outline' },
-  { key: 'phone',     label: 'Phone',       icon: 'call-outline' },
-  { key: 'fax',       label: 'Fax',         icon: 'print-outline' },
+  { key: 'email',     label: 'Email',       icon: 'mail-outline',     keyboard: 'email-address' },
+  { key: 'phone',     label: 'Phone',       icon: 'call-outline',     keyboard: 'phone-pad' },
+  { key: 'fax',       label: 'Fax',         icon: 'print-outline',    keyboard: 'phone-pad' },
   { key: 'company',   label: 'Company',     icon: 'business-outline' },
   { key: 'jobTitle',  label: 'Job Title',   icon: 'briefcase-outline' },
-  { key: 'website',   label: 'Website',     icon: 'globe-outline' },
+  { key: 'website',   label: 'Website',     icon: 'globe-outline',    keyboard: 'url' },
   { key: 'address',   label: 'Address',     icon: 'location-outline' },
+];
+
+// Blank form shown by Add Contact (no scan data) — every common field ready to fill
+const BLANK_FORM_FIELDS: FieldKey[] = [
+  'firstName', 'lastName', 'phone', 'email', 'company', 'jobTitle', 'website', 'address',
 ];
 
 interface Item { id: string; value: string; field: FieldKey; }
@@ -39,6 +49,9 @@ let _id = 0;
 function uid() { return String(_id++); }
 
 function toItems(initial: Partial<ScanResult> | null): Item[] {
+  if (!initial) {
+    return BLANK_FORM_FIELDS.map((field) => ({ id: uid(), value: '', field }));
+  }
   const items: Item[] = [];
   const add = (field: FieldKey, value: string | null | undefined) => {
     if (value) items.push({ id: uid(), value, field });
@@ -171,6 +184,8 @@ export function ContactReviewSheet({ visible, initial, onClose, onSave, title = 
                       placeholderTextColor={COLORS.textTertiary}
                       placeholder={opt.label}
                       onFocus={() => setPickerFor(null)}
+                      keyboardType={opt.keyboard ?? 'default'}
+                      autoCapitalize={opt.keyboard === 'email-address' || opt.keyboard === 'url' ? 'none' : 'sentences'}
                     />
                     <Pressable
                       style={[styles.fieldPill, isPickerOpen && { borderColor: COLORS.accent }]}
