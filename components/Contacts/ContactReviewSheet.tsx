@@ -6,6 +6,7 @@ import {
   Keyboard,
   KeyboardAvoidingView,
   Modal,
+  PanResponder,
   Platform,
   Pressable,
   ScrollView,
@@ -112,6 +113,27 @@ export function ContactReviewSheet({ visible, initial, onClose, onSave, title = 
 
   const close = () => { Keyboard.dismiss(); setPickerFor(null); onClose(); };
 
+  // Swipe-down-to-dismiss on the handle/header zone (the body ScrollView keeps
+  // its own vertical gestures). closeRef avoids a stale onClose in the responder.
+  const closeRef = useRef(close);
+  closeRef.current = close;
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, g) => g.dy > 6 && Math.abs(g.dy) > Math.abs(g.dx),
+      onPanResponderMove: (_, g) => { if (g.dy > 0) slideY.setValue(g.dy); },
+      onPanResponderRelease: (_, g) => {
+        if (g.dy > 120 || g.vy > 0.8) {
+          closeRef.current();
+        } else {
+          Animated.spring(slideY, { toValue: 0, useNativeDriver: true, damping: 20, stiffness: 200 }).start();
+        }
+      },
+      onPanResponderTerminate: () => {
+        Animated.spring(slideY, { toValue: 0, useNativeDriver: true, damping: 20, stiffness: 200 }).start();
+      },
+    })
+  ).current;
+
   const updateValue = (idx: number, value: string) =>
     setItems(prev => prev.map((it, i) => i === idx ? { ...it, value } : it));
 
@@ -151,12 +173,14 @@ export function ContactReviewSheet({ visible, initial, onClose, onSave, title = 
       <Pressable style={styles.backdrop} onPress={close} />
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.kav} pointerEvents="box-none">
         <Animated.View style={[styles.sheet, { transform: [{ translateY: slideY }] }]}>
-          <View style={styles.handle} />
-          <View style={styles.header}>
-            <Text style={styles.title}>{title}</Text>
-            <Pressable onPress={close} hitSlop={12}>
-              <Ionicons name="close" size={20} color={COLORS.textSecondary} />
-            </Pressable>
+          <View {...panResponder.panHandlers}>
+            <View style={styles.handle} />
+            <View style={styles.header}>
+              <Text style={styles.title}>{title}</Text>
+              <Pressable onPress={close} hitSlop={12}>
+                <Ionicons name="close" size={20} color={COLORS.textSecondary} />
+              </Pressable>
+            </View>
           </View>
 
           <ScrollView
