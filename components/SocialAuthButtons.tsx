@@ -1,4 +1,5 @@
 import { useSignInWithApple, useSSO } from '@clerk/clerk-expo';
+import { Ionicons } from '@expo/vector-icons';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import React, { useState } from 'react';
@@ -32,14 +33,9 @@ function GoogleIcon() {
 }
 
 function AppleIcon() {
-  return (
-    <Svg width={18} height={18} viewBox="0 0 814 1000">
-      <Path
-        d="M788.1 340.9c-5.8 4.5-108.2 62.2-108.2 190.5 0 148.4 130.3 200.9 134.2 202.2-.6 3.2-20.7 71.9-68.7 141.9-42.8 61.6-87.5 123.1-155.5 123.1s-85.5-39.5-164-39.5c-76 0-103.7 40.8-165.9 40.8s-105-57.8-155.5-127.4C46 391.6 0 302.5 0 217.4c0-159.4 104.1-244 206.6-244 54.8 0 100.5 36.1 134.2 36.1 32.4 0 83.3-38.2 145.5-38.2 23.7 0 108.1 2 166 79.7zm-54.1-216.4c24.5-29 41.3-69.4 41.3-109.8 0-5.8-.6-11.6-1.9-16.1-39.3 1.3-85.5 26.1-113.6 58.8-22.5 25.9-41.9 66.3-41.9 107.4 0 6.4.6 12.8 1.9 18 2.6.6 6.5 1.3 10.3 1.3 35.5 0 79.8-23.2 103.9-59.6z"
-        fill={COLORS.text}
-      />
-    </Svg>
-  );
+  // Ionicons' Apple mark renders with correct proportions; the glyph sits a
+  // touch low in its em box, so nudge it up to optically center on the button
+  return <Ionicons name="logo-apple" size={20} color={COLORS.text} style={{ marginTop: -2 }} />;
 }
 
 interface Props {
