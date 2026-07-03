@@ -37,6 +37,26 @@ export function ShareSheet({ visible, username, user, card, onClose }: Props) {
 
   const [qrMode, setQrMode] = useState<'online' | 'offline'>('online');
   const [inWallet, setInWallet] = useState(false);
+  // Passes already in Wallet when the sheet opened: their button is hidden
+  // outright. A pass added DURING this open keeps the button visible in its
+  // green "Added" state until the next open.
+  const [addedAtOpen, setAddedAtOpen] = useState({ online: false, offline: false });
+
+  useEffect(() => {
+    if (!visible || !card) {
+      setAddedAtOpen({ online: false, offline: false });
+      return;
+    }
+    let alive = true;
+    (async () => {
+      const [online, offline] = await Promise.all([
+        WalletManager.hasPass(PASS_TYPE_ID, card.id).catch(() => false),
+        WalletManager.hasPass(PASS_TYPE_ID, `${card.id}-offline`).catch(() => false),
+      ]);
+      if (alive) setAddedAtOpen({ online: !!online, offline: !!offline });
+    })();
+    return () => { alive = false; };
+  }, [visible, card?.id]);
 
   // Reflect whether the active mode's pass is already in Wallet. Re-checked
   // when the sheet opens, the mode flips, or the app returns to foreground
@@ -195,21 +215,24 @@ export function ShareSheet({ visible, username, user, card, onClose }: Props) {
             <Text style={styles.btnPrimaryText}>Share</Text>
           </Pressable>
 
-          {/* Apple Wallet */}
-          <Pressable
-            style={[styles.walletBtn, !card && { opacity: 0.4 }, inWallet && styles.walletBtnAdded]}
-            onPress={handleAddToWallet}
-            disabled={!card || inWallet}
-          >
-            <Ionicons
-              name={inWallet ? 'checkmark-circle' : 'wallet-outline'}
-              size={16}
-              color={inWallet ? '#22C55E' : '#fff'}
-            />
-            <Text style={[styles.walletBtnText, inWallet && styles.walletBtnTextAdded]}>
-              {inWallet ? 'Added to Wallet' : 'Add to Apple Wallet'}
-            </Text>
-          </Pressable>
+          {/* Apple Wallet — hidden when this mode's pass was already added
+              before the sheet opened */}
+          {!addedAtOpen[qrMode] && (
+            <Pressable
+              style={[styles.walletBtn, !card && { opacity: 0.4 }, inWallet && styles.walletBtnAdded]}
+              onPress={handleAddToWallet}
+              disabled={!card || inWallet}
+            >
+              <Ionicons
+                name={inWallet ? 'checkmark-circle' : 'wallet-outline'}
+                size={16}
+                color={inWallet ? '#22C55E' : '#fff'}
+              />
+              <Text style={[styles.walletBtnText, inWallet && styles.walletBtnTextAdded]}>
+                {inWallet ? 'Added to Wallet' : 'Add to Apple Wallet'}
+              </Text>
+            </Pressable>
+          )}
         </View>
       </Animated.View>
     </View>
