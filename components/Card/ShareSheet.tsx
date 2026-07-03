@@ -22,7 +22,7 @@ import { buildVcard, contactFromCard } from '../../lib/vcard';
 import { COLORS, FONTS } from '../../constants/colors';
 import { PASS_TYPE_ID, SHARE_BASE, publicCardUrl } from '../../constants/config';
 
-const SHEET_HEIGHT = Dimensions.get('window').height * 0.7;
+const SHEET_HEIGHT = Dimensions.get('window').height * 0.64;
 
 interface Props {
   visible: boolean;
@@ -37,7 +37,6 @@ export function ShareSheet({ visible, username, user, card, onClose }: Props) {
 
   const [qrMode, setQrMode] = useState<'online' | 'offline'>('online');
   const [inWallet, setInWallet] = useState(false);
-  const qrRef = useRef<any>(null);
 
   // Reflect whether the active mode's pass is already in Wallet. Re-checked
   // when the sheet opens, the mode flips, or the app returns to foreground
@@ -97,19 +96,6 @@ export function ShareSheet({ visible, username, user, card, onClose }: Props) {
     } catch (err: any) {
       Alert.alert('Share failed', err.message);
     }
-  };
-
-  const handleShareQr = async () => {
-    if (!qrRef.current) return;
-    qrRef.current.toDataURL(async (base64: string) => {
-      try {
-        const path = `${FileSystem.cacheDirectory}linkd-qr.png`;
-        await FileSystem.writeAsStringAsync(path, base64, { encoding: 'base64' as any });
-        await Sharing.shareAsync(path, { mimeType: 'image/png', dialogTitle: 'Share QR code' });
-      } catch (err: any) {
-        Alert.alert('Share failed', err.message);
-      }
-    });
   };
 
   const handleAddToWallet = async () => {
@@ -175,7 +161,6 @@ export function ShareSheet({ visible, username, user, card, onClose }: Props) {
                 backgroundColor="#fff"
                 color="#000"
                 ecl="M"
-                getRef={(c) => { qrRef.current = c; }}
               />
             </View>
             <Text style={styles.qrCaption}>
@@ -200,47 +185,15 @@ export function ShareSheet({ visible, username, user, card, onClose }: Props) {
             ))}
           </View>
 
-          {/* Primary action follows the mode: online shares the link, offline
-              shares the contact card itself (AirDrop works with no internet) */}
-          {qrMode === 'online' ? (
-            <Pressable style={styles.btnPrimary} onPress={handleShare}>
-              <Text style={styles.btnPrimaryText}>Share Link</Text>
-            </Pressable>
-          ) : (
-            <Pressable
-              style={[styles.btnPrimary, !card && { opacity: 0.4 }]}
-              onPress={handleShareContact}
-              disabled={!card}
-            >
-              <Text style={styles.btnPrimaryText}>Share Contact</Text>
-            </Pressable>
-          )}
-
-          <View style={styles.btnRow}>
-            {qrMode === 'online' ? (
-              <Pressable
-                style={[styles.btnSecondary, !card && { opacity: 0.4 }]}
-                onPress={handleShareContact}
-                disabled={!card}
-              >
-                <Ionicons name="person-add-outline" size={15} color={COLORS.text} />
-                <Text style={styles.btnSecondaryText}>Share Contact</Text>
-              </Pressable>
-            ) : (
-              <Pressable style={styles.btnSecondary} onPress={handleShare}>
-                <Ionicons name="link-outline" size={15} color={COLORS.text} />
-                <Text style={styles.btnSecondaryText}>Share Link</Text>
-              </Pressable>
-            )}
-            <Pressable
-              style={[styles.btnSecondary, !card && { opacity: 0.4 }]}
-              onPress={handleShareQr}
-              disabled={!card}
-            >
-              <Ionicons name="qr-code-outline" size={15} color={COLORS.text} />
-              <Text style={styles.btnSecondaryText}>Share QR</Text>
-            </Pressable>
-          </View>
+          {/* Share follows the mode: online shares the link, offline shares
+              the contact card itself (AirDrop works with no internet) */}
+          <Pressable
+            style={[styles.btnPrimary, qrMode === 'offline' && !card && { opacity: 0.4 }]}
+            onPress={qrMode === 'online' ? handleShare : handleShareContact}
+            disabled={qrMode === 'offline' && !card}
+          >
+            <Text style={styles.btnPrimaryText}>Share</Text>
+          </Pressable>
 
           {/* Apple Wallet */}
           <Pressable
@@ -291,13 +244,6 @@ const styles = StyleSheet.create({
   qrToggleTextActive: { color: '#0C0C0E', fontFamily: FONTS.semiBold },
   btnPrimary: { width: '100%', height: 46, borderRadius: 13, backgroundColor: COLORS.accent, alignItems: 'center', justifyContent: 'center' },
   btnPrimaryText: { fontSize: 13, fontFamily: FONTS.semiBold, color: '#0C0C0E' },
-  btnRow: { flexDirection: 'row', gap: 10, width: '100%' },
-  btnSecondary: {
-    flex: 1, height: 46, borderRadius: 13, flexDirection: 'row', gap: 7,
-    backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  btnSecondaryText: { fontSize: 13, fontFamily: FONTS.semiBold, color: COLORS.text },
   walletBtn: {
     width: '100%', height: 46, borderRadius: 13, flexDirection: 'row', gap: 8,
     backgroundColor: '#000', borderWidth: 1, borderColor: 'rgba(255,255,255,0.25)',
