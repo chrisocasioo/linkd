@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import * as ExpoContacts from 'expo-contacts';
+import * as ExpoContacts from 'expo-contacts/legacy';
 import React, { useEffect, useRef } from 'react';
 import {
   Alert,
