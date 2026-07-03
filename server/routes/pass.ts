@@ -160,9 +160,6 @@ router.get('/pass/:cardId', async (req, res) => {
           format: 'PKBarcodeFormatQR',
           message: publicUrl,
           messageEncoding: 'iso-8859-1',
-          // Caption under the code doubles as a lift: Wallet raises the
-          // barcode to make room for altText (there's no position key)
-          altText: 'Scan to connect',
         },
       ],
     };
