@@ -22,6 +22,15 @@ function hexToRgb(hex: string): string {
   return `rgb(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255})`;
 }
 
+// Dark ink on light accents, white on dark ones — always-white washes out on gold etc.
+function passTextColor(hex: string): string {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
+  if (!m) return 'rgb(255, 255, 255)';
+  const n = parseInt(m[1], 16);
+  const lum = 0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255);
+  return lum > 150 ? 'rgb(12, 12, 14)' : 'rgb(255, 255, 255)';
+}
+
 // Env values arrive via copy-paste; strip any whitespace/newlines picked up on the way
 function cleanB64(v: string | undefined): string | null {
   const s = (v ?? '').replace(/\s+/g, '');
@@ -97,6 +106,8 @@ router.get('/pass/:cardId', async (req, res) => {
     if (title) secondaryFields.push({ key: 'title', label: 'TITLE', value: title });
     if (company) secondaryFields.push({ key: 'company', label: 'COMPANY', value: company });
 
+    const accent = card.accentColor ?? '#C9A84C';
+    const textColor = passTextColor(accent);
     const passJson = {
       formatVersion: 1,
       passTypeIdentifier: PASS_TYPE_ID,
@@ -105,10 +116,11 @@ router.get('/pass/:cardId', async (req, res) => {
       organizationName: 'Linkd',
       description: `${displayName} — digital business card`,
       logoText: 'Linkd',
-      backgroundColor: hexToRgb(card.accentColor ?? '#C9A84C'),
-      foregroundColor: 'rgb(255, 255, 255)',
-      labelColor: 'rgb(255, 255, 255)',
+      backgroundColor: hexToRgb(accent),
+      foregroundColor: textColor,
+      labelColor: textColor,
       generic: {
+        headerFields: [{ key: 'cardName', value: card.name.toUpperCase() }],
         primaryFields: [{ key: 'name', value: displayName }],
         secondaryFields,
       },
@@ -117,7 +129,6 @@ router.get('/pass/:cardId', async (req, res) => {
           format: 'PKBarcodeFormatQR',
           message: publicUrl,
           messageEncoding: 'iso-8859-1',
-          altText: `${SHARE_BASE}/${user.username}`,
         },
       ],
     };
