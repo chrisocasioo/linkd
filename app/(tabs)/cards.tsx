@@ -235,7 +235,6 @@ export default function CardScreen() {
         username={user?.username ?? ''}
         card={activeCard}
         onClose={() => setShowShare(false)}
-        onUsernameChange={(u) => setUser((prev) => prev ? { ...prev, username: u } : prev)}
       />
       <SettingsSheet
         visible={showSettings}

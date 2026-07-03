@@ -2,7 +2,6 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Contacts from 'expo-contacts/legacy';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
-import * as WebBrowser from 'expo-web-browser';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Alert,
@@ -14,17 +13,16 @@ import {
   Share,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import WalletManager from 'react-native-wallet-manager';
-import { useApi, Card, User } from '../../lib/api';
+import { Card, User } from '../../lib/api';
 import { buildVcard, contactFromCard } from '../../lib/vcard';
 import { COLORS, FONTS } from '../../constants/colors';
 import { PASS_TYPE_ID, SHARE_BASE, publicCardUrl } from '../../constants/config';
 
-const SHEET_HEIGHT = Dimensions.get('window').height * 0.74;
+const SHEET_HEIGHT = Dimensions.get('window').height * 0.7;
 
 interface Props {
   visible: boolean;
@@ -32,25 +30,14 @@ interface Props {
   user?: User | null;
   card?: Card | null;
   onClose: () => void;
-  onUsernameChange?: (username: string) => void;
 }
 
-export function ShareSheet({ visible, username, user, card, onClose, onUsernameChange }: Props) {
-  const api = useApi();
+export function ShareSheet({ visible, username, user, card, onClose }: Props) {
   const slideAnim = useRef(new Animated.Value(SHEET_HEIGHT)).current;
 
-  const [editingUsername, setEditingUsername] = useState(false);
-  const [usernameValue, setUsernameValue] = useState(username);
-  const [availability, setAvailability] = useState<boolean | null>(null);
   const [qrMode, setQrMode] = useState<'online' | 'offline'>('online');
   const [inWallet, setInWallet] = useState(false);
-  const checkTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const inputRef = useRef<TextInput>(null);
   const qrRef = useRef<any>(null);
-
-  useEffect(() => {
-    setUsernameValue(username);
-  }, [username]);
 
   // Reflect whether the active mode's pass is already in Wallet. Re-checked
   // when the sheet opens, the mode flips, or the app returns to foreground
@@ -79,45 +66,12 @@ export function ShareSheet({ visible, username, user, card, onClose, onUsernameC
       Animated.spring(slideAnim, { toValue: 0, useNativeDriver: true, damping: 20, stiffness: 200 }).start();
     } else {
       Animated.timing(slideAnim, { toValue: SHEET_HEIGHT, duration: 250, useNativeDriver: true }).start();
-      setEditingUsername(false);
-      setAvailability(null);
       setQrMode('online');
     }
   }, [visible]);
 
-  const handleUsernameChange = (v: string) => {
-    const cleaned = v.toLowerCase().replace(/[^a-z0-9_-]/g, '');
-    setUsernameValue(cleaned);
-    setAvailability(null);
-    if (checkTimer.current) clearTimeout(checkTimer.current);
-    if (!cleaned || cleaned === username) return;
-    if (!/^[a-z0-9_-]{3,30}$/.test(cleaned)) { setAvailability(false); return; }
-    checkTimer.current = setTimeout(async () => {
-      try {
-        const { available } = await api.checkUsername(cleaned);
-        setAvailability(available);
-      } catch {}
-    }, 500);
-  };
-
-  const handleUsernameBlur = async () => {
-    setEditingUsername(false);
-    setAvailability(null);
-    const cleaned = usernameValue.toLowerCase().trim();
-    if (!cleaned || cleaned === username || !/^[a-z0-9_-]{3,30}$/.test(cleaned)) {
-      setUsernameValue(username);
-      return;
-    }
-    try {
-      const updated = await api.updateMe({ username: cleaned });
-      onUsernameChange?.(updated.username ?? cleaned);
-    } catch {
-      setUsernameValue(username);
-    }
-  };
-
   const slug = card?.slug;
-  const url = publicCardUrl(usernameValue || username, slug);
+  const url = publicCardUrl(username, slug);
 
   // Offline QR encodes the vCard itself — scanning pops a native, pre-filled
   // "Add to Contacts" card with zero internet on either phone (HiHello-style)
@@ -246,37 +200,6 @@ export function ShareSheet({ visible, username, user, card, onClose, onUsernameC
             ))}
           </View>
 
-          {/* URL row */}
-          <View style={styles.urlRow}>
-            <Text style={styles.urlBase}>{SHARE_BASE}/</Text>
-            {editingUsername ? (
-              <>
-                <TextInput
-                  ref={inputRef}
-                  style={styles.urlInput}
-                  value={usernameValue}
-                  onChangeText={handleUsernameChange}
-                  onBlur={handleUsernameBlur}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                />
-                {usernameValue.length >= 3 && usernameValue !== username && (
-                  <Text style={availability === true ? styles.check : availability === false ? styles.ex : styles.checking}>
-                    {availability === true ? '✓' : availability === false ? '✗' : '…'}
-                  </Text>
-                )}
-              </>
-            ) : (
-              <Pressable
-                onPress={() => { setEditingUsername(true); setTimeout(() => inputRef.current?.focus(), 80); }}
-                hitSlop={{ top: 8, bottom: 8, left: 4, right: 8 }}
-              >
-                <Text style={styles.urlUsername}>{usernameValue || username}</Text>
-              </Pressable>
-            )}
-            {slug ? <Text style={styles.urlBase}>/{slug}</Text> : null}
-          </View>
-
           {/* Share */}
           <Pressable style={styles.btnPrimary} onPress={handleShare}>
             <Text style={styles.btnPrimaryText}>Share Link</Text>
@@ -349,17 +272,6 @@ const styles = StyleSheet.create({
   qrToggleItemActive: { backgroundColor: COLORS.accent },
   qrToggleText: { fontSize: 12, fontFamily: FONTS.medium, color: COLORS.textSecondary },
   qrToggleTextActive: { color: '#0C0C0E', fontFamily: FONTS.semiBold },
-  urlRow: {
-    flexDirection: 'row', alignItems: 'center',
-    backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border,
-    borderRadius: 12, paddingHorizontal: 14, height: 42, width: '100%',
-  },
-  urlBase: { fontSize: 13, fontFamily: FONTS.regular, color: COLORS.textSecondary },
-  urlUsername: { fontSize: 13, fontFamily: FONTS.semiBold, color: COLORS.accent },
-  urlInput: { fontSize: 13, fontFamily: FONTS.semiBold, color: COLORS.accent, flex: 1, paddingVertical: 0 },
-  check: { fontSize: 13, color: '#22c55e', marginLeft: 6 },
-  ex: { fontSize: 13, color: '#ef4444', marginLeft: 6 },
-  checking: { fontSize: 13, color: COLORS.textTertiary, marginLeft: 6 },
   btnPrimary: { width: '100%', height: 46, borderRadius: 13, backgroundColor: COLORS.accent, alignItems: 'center', justifyContent: 'center' },
   btnPrimaryText: { fontSize: 13, fontFamily: FONTS.semiBold, color: '#0C0C0E' },
   btnRow: { flexDirection: 'row', gap: 10, width: '100%' },
