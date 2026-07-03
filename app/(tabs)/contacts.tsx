@@ -1,8 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
+import * as FileSystem from 'expo-file-system/legacy';
 import { useFocusEffect } from 'expo-router';
+import * as Sharing from 'expo-sharing';
 import React, { useCallback, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   Pressable,
   RefreshControl,
@@ -79,13 +82,43 @@ export default function ContactsScreen() {
     setContacts((cs) => [created, ...cs]);
   };
 
+  const handleExport = async () => {
+    if (contacts.length === 0) {
+      Alert.alert('Nothing to export', 'Add or scan some contacts first.');
+      return;
+    }
+    try {
+      const cell = (v: string | null | undefined) => (v ? `"${v.replace(/"/g, '""')}"` : '');
+      const header = 'First Name,Last Name,Email,Phone,Company,Job Title,Website,Address,Notes,Added';
+      const rows = contacts.map((c) =>
+        [c.firstName, c.lastName, c.email, c.phone, c.company, c.jobTitle, c.website, c.address, c.notes, c.createdAt?.slice(0, 10)]
+          .map(cell)
+          .join(',')
+      );
+      const path = `${FileSystem.cacheDirectory}linkd-contacts.csv`;
+      await FileSystem.writeAsStringAsync(path, [header, ...rows].join('\n'));
+      await Sharing.shareAsync(path, {
+        mimeType: 'text/csv',
+        UTI: 'public.comma-separated-values-text',
+        dialogTitle: 'Export contacts',
+      });
+    } catch (err: any) {
+      Alert.alert('Export failed', err.message);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.topBar}>
         <Text style={styles.heading}>Contacts</Text>
-        <Pressable style={styles.addBtn} onPress={() => setShowAdd(true)}>
-          <Ionicons name="add" size={22} color={COLORS.text} />
-        </Pressable>
+        <View style={styles.topRight}>
+          <Pressable style={styles.addBtn} onPress={handleExport}>
+            <Ionicons name="download-outline" size={19} color={COLORS.text} />
+          </Pressable>
+          <Pressable style={styles.addBtn} onPress={() => setShowAdd(true)}>
+            <Ionicons name="add" size={22} color={COLORS.text} />
+          </Pressable>
+        </View>
       </View>
 
       {loading ? (
@@ -153,6 +186,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20, paddingTop: 10, paddingBottom: 14,
   },
   heading: { fontSize: 22, fontFamily: FONTS.semiBold, color: COLORS.text },
+  topRight: { flexDirection: 'row', gap: 8 },
   addBtn: {
     width: 36, height: 36, alignItems: 'center', justifyContent: 'center',
     backgroundColor: COLORS.surface, borderRadius: 10, borderWidth: 1, borderColor: COLORS.border,

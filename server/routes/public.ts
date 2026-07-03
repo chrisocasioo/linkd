@@ -1,7 +1,7 @@
 import { asc, eq, and } from 'drizzle-orm';
 import { Router } from 'express';
 import { db } from '../db';
-import { cardFields, cards, cardViews, users } from '../db/schema';
+import { cardFields, cards, cardViews, contacts, users } from '../db/schema';
 
 const router = Router();
 
@@ -136,6 +136,29 @@ function buildCardHtml(user: UserRow, card: CardRow, fields: FieldRow[], usernam
       padding: 12px; text-align: center; font-size: 12px; color: rgba(255,255,255,0.4);
     }
     .footer a { color: inherit; text-decoration: none; }
+    .exchange { padding: 14px 18px 18px; border-top: 1px solid rgba(255,255,255,0.06); }
+    .exchange-toggle {
+      width: 100%; padding: 13px; border: none; border-radius: 13px;
+      background: ${accent}; color: #0C0C0E; font-size: 14px; font-weight: 600;
+      cursor: pointer; font-family: inherit;
+    }
+    .exchange-form { display: none; flex-direction: column; gap: 10px; margin-top: 12px; }
+    .exchange-form input {
+      padding: 12px 14px; border-radius: 12px; font-size: 15px; font-family: inherit;
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: #fff;
+      outline: none;
+    }
+    .exchange-form input:focus { border-color: ${accent}; }
+    .exchange-form input::placeholder { color: rgba(255,255,255,0.35); }
+    .exchange-submit {
+      padding: 13px; border: none; border-radius: 12px;
+      background: ${accent}; color: #0C0C0E; font-size: 14px; font-weight: 600;
+      cursor: pointer; font-family: inherit;
+    }
+    .exchange-done {
+      display: none; text-align: center; padding: 13px;
+      color: ${accent}; font-size: 14px; font-weight: 600;
+    }
   </style>
 </head>
 <body>
@@ -151,11 +174,55 @@ function buildCardHtml(user: UserRow, card: CardRow, fields: FieldRow[], usernam
       ${headlineVal ? `<div class="headline">${esc(headlineVal)}</div>` : ''}
     </div>
     ${fieldRowsHtml}
+    <div class="exchange">
+      <button class="exchange-toggle" id="xToggle" onclick="toggleExchange()">Share your info with ${name}</button>
+      <form class="exchange-form" id="xForm" onsubmit="return submitExchange(event)">
+        <input id="xName" placeholder="Your name" maxlength="120" required />
+        <input id="xEmail" type="email" placeholder="Email" maxlength="120" />
+        <input id="xPhone" type="tel" placeholder="Phone" maxlength="40" />
+        <input id="xCompany" placeholder="Company (optional)" maxlength="120" />
+        <button type="submit" class="exchange-submit">Send</button>
+      </form>
+      <div class="exchange-done" id="xDone">&#10003; Sent to ${name} — thanks!</div>
+    </div>
   </div>
   ${!user.isPro ? '<div class="footer"><a href="https://linkd-production-fdce.up.railway.app">Get Linkd</a></div>' : ''}
 <script>
 function trackField(fieldId) {
   try { fetch('/api/analytics/field-click/' + fieldId, { method: 'POST', keepalive: true }).catch(function(){}); } catch(e) {}
+}
+function toggleExchange() {
+  var f = document.getElementById('xForm');
+  var open = f.style.display === 'flex';
+  f.style.display = open ? 'none' : 'flex';
+  if (!open) document.getElementById('xName').focus();
+}
+function submitExchange(e) {
+  e.preventDefault();
+  var name = document.getElementById('xName').value.trim();
+  var parts = name.split(/\\s+/);
+  var btn = document.querySelector('.exchange-submit');
+  btn.disabled = true;
+  fetch('/exchange/${esc(card.id)}', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      firstName: parts[0] || '',
+      lastName: parts.slice(1).join(' '),
+      email: document.getElementById('xEmail').value.trim(),
+      phone: document.getElementById('xPhone').value.trim(),
+      company: document.getElementById('xCompany').value.trim(),
+    }),
+  }).then(function (r) {
+    if (!r.ok) throw new Error();
+    document.getElementById('xForm').style.display = 'none';
+    document.getElementById('xToggle').style.display = 'none';
+    document.getElementById('xDone').style.display = 'block';
+  }).catch(function () {
+    btn.disabled = false;
+    alert('Could not send — please try again.');
+  });
+  return false;
 }
 </script>
 </body>
@@ -188,6 +255,38 @@ async function buildVcard(user: UserRow, fields: FieldRow[], username: string): 
 }
 
 // ── Routes ────────────────────────────────────────────────────────────────────
+
+// Exchange: a card viewer shares their info back — lands in the owner's contacts
+router.post('/exchange/:cardId', async (req, res) => {
+  try {
+    const { cardId } = req.params;
+    const card = await db.query.cards.findFirst({ where: eq(cards.id, cardId) });
+    if (!card) return res.status(404).json({ error: 'Card not found' });
+
+    const clip = (v: unknown, n: number) => (typeof v === 'string' ? v.trim().slice(0, n) : '');
+    const firstName = clip(req.body?.firstName, 60);
+    const lastName  = clip(req.body?.lastName, 60);
+    const email     = clip(req.body?.email, 120);
+    const phone     = clip(req.body?.phone, 40);
+    const company   = clip(req.body?.company, 120);
+    if (!firstName && !lastName && !email && !phone) {
+      return res.status(400).json({ error: 'Name, email, or phone required' });
+    }
+
+    await db.insert(contacts).values({
+      userId: card.userId,
+      firstName: firstName || null,
+      lastName: lastName || null,
+      email: email || null,
+      phone: phone || null,
+      company: company || null,
+      notes: 'Shared their info via your Linkd card',
+    });
+    res.status(201).json({ success: true });
+  } catch {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
 
 router.get('/:username/vcard', async (req, res) => {
   try {

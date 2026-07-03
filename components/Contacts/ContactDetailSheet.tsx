@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import * as ExpoContacts from 'expo-contacts';
 import React, { useEffect, useRef } from 'react';
 import {
   Alert,
@@ -59,6 +60,34 @@ export function ContactDetailSheet({ visible, contact, onClose, onDelete }: Prop
     contact.address ? { icon: 'location-outline',  label: 'Address', value: contact.address, url: `https://maps.apple.com/?q=${encodeURIComponent(contact.address)}` } : null,
   ].filter(Boolean) as FieldRow[];
 
+  const handleSaveToPhone = async () => {
+    try {
+      const { status } = await ExpoContacts.requestPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission needed', 'Allow contacts access to save this contact to your phone.');
+        return;
+      }
+      // Native pre-filled new-contact form — user reviews and taps Done to save
+      await ExpoContacts.presentFormAsync(
+        null,
+        {
+          contactType: 'person',
+          firstName: contact.firstName ?? '',
+          lastName: contact.lastName ?? '',
+          company: contact.company ?? '',
+          jobTitle: contact.jobTitle ?? '',
+          emails: contact.email ? [{ label: 'work', email: contact.email }] : [],
+          phoneNumbers: contact.phone ? [{ label: 'mobile', number: contact.phone }] : [],
+          urlAddresses: contact.website ? [{ label: 'website', url: contact.website }] : [],
+          note: contact.notes ?? undefined,
+        } as any,
+        { isNew: true } as any,
+      );
+    } catch (err: any) {
+      Alert.alert('Error', err.message ?? 'Could not open the contact form.');
+    }
+  };
+
   const handleDelete = () => {
     Alert.alert('Delete contact?', 'This cannot be undone.', [
       { text: 'Cancel', style: 'cancel' },
@@ -112,6 +141,10 @@ export function ContactDetailSheet({ visible, contact, onClose, onDelete }: Prop
         </View>
 
         <View style={styles.footer}>
+          <Pressable style={styles.saveBtn} onPress={handleSaveToPhone}>
+            <Ionicons name="person-add-outline" size={16} color="#0C0C0E" />
+            <Text style={styles.saveBtnText}>Save to Phone Contacts</Text>
+          </Pressable>
           <Pressable style={styles.deleteBtn} onPress={handleDelete}>
             <Ionicons name="trash-outline" size={16} color="#ef4444" />
             <Text style={styles.deleteBtnText}>Delete Contact</Text>
@@ -152,7 +185,12 @@ const styles = StyleSheet.create({
   fieldText: { flex: 1 },
   fieldLabel: { fontSize: 10, fontFamily: FONTS.medium, color: COLORS.textSecondary, letterSpacing: 0.5, textTransform: 'uppercase' },
   fieldValue: { fontSize: 14, fontFamily: FONTS.regular, color: COLORS.text, marginTop: 2 },
-  footer: { paddingHorizontal: 20, paddingTop: 20 },
+  footer: { paddingHorizontal: 20, paddingTop: 20, gap: 10 },
+  saveBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    height: 48, borderRadius: 14, backgroundColor: COLORS.accent,
+  },
+  saveBtnText: { fontSize: 14, fontFamily: FONTS.semiBold, color: '#0C0C0E' },
   deleteBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
     height: 48, borderRadius: 14, borderWidth: 1, borderColor: '#ef444433',
