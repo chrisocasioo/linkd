@@ -28,7 +28,7 @@ const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 const SIDE_INSET = 24;
 
 // Fixed UI heights (top bar + dots + action row)
-const FIXED_UI_H = 60 + 34 + 68;
+const FIXED_UI_H = 60 + 34 + 58;
 
 export default function CardScreen() {
   const api = useApi();
