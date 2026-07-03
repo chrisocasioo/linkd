@@ -341,34 +341,34 @@ export default function ScansScreen() {
           </Animated.View>
         </View>
 
-        {/* Scanning indicator — bottom of camera view */}
+        {/* Scanning indicator — above the floating controls */}
         <View style={styles.scanningPill} pointerEvents="none">
           <View style={styles.scanDot} />
           <Text style={styles.scanningText}>Scanning…</Text>
         </View>
-      </View>
 
-      {/* Controls */}
-      <View style={styles.controls}>
-        <Pressable style={styles.secondaryBtn} onPress={pickFromLibrary}>
-          <Ionicons name="images-outline" size={22} color="#fff" />
-        </Pressable>
+        {/* Controls — float over the camera preview */}
+        <View style={styles.controls}>
+          <Pressable style={styles.secondaryBtn} onPress={pickFromLibrary}>
+            <Ionicons name="images-outline" size={22} color="#fff" />
+          </Pressable>
 
-        {/* Manual capture — in case a card isn't being auto-detected */}
-        <Pressable style={styles.shutterBtn} onPress={captureManually} disabled={capturing}>
-          <View style={[styles.shutterInner, capturing && { opacity: 0.4 }]} />
-        </Pressable>
+          {/* Manual capture — in case a card isn't being auto-detected */}
+          <Pressable style={styles.shutterBtn} onPress={captureManually} disabled={capturing}>
+            <View style={[styles.shutterInner, capturing && { opacity: 0.4 }]} />
+          </Pressable>
 
-        <Pressable
-          style={styles.secondaryBtn}
-          onPress={() => setFlash((f) => (f === 'off' ? 'on' : 'off'))}
-        >
-          <Ionicons
-            name={flash === 'on' ? 'flash' : 'flash-off'}
-            size={22}
-            color={flash === 'on' ? COLORS.accent : '#fff'}
-          />
-        </Pressable>
+          <Pressable
+            style={styles.secondaryBtn}
+            onPress={() => setFlash((f) => (f === 'off' ? 'on' : 'off'))}
+          >
+            <Ionicons
+              name={flash === 'on' ? 'flash' : 'flash-off'}
+              size={22}
+              color={flash === 'on' ? COLORS.accent : '#fff'}
+            />
+          </Pressable>
+        </View>
       </View>
 
       <ContactReviewSheet
@@ -422,20 +422,21 @@ const styles = StyleSheet.create({
   },
 
   controls: {
+    position: 'absolute',
+    left: 0, right: 0, bottom: 0,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 48,
     paddingVertical: 20,
-    backgroundColor: '#000',
   },
   secondaryBtn: {
     width: 48, height: 48, borderRadius: 24,
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: 'rgba(0,0,0,0.35)',
     alignItems: 'center', justifyContent: 'center',
   },
   scanningPill: {
-    position: 'absolute', bottom: 14, alignSelf: 'center',
+    position: 'absolute', bottom: 122, alignSelf: 'center',
     flexDirection: 'row', alignItems: 'center', gap: 8,
     backgroundColor: 'rgba(0,0,0,0.45)',
     paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20,
@@ -443,6 +444,7 @@ const styles = StyleSheet.create({
   shutterBtn: {
     width: 68, height: 68, borderRadius: 34,
     borderWidth: 4, borderColor: '#fff',
+    backgroundColor: 'rgba(0,0,0,0.25)',
     alignItems: 'center', justifyContent: 'center',
   },
   shutterInner: {
