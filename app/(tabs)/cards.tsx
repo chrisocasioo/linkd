@@ -35,8 +35,11 @@ export default function CardScreen() {
   const router = useRouter();
   const { isPro } = useRevenueCat();
   const insets = useSafeAreaInsets();
-  // Tab bar is 49px + bottom home-indicator inset; subtract all fixed chrome to get card height
-  const cardMaxH = SCREEN_H - insets.top - 49 - insets.bottom - FIXED_UI_H - 8;
+  // Measured height of the carousel area — the true space a card can occupy.
+  // The inset formula is only the pre-layout estimate; estimating chrome heights
+  // runs a few points over on some devices and clips the card's rounded bottom.
+  const [carouselH, setCarouselH] = useState<number | null>(null);
+  const cardMaxH = carouselH ?? (SCREEN_H - insets.top - 49 - insets.bottom - FIXED_UI_H - 8);
 
   const [user, setUser] = useState<User | null>(null);
   const [cards, setCards] = useState<Card[]>([]);
@@ -114,7 +117,7 @@ export default function CardScreen() {
       </View>
 
       {/* Card carousel */}
-      <View style={{ flex: 1 }}>
+      <View style={{ flex: 1 }} onLayout={(e) => setCarouselH(e.nativeEvent.layout.height)}>
         {cards.length === 0 ? (
           <View style={styles.emptyState}>
             <Text style={styles.emptyTitle}>No cards yet</Text>
