@@ -226,7 +226,7 @@ const styles = StyleSheet.create({
   },
   dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: COLORS.border },
   actionRow: {
-    flexDirection: 'row', paddingHorizontal: 20, paddingBottom: 16, gap: 12,
+    flexDirection: 'row', paddingHorizontal: 20, paddingBottom: 6, gap: 12,
   },
   editBtn: {
     flex: 1, height: 52, borderRadius: 16,
