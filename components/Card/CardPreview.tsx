@@ -356,7 +356,7 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
   fields: {
-    paddingBottom: 8,
+    paddingBottom: 0,
   },
   fieldRow: {
     flexDirection: 'row',
