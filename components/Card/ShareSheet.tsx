@@ -141,9 +141,18 @@ export function ShareSheet({ visible, username, user, card, onClose, onUsernameC
   const handleContactPreview = async () => {
     if (!card) return;
     try {
-      // Native pre-filled contact card — exactly what a scanner of the offline QR sees
-      await Contacts.presentFormAsync(null, contactFromCard(card, user ?? null, url), { isNew: true } as any);
-    } catch {}
+      // The native form requires Contacts access even just to present
+      const { status } = await Contacts.requestPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission needed', 'Allow contacts access to preview the offline contact card.');
+        return;
+      }
+      // isNew:false presents the read-style "unknown contact" card — exactly
+      // what a scanner of the offline QR sees, without saving anything
+      await Contacts.presentFormAsync(null, contactFromCard(card, user ?? null, url), { isNew: false } as any);
+    } catch (err: any) {
+      Alert.alert('Preview unavailable', err.message ?? 'Could not open the contact preview.');
+    }
   };
 
   if (!visible) return null;
