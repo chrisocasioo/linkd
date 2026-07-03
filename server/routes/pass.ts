@@ -5,6 +5,7 @@ import path from 'path';
 import { PKPass } from 'passkit-generator';
 import { db } from '../db';
 import { cardFields, cards, users } from '../db/schema';
+import { formatPhone } from '../util/format';
 
 const router = Router();
 
@@ -101,7 +102,8 @@ router.get('/pass/:cardId', async (req, res) => {
     const RIGHT = 'PKTextAlignmentRight';
     type PassField = { key: string; label: string; value: string; textAlignment?: string };
     const email = fields.find((f) => f.type === 'email')?.value;
-    const phone = fields.find((f) => f.type === 'phone')?.value;
+    const rawPhone = fields.find((f) => f.type === 'phone')?.value;
+    const phone = rawPhone ? formatPhone(rawPhone) : undefined;
     const website = fields.find((f) => f.type === 'website')?.value;
 
     // Website stands in for whichever right-column slot is missing (only once)

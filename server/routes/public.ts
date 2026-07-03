@@ -2,6 +2,7 @@ import { asc, eq, and } from 'drizzle-orm';
 import { Router } from 'express';
 import { db } from '../db';
 import { cardFields, cards, cardViews, contacts, users } from '../db/schema';
+import { formatPhone } from '../util/format';
 
 const router = Router();
 
@@ -53,7 +54,7 @@ function buildCardHtml(user: UserRow, card: CardRow, fields: FieldRow[], usernam
   const fieldRowsHtml = linkFields.map(f => {
     const url  = fieldUrl(f.type, f.value);
     const icon = ICON_NAME[f.type] ?? 'ellipsis-horizontal';
-    const display = esc(f.label ?? f.value);
+    const display = esc(f.label ?? (f.type === 'phone' ? formatPhone(f.value) : f.value));
     return `<a href="${esc(url)}" onclick="trackField('${esc(f.id)}')" class="field-row">
       <span class="field-icon" style="background:${accent}"><ion-icon name="${icon}"></ion-icon></span>
       <span class="field-value">${display}</span>
