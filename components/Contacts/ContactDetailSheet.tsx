@@ -123,7 +123,7 @@ export function ContactDetailSheet({ visible, contact, onClose, onDelete }: Prop
 }
 
 const styles = StyleSheet.create({
-  backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.6)' },
+  backdrop: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)' },
   sheet: {
     position: 'absolute', bottom: 0, left: 0, right: 0,
     backgroundColor: COLORS.surface,

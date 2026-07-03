@@ -22,17 +22,6 @@ export interface User {
   updatedAt: string;
 }
 
-export interface ContactMeta {
-  firstName?: string;
-  lastName?: string;
-  email?: string;
-  phone?: string;
-  fax?: string;
-  company?: string;
-  jobTitle?: string;
-  website?: string;
-}
-
 export interface Contact {
   id: string;
   userId: string;
@@ -62,27 +51,6 @@ export interface ScanResult {
   websites: string[];
   address: string | null;
   addresses: string[];
-}
-
-export interface Link {
-  id: string;
-  userId: string;
-  title: string;
-  url: string;
-  type: string;
-  metadata: string | null;
-  order: number;
-  goLiveAt: string | null;
-  expiresAt: string | null;
-  createdAt: string;
-}
-
-export interface SavedQR {
-  id: string;
-  type: 'url' | 'wifi';
-  label: string | null;
-  data: string;
-  createdAt: string;
 }
 
 export interface FieldClickStat {
@@ -194,34 +162,7 @@ export function useApi() {
         });
       }),
 
-    getMyLinks: () => withToken((t) => request<Link[]>('/api/links', t)),
-    addLink: (body: { title: string; url: string; type?: string; metadata?: string }) =>
-      withToken((t) =>
-        request<Link>('/api/links', t, { method: 'POST', body: JSON.stringify(body) })
-      ),
-    updateLink: (id: string, body: Partial<Pick<Link, 'title' | 'url' | 'goLiveAt' | 'expiresAt' | 'metadata'>>) =>
-      withToken((t) =>
-        request<Link>(`/api/links/${id}`, t, { method: 'PATCH', body: JSON.stringify(body) })
-      ),
-    reorderLinks: (items: Array<{ id: string; order: number }>) =>
-      withToken((t) =>
-        request<{ success: boolean }>('/api/links/reorder', t, {
-          method: 'PATCH',
-          body: JSON.stringify({ items }),
-        })
-      ),
-    deleteLink: (id: string) =>
-      withToken((t) =>
-        request<{ success: boolean }>(`/api/links/${id}`, t, { method: 'DELETE' })
-      ),
-
     getAnalytics: () => withToken((t) => request<AnalyticsData>('/api/analytics/me', t)),
-
-    logView: (body: { username: string }) =>
-      request<{ success: boolean }>('/api/analytics/view', null, {
-        method: 'POST',
-        body: JSON.stringify(body),
-      }),
 
     // Cards (new multi-card system)
     getMyCards: () => withToken((t) => request<Card[]>('/api/cards', t)),
@@ -231,10 +172,6 @@ export function useApi() {
       withToken((t) => request<Card>(`/api/cards/${id}`, t, { method: 'PATCH', body: JSON.stringify(body) })),
     deleteCard: (id: string) =>
       withToken((t) => request<{ success: boolean }>(`/api/cards/${id}`, t, { method: 'DELETE' })),
-    reorderCards: (items: Array<{ id: string; order: number }>) =>
-      withToken((t) =>
-        request<{ success: boolean }>('/api/cards/reorder', t, { method: 'PATCH', body: JSON.stringify({ items }) })
-      ),
 
     addField: (cardId: string, body: { type: string; value: string; label?: string }) =>
       withToken((t) =>
@@ -260,16 +197,7 @@ export function useApi() {
     getMyContacts: () => withToken((t) => request<Contact[]>('/api/contacts', t)),
     addContact: (body: Partial<Omit<Contact, 'id' | 'userId' | 'createdAt'>>) =>
       withToken((t) => request<Contact>('/api/contacts', t, { method: 'POST', body: JSON.stringify(body) })),
-    updateContact: (id: string, body: Partial<Omit<Contact, 'id' | 'userId' | 'createdAt'>>) =>
-      withToken((t) => request<Contact>(`/api/contacts/${id}`, t, { method: 'PATCH', body: JSON.stringify(body) })),
     deleteContact: (id: string) =>
       withToken((t) => request<{ success: boolean }>(`/api/contacts/${id}`, t, { method: 'DELETE' })),
-    getQRs: () => withToken((t) => request<SavedQR[]>('/api/qrs', t)),
-    saveQR: (body: { type: string; label: string; data: string }) =>
-      withToken((t) =>
-        request<SavedQR>('/api/qrs', t, { method: 'POST', body: JSON.stringify(body) })
-      ),
-    deleteQR: (id: string) =>
-      withToken((t) => request<void>(`/api/qrs/${id}`, t, { method: 'DELETE' })),
   };
 }

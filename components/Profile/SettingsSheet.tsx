@@ -1,6 +1,7 @@
 import { useAuth } from '@clerk/clerk-expo';
 import { useClerk } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
 import React, { useEffect, useRef } from 'react';
 import {
   Alert,
@@ -101,7 +102,7 @@ export function SettingsSheet({ visible, onClose, onShowPaywall }: Props) {
               if (!code) return;
               try {
                 await emailAddr.attemptVerification({ code: code.trim() });
-                await emailAddr.setAsPrimary();
+                await user!.update({ primaryEmailAddressId: emailAddr.id });
                 await user!.reload();
                 Alert.alert('Success', 'Email updated successfully.');
               } catch (err: any) {

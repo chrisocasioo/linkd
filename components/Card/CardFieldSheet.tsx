@@ -179,7 +179,7 @@ export function CardFieldSheet({ visible, cardId, field, initialType, onClose, o
 }
 
 const styles = StyleSheet.create({
-  backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.6)' },
+  backdrop: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)' },
   kav: { flex: 1, justifyContent: 'flex-end' },
   sheet: {
     backgroundColor: COLORS.surface,
