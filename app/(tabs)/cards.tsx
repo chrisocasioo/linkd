@@ -116,7 +116,7 @@ export default function CardScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.safe}>
+      <SafeAreaView style={styles.safe} edges={['top']}>
         <View style={styles.center}>
           <ActivityIndicator color={COLORS.accent} size="large" />
         </View>
@@ -125,7 +125,7 @@ export default function CardScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={styles.safe} edges={['top']}>
       {/* Top bar */}
       <View style={styles.topBar}>
         <View style={styles.headingRow}>
