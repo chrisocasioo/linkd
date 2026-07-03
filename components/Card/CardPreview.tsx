@@ -96,7 +96,10 @@ export function CardPreview({ card, user, analytics, maxHeight, onPreview, refre
   return (
     <View style={styles.card}>
       {/* ── Front face ── */}
-      <Animated.View style={[styles.face, { transform: [{ rotateY: frontRotate }] }]}>
+      <Animated.View
+        pointerEvents={isFlipped ? 'none' : 'auto'}
+        style={[styles.face, { transform: [{ rotateY: frontRotate }] }]}
+      >
         <ScrollView
           style={{ maxHeight: capH }}
           showsVerticalScrollIndicator={false}
@@ -161,6 +164,7 @@ export function CardPreview({ card, user, analytics, maxHeight, onPreview, refre
 
       {/* ── Back face ── */}
       <Animated.View
+        pointerEvents={isFlipped ? 'auto' : 'none'}
         style={[styles.face, styles.backFace, StyleSheet.absoluteFill, { transform: [{ rotateY: backRotate }] }]}
       >
         <View style={[styles.backHeader, { backgroundColor: accent + '22', borderBottomColor: accent + '33' }]}>
