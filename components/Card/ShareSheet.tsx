@@ -7,6 +7,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   Alert,
   Animated,
+  AppState,
   Dimensions,
   Linking,
   Pressable,
@@ -17,10 +18,11 @@ import {
   View,
 } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
+import WalletManager from 'react-native-wallet-manager';
 import { useApi, Card, User } from '../../lib/api';
 import { buildVcard, contactFromCard } from '../../lib/vcard';
 import { COLORS, FONTS } from '../../constants/colors';
-import { SHARE_BASE, publicCardUrl } from '../../constants/config';
+import { PASS_TYPE_ID, SHARE_BASE, publicCardUrl } from '../../constants/config';
 
 const SHEET_HEIGHT = Dimensions.get('window').height * 0.74;
 
@@ -41,6 +43,7 @@ export function ShareSheet({ visible, username, user, card, onClose, onUsernameC
   const [usernameValue, setUsernameValue] = useState(username);
   const [availability, setAvailability] = useState<boolean | null>(null);
   const [qrMode, setQrMode] = useState<'online' | 'offline'>('online');
+  const [inWallet, setInWallet] = useState(false);
   const checkTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inputRef = useRef<TextInput>(null);
   const qrRef = useRef<any>(null);
@@ -48,6 +51,28 @@ export function ShareSheet({ visible, username, user, card, onClose, onUsernameC
   useEffect(() => {
     setUsernameValue(username);
   }, [username]);
+
+  // Reflect whether the active mode's pass is already in Wallet. Re-checked
+  // when the sheet opens, the mode flips, or the app returns to foreground
+  // (in case the user removed the pass in the Wallet app).
+  const passSerial = card ? (qrMode === 'offline' ? `${card.id}-offline` : card.id) : null;
+  useEffect(() => {
+    let alive = true;
+    const check = async () => {
+      if (!passSerial) { setInWallet(false); return; }
+      try {
+        const has = await WalletManager.hasPass(PASS_TYPE_ID, passSerial);
+        if (alive) setInWallet(!!has);
+      } catch {
+        if (alive) setInWallet(false);
+      }
+    };
+    if (visible) check();
+    const sub = AppState.addEventListener('change', (s) => {
+      if (s === 'active' && visible) check();
+    });
+    return () => { alive = false; sub.remove(); };
+  }, [visible, passSerial]);
 
   useEffect(() => {
     if (visible) {
@@ -134,15 +159,22 @@ export function ShareSheet({ visible, username, user, card, onClose, onUsernameC
   };
 
   const handleAddToWallet = async () => {
-    if (!card) return;
-    // Must open in REAL Safari — the in-app browser (SFSafariViewController)
-    // can't handle .pkpass downloads, so the add sheet never appears.
-    // The pass follows the active QR mode: online = link QR, offline = vCard QR.
+    if (!card || inWallet) return;
+    // The pass follows the active QR mode: online = link QR, offline = vCard QR
+    const passUrl = `https://${SHARE_BASE}/pass/${card.id}${qrMode === 'offline' ? '?mode=offline' : ''}`;
     try {
-      const mode = qrMode === 'offline' ? '?mode=offline' : '';
-      await Linking.openURL(`https://${SHARE_BASE}/pass/${card.id}${mode}`);
-    } catch (err: any) {
-      Alert.alert('Could not open pass', err.message ?? 'Try again.');
+      // Native in-app add sheet (needs the Wallet entitlement)
+      await WalletManager.addPassFromUrl(passUrl);
+      if (passSerial) {
+        setInWallet(!!(await WalletManager.hasPass(PASS_TYPE_ID, passSerial).catch(() => false)));
+      }
+    } catch {
+      // Fallback: real Safari handles .pkpass (in-app browser does not)
+      try {
+        await Linking.openURL(passUrl);
+      } catch (err: any) {
+        Alert.alert('Could not open pass', err.message ?? 'Try again.');
+      }
     }
   };
 
@@ -272,12 +304,18 @@ export function ShareSheet({ visible, username, user, card, onClose, onUsernameC
 
           {/* Apple Wallet */}
           <Pressable
-            style={[styles.walletBtn, !card && { opacity: 0.4 }]}
+            style={[styles.walletBtn, !card && { opacity: 0.4 }, inWallet && styles.walletBtnAdded]}
             onPress={handleAddToWallet}
-            disabled={!card}
+            disabled={!card || inWallet}
           >
-            <Ionicons name="wallet-outline" size={16} color="#fff" />
-            <Text style={styles.walletBtnText}>Add to Apple Wallet</Text>
+            <Ionicons
+              name={inWallet ? 'checkmark-circle' : 'wallet-outline'}
+              size={16}
+              color={inWallet ? '#22C55E' : '#fff'}
+            />
+            <Text style={[styles.walletBtnText, inWallet && styles.walletBtnTextAdded]}>
+              {inWallet ? 'Added to Wallet' : 'Add to Apple Wallet'}
+            </Text>
           </Pressable>
         </View>
       </Animated.View>
@@ -337,4 +375,6 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   walletBtnText: { fontSize: 13, fontFamily: FONTS.semiBold, color: '#fff' },
+  walletBtnAdded: { backgroundColor: 'rgba(34,197,94,0.08)', borderColor: 'rgba(34,197,94,0.3)' },
+  walletBtnTextAdded: { color: '#22C55E' },
 });
