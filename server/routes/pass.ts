@@ -22,12 +22,55 @@ function hexToRgb(hex: string): string {
   return `rgb(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255})`;
 }
 
+// Env values arrive via copy-paste; strip any whitespace/newlines picked up on the way
+function cleanB64(v: string | undefined): string | null {
+  const s = (v ?? '').replace(/\s+/g, '');
+  return s.length > 0 ? s : null;
+}
+
+// Signing-config self check — reports parse/pair status, no secrets in the response
+router.get('/pass/health', (_req, res) => {
+  const certB64 = cleanB64(process.env.PASS_CERT_PEM_BASE64);
+  const keyB64 = cleanB64(process.env.PASS_KEY_PEM_BASE64);
+  const out: Record<string, unknown> = {
+    certPresent: !!certB64,
+    keyPresent: !!keyB64,
+    certParses: false,
+    keyParses: false,
+    pairMatches: false,
+    assetsPresent: fs.existsSync(path.join(ASSETS_DIR, 'icon.png')),
+    wwdrPresent: fs.existsSync(WWDR_PATH),
+  };
+  try {
+    const crypto = require('crypto');
+    let key: any = null;
+    if (keyB64) {
+      try {
+        key = crypto.createPrivateKey(Buffer.from(keyB64, 'base64'));
+        out.keyParses = true;
+      } catch (e: any) {
+        out.keyError = e?.message ?? String(e);
+      }
+    }
+    if (certB64) {
+      const cert = new crypto.X509Certificate(Buffer.from(certB64, 'base64'));
+      out.certParses = true;
+      out.certSubject = cert.subject.split('\n').pop();
+      out.certValidTo = cert.validTo;
+      if (key) out.pairMatches = cert.checkPrivateKey(key);
+    }
+  } catch (err: any) {
+    out.error = err?.message ?? String(err);
+  }
+  res.json(out);
+});
+
 // Signed .pkpass for a card — opening this URL in Safari shows the native
 // "Add to Apple Wallet" sheet. Public, like the card page itself.
 router.get('/pass/:cardId', async (req, res) => {
   try {
-    const certB64 = process.env.PASS_CERT_PEM_BASE64;
-    const keyB64 = process.env.PASS_KEY_PEM_BASE64;
+    const certB64 = cleanB64(process.env.PASS_CERT_PEM_BASE64);
+    const keyB64 = cleanB64(process.env.PASS_KEY_PEM_BASE64);
     if (!certB64 || !keyB64) {
       return res.status(503).send('Wallet passes are not configured');
     }
@@ -98,7 +141,7 @@ router.get('/pass/:cardId', async (req, res) => {
     res.send(buffer);
   } catch (err: any) {
     console.error('pkpass error:', err?.message ?? err);
-    res.status(500).send('Could not generate pass');
+    res.status(500).send(`Could not generate pass: ${err?.message ?? 'unknown error'}`);
   }
 });
 
