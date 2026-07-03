@@ -73,19 +73,21 @@ interface Props {
   analytics?: CardAnalytics;
   maxHeight?: number;
   onPreview?: () => void;
-  /** Called when the user pulls down past the top of an overflowing card —
-      the inner scroller owns the gesture then, so the outer RefreshControl
-      never sees the pull and we must trigger the refresh ourselves. */
-  onPullRefresh?: () => void;
 }
 
-export function CardPreview({ card, user, analytics, maxHeight, onPreview, onPullRefresh }: Props) {
+export function CardPreview({ card, user, analytics, maxHeight, onPreview }: Props) {
   const accent = card.accentColor;
   const fonts = CARD_FONTS[card.font ?? 'dm-sans'] ?? CARD_FONTS['dm-sans'];
   const initial = (user.displayName ?? user.username ?? '?')[0].toUpperCase();
   const capH = maxHeight ?? MAX_CARD_H;
   const [isFlipped, setIsFlipped] = useState(false);
   const flipAnim = useRef(new Animated.Value(0)).current;
+  // Scroll handoff: the moment the card's content is pulled past its top we
+  // disable the inner scroller mid-gesture and pin it to 0 — the outer
+  // refresh layer (tracking the same touch) takes over and pulls the whole
+  // card down. Re-armed when the finger lifts.
+  const [innerScrollEnabled, setInnerScrollEnabled] = useState(true);
+  const innerScrollRef = useRef<ScrollView>(null);
 
   const flip = () => {
     const toValue = isFlipped ? 0 : 1;
@@ -97,24 +99,26 @@ export function CardPreview({ card, user, analytics, maxHeight, onPreview, onPul
   const backRotate  = flipAnim.interpolate({ inputRange: [0, 1], outputRange: ['180deg', '360deg'] });
 
   return (
-    <View style={styles.card}>
+    <View
+      style={styles.card}
+      onTouchEnd={() => setInnerScrollEnabled(true)}
+      onTouchCancel={() => setInnerScrollEnabled(true)}
+    >
       {/* ── Front face ── */}
       <Animated.View
         pointerEvents={isFlipped ? 'none' : 'auto'}
         style={[styles.face, { transform: [{ rotateY: frontRotate }] }]}
       >
         <ScrollView
+          ref={innerScrollRef}
           style={{ maxHeight: capH, borderRadius: 22 }}
           showsVerticalScrollIndicator={false}
-          // The card owns the pull gesture: rubber-band at the top, release
-          // past the threshold to refresh. The outer layer stays frozen so
-          // only one surface moves; its RefreshControl still shows the
-          // spinner above the card once refreshing flips on.
-          bounces={!!onPullRefresh}
-          alwaysBounceVertical={!!onPullRefresh}
-          onScrollEndDrag={(e) => {
-            if (onPullRefresh && e.nativeEvent.contentOffset.y < -70) {
-              onPullRefresh();
+          bounces
+          scrollEnabled={innerScrollEnabled}
+          onScroll={(e) => {
+            if (innerScrollEnabled && e.nativeEvent.contentOffset.y < -1) {
+              setInnerScrollEnabled(false);
+              innerScrollRef.current?.scrollTo({ y: 0, animated: false });
             }
           }}
           scrollEventThrottle={16}

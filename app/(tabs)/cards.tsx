@@ -153,10 +153,6 @@ export default function CardScreen() {
         <ScrollView
           contentContainerStyle={{ flexGrow: 1 }}
           showsVerticalScrollIndicator={false}
-          // Cards own the pull gesture themselves (onPullRefresh); this layer
-          // only hosts the spinner above the card. It stays draggable solely
-          // for the empty state, where there's no card to pull.
-          scrollEnabled={cards.length === 0}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.accent} />
           }
@@ -193,7 +189,6 @@ export default function CardScreen() {
                       analytics={cardAnalytics.find((a) => a.cardId === item.id)}
                       maxHeight={cardMaxH}
                       onPreview={() => WebBrowser.openBrowserAsync(publicUrl)}
-                      onPullRefresh={onRefresh}
                     />
                   </View>
                 );
