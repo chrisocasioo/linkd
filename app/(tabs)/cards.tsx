@@ -42,7 +42,9 @@ export default function CardScreen() {
   // The inset formula is only the pre-layout estimate; estimating chrome heights
   // runs a few points over on some devices and clips the card's rounded bottom.
   const [carouselH, setCarouselH] = useState<number | null>(null);
-  const cardMaxH = carouselH ?? (SCREEN_H - insets.top - 49 - insets.bottom - FIXED_UI_H - 8);
+  // Breathing room under a maxed-out card so it doesn't sit flush against the dots
+  const CARD_BREATHING_ROOM = 12;
+  const cardMaxH = (carouselH ?? (SCREEN_H - insets.top - 49 - insets.bottom - FIXED_UI_H - 8)) - CARD_BREATHING_ROOM;
 
   const [user, setUser] = useState<User | null>(null);
   const [cards, setCards] = useState<Card[]>([]);
