@@ -10,7 +10,7 @@ async function getCardsWithFields(userId: string) {
     .select()
     .from(cards)
     .where(eq(cards.userId, userId))
-    .orderBy(asc(cards.displayOrder));
+    .orderBy(asc(cards.displayOrder), asc(cards.createdAt));
 
   const withFields = await Promise.all(
     userCards.map(async (card) => {
@@ -47,9 +47,11 @@ router.post('/', async (req, res) => {
     }
 
     const slug = Math.random().toString(36).slice(2, 10);
+    // existing.length collides with surviving orders after a delete; always append past the max
+    const maxOrder = existing.reduce((m, c) => Math.max(m, c.displayOrder ?? 0), -1);
     const [created] = await db
       .insert(cards)
-      .values({ userId, name, accentColor: accentColor ?? '#C9A84C', slug, displayOrder: existing.length })
+      .values({ userId, name, accentColor: accentColor ?? '#C9A84C', slug, displayOrder: maxOrder + 1 })
       .returning();
     res.status(201).json({ ...created, fields: [] });
   } catch (err: any) {
