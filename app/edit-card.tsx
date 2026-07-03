@@ -145,25 +145,27 @@ export default function EditCardScreen() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      if (photoUri) await api.uploadPhoto(photoUri);
-
       const displayName = [firstName.trim(), middleName.trim(), lastName.trim()].filter(Boolean).join(' ');
-      if (displayName) await api.updateMe({ displayName });
-
-      await api.updateCard(cardId, { name: cardName.trim() || 'Card', accentColor: accent, font: cardFont });
-
       const infoFieldDefs = [
         { type: 'title',      value: infoTitle  },
         { type: 'company',    value: company    },
         { type: 'department', value: department },
         { type: 'headline',   value: headline   },
       ];
-      await Promise.all(infoFieldDefs.map(async ({ type, value }) => {
-        const existing = card!.fields.find((f) => f.type === type);
-        if (value.trim() && existing)       await api.updateField(cardId, existing.id, { value: value.trim() });
-        else if (value.trim() && !existing) await api.addField(cardId, { type, value: value.trim() });
-        else if (!value.trim() && existing) await api.deleteField(cardId, existing.id);
-      }));
+
+      // All independent — run in parallel instead of paying each round trip in sequence
+      const ops: Promise<unknown>[] = [
+        api.updateCard(cardId, { name: cardName.trim() || 'Card', accentColor: accent, font: cardFont }),
+        ...infoFieldDefs.map(async ({ type, value }) => {
+          const existing = card!.fields.find((f) => f.type === type);
+          if (value.trim() && existing)       await api.updateField(cardId, existing.id, { value: value.trim() });
+          else if (value.trim() && !existing) await api.addField(cardId, { type, value: value.trim() });
+          else if (!value.trim() && existing) await api.deleteField(cardId, existing.id);
+        }),
+      ];
+      if (photoUri) ops.push(api.uploadPhoto(photoUri));
+      if (displayName) ops.push(api.updateMe({ displayName }));
+      await Promise.all(ops);
 
       router.back();
     } catch (err: any) {
