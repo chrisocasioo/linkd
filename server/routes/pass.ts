@@ -94,24 +94,20 @@ router.get('/pass/:cardId', async (req, res) => {
       ? `https://${SHARE_BASE}/${user.username}/${card.slug}`
       : `https://${SHARE_BASE}/${user.username}`;
 
-    // Wallet right-aligns the last field of each row by default, which made the
-    // second column look offset — force everything left so columns line up
-    const LEFT = 'PKTextAlignmentLeft';
-    type PassField = { key: string; label: string; value: string; textAlignment: string };
-    const secondaryFields: PassField[] = [];
-    if (title) secondaryFields.push({ key: 'title', label: 'TITLE', value: title, textAlignment: LEFT });
-    if (company) secondaryFields.push({ key: 'company', label: 'COMPANY', value: company, textAlignment: LEFT });
+    const secondaryFields: Array<{ key: string; label: string; value: string }> = [];
+    if (title) secondaryFields.push({ key: 'title', label: 'TITLE', value: title });
+    if (company) secondaryFields.push({ key: 'company', label: 'COMPANY', value: company });
 
     // Contact row under title/company — fills the fixed gap above the QR
     // (Apple pins barcode size/position; content is the only lever)
     const email = fields.find((f) => f.type === 'email')?.value;
     const phone = fields.find((f) => f.type === 'phone')?.value;
     const website = fields.find((f) => f.type === 'website')?.value;
-    const auxiliaryFields: PassField[] = [];
-    if (email) auxiliaryFields.push({ key: 'email', label: 'EMAIL', value: email, textAlignment: LEFT });
-    if (phone) auxiliaryFields.push({ key: 'phone', label: 'PHONE', value: phone, textAlignment: LEFT });
+    const auxiliaryFields: Array<{ key: string; label: string; value: string }> = [];
+    if (email) auxiliaryFields.push({ key: 'email', label: 'EMAIL', value: email });
+    if (phone) auxiliaryFields.push({ key: 'phone', label: 'PHONE', value: phone });
     if (auxiliaryFields.length < 2 && website) {
-      auxiliaryFields.push({ key: 'website', label: 'WEBSITE', value: website, textAlignment: LEFT });
+      auxiliaryFields.push({ key: 'website', label: 'WEBSITE', value: website });
     }
 
     const accent = card.accentColor ?? '#C9A84C';
