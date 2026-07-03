@@ -200,21 +200,38 @@ export function ShareSheet({ visible, username, user, card, onClose }: Props) {
             ))}
           </View>
 
-          {/* Share */}
-          <Pressable style={styles.btnPrimary} onPress={handleShare}>
-            <Text style={styles.btnPrimaryText}>Share Link</Text>
-          </Pressable>
-
-          {/* Offline shares — AirDrop works peer-to-peer with no internet */}
-          <View style={styles.btnRow}>
+          {/* Primary action follows the mode: online shares the link, offline
+              shares the contact card itself (AirDrop works with no internet) */}
+          {qrMode === 'online' ? (
+            <Pressable style={styles.btnPrimary} onPress={handleShare}>
+              <Text style={styles.btnPrimaryText}>Share Link</Text>
+            </Pressable>
+          ) : (
             <Pressable
-              style={[styles.btnSecondary, !card && { opacity: 0.4 }]}
+              style={[styles.btnPrimary, !card && { opacity: 0.4 }]}
               onPress={handleShareContact}
               disabled={!card}
             >
-              <Ionicons name="person-add-outline" size={15} color={COLORS.text} />
-              <Text style={styles.btnSecondaryText}>Share Contact</Text>
+              <Text style={styles.btnPrimaryText}>Share Contact</Text>
             </Pressable>
+          )}
+
+          <View style={styles.btnRow}>
+            {qrMode === 'online' ? (
+              <Pressable
+                style={[styles.btnSecondary, !card && { opacity: 0.4 }]}
+                onPress={handleShareContact}
+                disabled={!card}
+              >
+                <Ionicons name="person-add-outline" size={15} color={COLORS.text} />
+                <Text style={styles.btnSecondaryText}>Share Contact</Text>
+              </Pressable>
+            ) : (
+              <Pressable style={styles.btnSecondary} onPress={handleShare}>
+                <Ionicons name="link-outline" size={15} color={COLORS.text} />
+                <Text style={styles.btnSecondaryText}>Share Link</Text>
+              </Pressable>
+            )}
             <Pressable
               style={[styles.btnSecondary, !card && { opacity: 0.4 }]}
               onPress={handleShareQr}
