@@ -128,7 +128,10 @@ router.get('/pass/:cardId', async (req, res) => {
     const files: Record<string, Buffer> = {
       'pass.json': Buffer.from(JSON.stringify(passJson)),
     };
-    for (const asset of ['icon.png', 'icon@2x.png', 'icon@3x.png', 'logo.png', 'logo@2x.png', 'logo@3x.png']) {
+    // icon.png set is required by Wallet (notifications/previews only, never the
+    // pass face). No logo.png: the squished app icon next to the wordmark made
+    // the top row feel cramped — logoText alone renders cleaner.
+    for (const asset of ['icon.png', 'icon@2x.png', 'icon@3x.png']) {
       files[asset] = fs.readFileSync(path.join(ASSETS_DIR, asset));
     }
 
