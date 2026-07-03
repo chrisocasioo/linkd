@@ -188,10 +188,11 @@ export default function ScansScreen() {
   const device = useCameraDevice('back');
   const cameraRef = useRef<Camera>(null);
   const detectingRef = useRef(false);
-  const intervalRef = useRef<ReturnType<typeof setInterval>>();
+  const intervalRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
   const consecutiveHitsRef = useRef(0);
 
   const [flash, setFlash] = useState<'off' | 'on'>('off');
+  const [capturing, setCapturing] = useState(false);
   const [detected, setDetected] = useState(false);
   const [scanResult, setScanResult] = useState<Partial<ScanResult> | null>(null);
   const [showReview, setShowReview] = useState(false);
@@ -247,6 +248,27 @@ export default function ScansScreen() {
 
     return () => clearInterval(intervalRef.current);
   }, [hasPermission, device, showReview]);
+
+  // Manual capture — for cards the auto-detect loop can't read. Always opens
+  // the review sheet with whatever OCR found (even nothing) so the user can
+  // finish the contact by hand.
+  const captureManually = async () => {
+    if (capturing || !cameraRef.current) return;
+    setCapturing(true);
+    detectingRef.current = true; // pause the live-scan loop while we capture
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      const snapshot = await cameraRef.current.takeSnapshot({ quality: 90 });
+      const uri = snapshot.path.startsWith('file://') ? snapshot.path : `file://${snapshot.path}`;
+      const result = await TextRecognition.recognize(uri);
+      setScanResult(parseBusinessCard(result.text, extractLargeTextLines(result)));
+      setShowReview(true);
+      setDetected(false);
+      consecutiveHitsRef.current = 0;
+    } catch {}
+    detectingRef.current = false;
+    setCapturing(false);
+  };
 
   const pickFromLibrary = async () => {
     clearInterval(intervalRef.current);
@@ -318,6 +340,12 @@ export default function ScansScreen() {
             </Text>
           </Animated.View>
         </View>
+
+        {/* Scanning indicator — bottom of camera view */}
+        <View style={styles.scanningPill} pointerEvents="none">
+          <View style={styles.scanDot} />
+          <Text style={styles.scanningText}>Scanning…</Text>
+        </View>
       </View>
 
       {/* Controls */}
@@ -326,10 +354,10 @@ export default function ScansScreen() {
           <Ionicons name="images-outline" size={22} color="#fff" />
         </Pressable>
 
-        <View style={styles.scanningIndicator}>
-          <View style={styles.scanDot} />
-          <Text style={styles.scanningText}>Scanning…</Text>
-        </View>
+        {/* Manual capture — in case a card isn't being auto-detected */}
+        <Pressable style={styles.shutterBtn} onPress={captureManually} disabled={capturing}>
+          <View style={[styles.shutterInner, capturing && { opacity: 0.4 }]} />
+        </Pressable>
 
         <Pressable
           style={styles.secondaryBtn}
@@ -406,8 +434,20 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.15)',
     alignItems: 'center', justifyContent: 'center',
   },
-  scanningIndicator: {
+  scanningPill: {
+    position: 'absolute', bottom: 14, alignSelf: 'center',
     flexDirection: 'row', alignItems: 'center', gap: 8,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20,
+  },
+  shutterBtn: {
+    width: 68, height: 68, borderRadius: 34,
+    borderWidth: 4, borderColor: '#fff',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  shutterInner: {
+    width: 52, height: 52, borderRadius: 26,
+    backgroundColor: '#fff',
   },
   scanDot: {
     width: 8, height: 8, borderRadius: 4,
