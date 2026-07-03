@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ContactDetailSheet } from '../../components/Contacts/ContactDetailSheet';
 import { ContactReviewSheet } from '../../components/Contacts/ContactReviewSheet';
 import { useApi, Contact } from '../../lib/api';
+import { loadContactsCache, saveContactsCache } from '../../lib/cache';
 import { COLORS, FONTS } from '../../constants/colors';
 
 function getInitials(c: Contact): string {
@@ -36,23 +37,35 @@ export default function ContactsScreen() {
   const [showDetail, setShowDetail] = useState(false);
 
   const [showAdd, setShowAdd] = useState(false);
+  const hydratedRef = useRef(false);
 
-  const load = useCallback(async () => {
+  const fetchFresh = useCallback(async () => {
     try {
       const data = await api.getMyContacts();
       setContacts(data);
-    } catch {}
-    setLoading(false);
+      saveContactsCache(data);
+    } catch {} // offline — cached data (if any) stays on screen
   }, [api]);
+
+  const load = useCallback(async () => {
+    // Hydrate from disk once per mount so contacts are viewable offline
+    if (!hydratedRef.current) {
+      hydratedRef.current = true;
+      const cached = await loadContactsCache();
+      if (cached) {
+        setContacts(cached);
+        setLoading(false);
+      }
+    }
+    await fetchFresh();
+    setLoading(false);
+  }, [fetchFresh]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    try {
-      const data = await api.getMyContacts();
-      setContacts(data);
-    } catch {}
+    await fetchFresh();
     setRefreshing(false);
-  }, [api]);
+  }, [fetchFresh]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
