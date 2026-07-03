@@ -98,6 +98,18 @@ router.get('/pass/:cardId', async (req, res) => {
     if (title) secondaryFields.push({ key: 'title', label: 'TITLE', value: title });
     if (company) secondaryFields.push({ key: 'company', label: 'COMPANY', value: company });
 
+    // Contact row under title/company — fills the fixed gap above the QR
+    // (Apple pins barcode size/position; content is the only lever)
+    const email = fields.find((f) => f.type === 'email')?.value;
+    const phone = fields.find((f) => f.type === 'phone')?.value;
+    const website = fields.find((f) => f.type === 'website')?.value;
+    const auxiliaryFields: Array<{ key: string; label: string; value: string }> = [];
+    if (email) auxiliaryFields.push({ key: 'email', label: 'EMAIL', value: email });
+    if (phone) auxiliaryFields.push({ key: 'phone', label: 'PHONE', value: phone });
+    if (auxiliaryFields.length < 2 && website) {
+      auxiliaryFields.push({ key: 'website', label: 'WEBSITE', value: website });
+    }
+
     const accent = card.accentColor ?? '#C9A84C';
     const passJson = {
       formatVersion: 1,
@@ -115,6 +127,7 @@ router.get('/pass/:cardId', async (req, res) => {
         headerFields: [{ key: 'cardName', value: card.name.toUpperCase() }],
         primaryFields: [{ key: 'name', value: displayName }],
         secondaryFields,
+        auxiliaryFields,
       },
       barcodes: [
         {
