@@ -94,21 +94,28 @@ router.get('/pass/:cardId', async (req, res) => {
       ? `https://${SHARE_BASE}/${user.username}/${card.slug}`
       : `https://${SHARE_BASE}/${user.username}`;
 
-    const secondaryFields: Array<{ key: string; label: string; value: string }> = [];
+    // Right column (COMPANY / PHONE) is pinned flush to the pass's right edge
+    // so the two rows line up; left column keeps natural alignment
+    const RIGHT = 'PKTextAlignmentRight';
+    type PassField = { key: string; label: string; value: string; textAlignment?: string };
+    const secondaryFields: PassField[] = [];
     if (title) secondaryFields.push({ key: 'title', label: 'TITLE', value: title });
-    if (company) secondaryFields.push({ key: 'company', label: 'COMPANY', value: company });
+    if (company) secondaryFields.push({ key: 'company', label: 'COMPANY', value: company, textAlignment: RIGHT });
 
     // Contact row under title/company — fills the fixed gap above the QR
     // (Apple pins barcode size/position; content is the only lever)
     const email = fields.find((f) => f.type === 'email')?.value;
     const phone = fields.find((f) => f.type === 'phone')?.value;
     const website = fields.find((f) => f.type === 'website')?.value;
-    const auxiliaryFields: Array<{ key: string; label: string; value: string }> = [];
+    const auxiliaryFields: PassField[] = [];
     if (email) auxiliaryFields.push({ key: 'email', label: 'EMAIL', value: email });
-    if (phone) auxiliaryFields.push({ key: 'phone', label: 'PHONE', value: phone });
+    if (phone) auxiliaryFields.push({ key: 'phone', label: 'PHONE', value: phone, textAlignment: RIGHT });
     if (auxiliaryFields.length < 2 && website) {
-      auxiliaryFields.push({ key: 'website', label: 'WEBSITE', value: website });
+      auxiliaryFields.push({ key: 'website', label: 'WEBSITE', value: website, textAlignment: RIGHT });
     }
+    // If a row ends up with a single field, drop the right-pin so it reads naturally
+    if (secondaryFields.length === 1) delete secondaryFields[0].textAlignment;
+    if (auxiliaryFields.length === 1) delete auxiliaryFields[0].textAlignment;
 
     const accent = card.accentColor ?? '#C9A84C';
     const passJson = {
