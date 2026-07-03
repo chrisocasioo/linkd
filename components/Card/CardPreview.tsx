@@ -73,21 +73,24 @@ interface Props {
   analytics?: CardAnalytics;
   maxHeight?: number;
   onPreview?: () => void;
+  /** Fires when the user pulls down while the card content is at the top. */
+  onPullRefresh?: () => void;
 }
 
-export function CardPreview({ card, user, analytics, maxHeight, onPreview }: Props) {
+export function CardPreview({ card, user, analytics, maxHeight, onPreview, onPullRefresh }: Props) {
   const accent = card.accentColor;
   const fonts = CARD_FONTS[card.font ?? 'dm-sans'] ?? CARD_FONTS['dm-sans'];
   const initial = (user.displayName ?? user.username ?? '?')[0].toUpperCase();
   const capH = maxHeight ?? MAX_CARD_H;
   const [isFlipped, setIsFlipped] = useState(false);
   const flipAnim = useRef(new Animated.Value(0)).current;
-  // Scroll handoff: the moment the card's content is pulled past its top we
-  // disable the inner scroller mid-gesture and pin it to 0 — the outer
-  // refresh layer (tracking the same touch) takes over and pulls the whole
-  // card down. Re-armed when the finger lifts.
-  const [innerScrollEnabled, setInnerScrollEnabled] = useState(true);
-  const innerScrollRef = useRef<ScrollView>(null);
+  // Pull-to-refresh: the card scroll stops dead at the top (no bounce). A
+  // pull that STARTS with content at the top is measured on the wrapper's
+  // raw touches; past the threshold it fires onPullRefresh once.
+  const atTopRef = useRef(true);
+  const touchStartYRef = useRef(0);
+  const startedAtTopRef = useRef(false);
+  const pullTriggeredRef = useRef(false);
 
   const flip = () => {
     const toValue = isFlipped ? 0 : 1;
@@ -101,8 +104,22 @@ export function CardPreview({ card, user, analytics, maxHeight, onPreview }: Pro
   return (
     <View
       style={styles.card}
-      onTouchEnd={() => setInnerScrollEnabled(true)}
-      onTouchCancel={() => setInnerScrollEnabled(true)}
+      onTouchStart={(e) => {
+        touchStartYRef.current = e.nativeEvent.pageY;
+        startedAtTopRef.current = atTopRef.current;
+        pullTriggeredRef.current = false;
+      }}
+      onTouchMove={(e) => {
+        if (
+          onPullRefresh &&
+          !pullTriggeredRef.current &&
+          startedAtTopRef.current &&
+          e.nativeEvent.pageY - touchStartYRef.current > 80
+        ) {
+          pullTriggeredRef.current = true;
+          onPullRefresh();
+        }
+      }}
     >
       {/* ── Front face ── */}
       <Animated.View
@@ -110,16 +127,11 @@ export function CardPreview({ card, user, analytics, maxHeight, onPreview }: Pro
         style={[styles.face, { transform: [{ rotateY: frontRotate }] }]}
       >
         <ScrollView
-          ref={innerScrollRef}
           style={{ maxHeight: capH, borderRadius: 22 }}
           showsVerticalScrollIndicator={false}
-          bounces
-          scrollEnabled={innerScrollEnabled}
+          bounces={false}
           onScroll={(e) => {
-            if (innerScrollEnabled && e.nativeEvent.contentOffset.y < -1) {
-              setInnerScrollEnabled(false);
-              innerScrollRef.current?.scrollTo({ y: 0, animated: false });
-            }
+            atTopRef.current = e.nativeEvent.contentOffset.y <= 0;
           }}
           scrollEventThrottle={16}
         >
