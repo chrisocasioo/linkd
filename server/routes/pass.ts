@@ -94,24 +94,41 @@ router.get('/pass/:cardId', async (req, res) => {
       ? `https://${SHARE_BASE}/${user.username}/${card.slug}`
       : `https://${SHARE_BASE}/${user.username}`;
 
-    // Right column (COMPANY / PHONE) is pinned flush to the pass's right edge
-    // so the two rows line up; left column keeps natural alignment
+    // Grid: TITLE | PHONE on the top row, COMPANY | EMAIL below. Putting the
+    // long email next to the (usually short) company keeps Wallet from
+    // shrinking the row's font, which it did when email and phone shared a
+    // line. Right column pinned flush to the pass edge so the rows line up.
     const RIGHT = 'PKTextAlignmentRight';
     type PassField = { key: string; label: string; value: string; textAlignment?: string };
-    const secondaryFields: PassField[] = [];
-    if (title) secondaryFields.push({ key: 'title', label: 'TITLE', value: title });
-    if (company) secondaryFields.push({ key: 'company', label: 'COMPANY', value: company, textAlignment: RIGHT });
-
-    // Contact row under title/company — fills the fixed gap above the QR
-    // (Apple pins barcode size/position; content is the only lever)
     const email = fields.find((f) => f.type === 'email')?.value;
     const phone = fields.find((f) => f.type === 'phone')?.value;
     const website = fields.find((f) => f.type === 'website')?.value;
+
+    // Website stands in for whichever right-column slot is missing (only once)
+    const topRight = phone ?? website;
+    const topRightIsWebsite = !phone && !!website;
+    const bottomRight = email ?? (topRightIsWebsite ? undefined : website);
+
+    const secondaryFields: PassField[] = [];
+    if (title) secondaryFields.push({ key: 'title', label: 'TITLE', value: title });
+    if (topRight) {
+      secondaryFields.push({
+        key: 'topRight',
+        label: topRightIsWebsite ? 'WEBSITE' : 'PHONE',
+        value: topRight,
+        textAlignment: RIGHT,
+      });
+    }
+
     const auxiliaryFields: PassField[] = [];
-    if (email) auxiliaryFields.push({ key: 'email', label: 'EMAIL', value: email });
-    if (phone) auxiliaryFields.push({ key: 'phone', label: 'PHONE', value: phone, textAlignment: RIGHT });
-    if (auxiliaryFields.length < 2 && website) {
-      auxiliaryFields.push({ key: 'website', label: 'WEBSITE', value: website, textAlignment: RIGHT });
+    if (company) auxiliaryFields.push({ key: 'company', label: 'COMPANY', value: company });
+    if (bottomRight) {
+      auxiliaryFields.push({
+        key: 'bottomRight',
+        label: email ? 'EMAIL' : 'WEBSITE',
+        value: bottomRight,
+        textAlignment: RIGHT,
+      });
     }
     // If a row ends up with a single field, drop the right-pin so it reads naturally
     if (secondaryFields.length === 1) delete secondaryFields[0].textAlignment;
