@@ -136,9 +136,11 @@ export function ShareSheet({ visible, username, user, card, onClose, onUsernameC
   const handleAddToWallet = async () => {
     if (!card) return;
     // Must open in REAL Safari — the in-app browser (SFSafariViewController)
-    // can't handle .pkpass downloads, so the add sheet never appears
+    // can't handle .pkpass downloads, so the add sheet never appears.
+    // The pass follows the active QR mode: online = link QR, offline = vCard QR.
     try {
-      await Linking.openURL(`https://${SHARE_BASE}/pass/${card.id}`);
+      const mode = qrMode === 'offline' ? '?mode=offline' : '';
+      await Linking.openURL(`https://${SHARE_BASE}/pass/${card.id}${mode}`);
     } catch (err: any) {
       Alert.alert('Could not open pass', err.message ?? 'Try again.');
     }

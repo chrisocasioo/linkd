@@ -30,6 +30,39 @@ function cleanB64(v: string | undefined): string | null {
   return s.length > 0 ? s : null;
 }
 
+// vCard text escaping (RFC 6350)
+function vesc(v: string): string {
+  return v.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
+}
+
+// Compact vCard for the offline pass QR — scanning pops a native pre-filled
+// contact card with no internet on either phone. Kept small for scannability.
+function buildCompactVcard(opts: {
+  displayName: string;
+  phone?: string;
+  email?: string;
+  title?: string;
+  company?: string;
+  publicUrl: string;
+}): string {
+  const parts = opts.displayName.trim().split(/\s+/);
+  const first = parts[0] ?? '';
+  const last = parts.slice(1).join(' ');
+  const lines = [
+    'BEGIN:VCARD',
+    'VERSION:3.0',
+    `FN:${vesc(opts.displayName)}`,
+    `N:${vesc(last)};${vesc(first)};;;`,
+  ];
+  if (opts.phone) lines.push(`TEL;TYPE=CELL:${vesc(opts.phone)}`);
+  if (opts.email) lines.push(`EMAIL;TYPE=INTERNET;TYPE=WORK:${vesc(opts.email)}`);
+  if (opts.title) lines.push(`TITLE:${vesc(opts.title)}`);
+  if (opts.company) lines.push(`ORG:${vesc(opts.company)}`);
+  lines.push(`URL;TYPE=Linkd:${opts.publicUrl}`);
+  lines.push('END:VCARD');
+  return lines.join('\r\n');
+}
+
 // Signing-config self check — reports parse/pair status, no secrets in the response
 router.get('/pass/health', (_req, res) => {
   const certB64 = cleanB64(process.env.PASS_CERT_PEM_BASE64);
@@ -136,21 +169,30 @@ router.get('/pass/:cardId', async (req, res) => {
     if (secondaryFields.length === 1) delete secondaryFields[0].textAlignment;
     if (auxiliaryFields.length === 1) delete auxiliaryFields[0].textAlignment;
 
+    // ?mode=offline: the QR embeds the vCard itself (works with no internet),
+    // distinct serial so both variants can sit in Wallet together
+    const offline = req.query.mode === 'offline';
+    const qrMessage = offline
+      ? buildCompactVcard({ displayName, phone: rawPhone, email, title, company, publicUrl })
+      : publicUrl;
+
     const accent = card.accentColor ?? '#C9A84C';
     const passJson = {
       formatVersion: 1,
       passTypeIdentifier: PASS_TYPE_ID,
       teamIdentifier: PASS_TEAM_ID,
-      serialNumber: card.id,
+      serialNumber: offline ? `${card.id}-offline` : card.id,
       organizationName: 'Linkd',
-      description: `${displayName} — digital business card`,
+      description: `${displayName} — digital business card${offline ? ' (offline)' : ''}`,
       logoText: 'Linkd',
       // Match the in-app card design: charcoal card, white text, accent labels
       backgroundColor: 'rgb(22, 22, 22)',
       foregroundColor: 'rgb(255, 255, 255)',
       labelColor: hexToRgb(accent),
       generic: {
-        headerFields: [{ key: 'cardName', value: card.name.toUpperCase() }],
+        headerFields: [
+          { key: 'cardName', value: `${card.name.toUpperCase()}${offline ? ' · OFFLINE' : ''}` },
+        ],
         primaryFields: [{ key: 'name', value: displayName }],
         secondaryFields,
         auxiliaryFields,
@@ -158,7 +200,7 @@ router.get('/pass/:cardId', async (req, res) => {
       barcodes: [
         {
           format: 'PKBarcodeFormatQR',
-          message: publicUrl,
+          message: qrMessage,
           messageEncoding: 'iso-8859-1',
         },
       ],
