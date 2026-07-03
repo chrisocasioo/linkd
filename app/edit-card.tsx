@@ -16,6 +16,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import ColorPicker from 'react-native-wheel-color-picker';
 import { CardFieldSheet } from '../components/Card/CardFieldSheet';
 import { useApi, Card, CardField, User } from '../lib/api';
 import { COLORS, FONTS } from '../constants/colors';
@@ -338,23 +339,37 @@ export default function EditCardScreen() {
                 </View>
 
                 {showHexInput && (
-                  <View style={styles.hexRow}>
-                    <View style={[styles.hexPreview, { backgroundColor: /^#[0-9A-Fa-f]{6}$/.test(hexDraft) ? hexDraft : COLORS.border }]} />
-                    <TextInput
-                      style={styles.hexInput}
-                      value={hexDraft}
-                      onChangeText={(v) => {
-                        const clean = v.startsWith('#') ? v : '#' + v;
-                        setHexDraft(clean);
-                        if (/^#[0-9A-Fa-f]{6}$/.test(clean)) setAccent(clean);
-                      }}
-                      placeholder="#C9A84C"
-                      placeholderTextColor={COLORS.textTertiary}
-                      autoCapitalize="characters"
-                      maxLength={7}
-                      autoFocus
-                    />
-                  </View>
+                  <>
+                    <View style={styles.wheelWrap}>
+                      <ColorPicker
+                        color={accent}
+                        onColorChangeComplete={(c: string) => {
+                          setAccent(c);
+                          setHexDraft(c);
+                        }}
+                        thumbSize={26}
+                        sliderSize={26}
+                        gapSize={20}
+                        swatches={false}
+                      />
+                    </View>
+                    <View style={styles.hexRow}>
+                      <View style={[styles.hexPreview, { backgroundColor: /^#[0-9A-Fa-f]{6}$/.test(hexDraft) ? hexDraft : COLORS.border }]} />
+                      <TextInput
+                        style={styles.hexInput}
+                        value={hexDraft}
+                        onChangeText={(v) => {
+                          const clean = v.startsWith('#') ? v : '#' + v;
+                          setHexDraft(clean);
+                          if (/^#[0-9A-Fa-f]{6}$/.test(clean)) setAccent(clean);
+                        }}
+                        placeholder="#C9A84C"
+                        placeholderTextColor={COLORS.textTertiary}
+                        autoCapitalize="characters"
+                        maxLength={7}
+                      />
+                    </View>
+                  </>
                 )}
 
                 <Text style={[styles.label, { marginTop: 20 }]}>Font</Text>
@@ -619,8 +634,9 @@ const styles = StyleSheet.create({
   },
   colorPickerDot: { backgroundColor: 'rgba(255,255,255,0.08)' },
   colorDotActive: { borderColor: '#fff' },
+  wheelWrap: { height: 280, marginTop: 16, paddingHorizontal: 8 },
   hexRow: {
-    flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 12,
+    flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 20,
   },
   hexPreview: { width: 32, height: 32, borderRadius: 16 },
   hexInput: {
