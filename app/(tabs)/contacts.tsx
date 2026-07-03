@@ -80,7 +80,7 @@ export default function ContactsScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.topBar}>
         <Text style={styles.heading}>Contacts</Text>
         <Pressable style={styles.addBtn} onPress={() => setShowAdd(true)}>
@@ -161,7 +161,7 @@ const styles = StyleSheet.create({
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10, paddingHorizontal: 40 },
   emptyTitle: { fontSize: 18, fontFamily: FONTS.semiBold, color: COLORS.text },
   emptySub: { fontSize: 13, fontFamily: FONTS.regular, color: COLORS.textSecondary, textAlign: 'center' },
-  list: { paddingHorizontal: 16, paddingTop: 8 },
+  list: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 16 },
   listEmpty: { flex: 1 },
   separator: { height: 1, backgroundColor: COLORS.border, marginLeft: 70 },
   row: {
