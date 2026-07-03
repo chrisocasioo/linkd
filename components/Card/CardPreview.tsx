@@ -84,7 +84,6 @@ export function CardPreview({ card, user, analytics, maxHeight, onPreview, onPul
   const fonts = CARD_FONTS[card.font ?? 'dm-sans'] ?? CARD_FONTS['dm-sans'];
   const initial = (user.displayName ?? user.username ?? '?')[0].toUpperCase();
   const capH = maxHeight ?? MAX_CARD_H;
-  const [contentOverflows, setContentOverflows] = useState(false);
   const [isFlipped, setIsFlipped] = useState(false);
   const flipAnim = useRef(new Animated.Value(0)).current;
 
@@ -107,13 +106,14 @@ export function CardPreview({ card, user, analytics, maxHeight, onPreview, onPul
         <ScrollView
           style={{ maxHeight: capH, borderRadius: 22 }}
           showsVerticalScrollIndicator={false}
-          // Fits: bounces off so the pan never starts and the outer refresh
-          // layer gets the pull. Overflows: bounce at the top and detect the
-          // pull ourselves on release.
-          bounces={contentOverflows && !!onPullRefresh}
-          onContentSizeChange={(_, h) => setContentOverflows(h > capH + 1)}
+          // The card owns the pull gesture: rubber-band at the top, release
+          // past the threshold to refresh. The outer layer stays frozen so
+          // only one surface moves; its RefreshControl still shows the
+          // spinner above the card once refreshing flips on.
+          bounces={!!onPullRefresh}
+          alwaysBounceVertical={!!onPullRefresh}
           onScrollEndDrag={(e) => {
-            if (contentOverflows && onPullRefresh && e.nativeEvent.contentOffset.y < -70) {
+            if (onPullRefresh && e.nativeEvent.contentOffset.y < -70) {
               onPullRefresh();
             }
           }}
