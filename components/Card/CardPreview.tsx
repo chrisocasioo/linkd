@@ -88,6 +88,7 @@ export function CardPreview({ card, user, analytics, maxHeight, onPreview, onPul
   // pull that STARTS with content at the top is measured on the wrapper's
   // raw touches; past the threshold it fires onPullRefresh once.
   const atTopRef = useRef(true);
+  const backAtTopRef = useRef(true);
   const touchStartYRef = useRef(0);
   const startedAtTopRef = useRef(false);
   const pullTriggeredRef = useRef(false);
@@ -106,7 +107,8 @@ export function CardPreview({ card, user, analytics, maxHeight, onPreview, onPul
       style={styles.card}
       onTouchStart={(e) => {
         touchStartYRef.current = e.nativeEvent.pageY;
-        startedAtTopRef.current = atTopRef.current;
+        // "At top" of whichever face is showing — refresh works from both
+        startedAtTopRef.current = isFlipped ? backAtTopRef.current : atTopRef.current;
         pullTriggeredRef.current = false;
       }}
       onTouchMove={(e) => {
@@ -199,7 +201,14 @@ export function CardPreview({ card, user, analytics, maxHeight, onPreview, onPul
           <Text style={[styles.backCardName, { color: accent }]}>{card.name.toUpperCase()}</Text>
         </View>
 
-        <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          bounces={false}
+          onScroll={(e) => {
+            backAtTopRef.current = e.nativeEvent.contentOffset.y <= 0;
+          }}
+          scrollEventThrottle={16}
+        >
           {/* Views summary */}
           <View style={styles.backViewsSection}>
             <Text style={styles.backPeriod}>LAST 30 DAYS</Text>
@@ -389,7 +398,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
+    paddingVertical: 12,
     borderBottomWidth: 1,
     position: 'relative',
   },
@@ -400,7 +409,7 @@ const styles = StyleSheet.create({
   },
   backViewsSection: {
     alignItems: 'center',
-    paddingVertical: 24,
+    paddingVertical: 14,
     paddingHorizontal: 24,
     gap: 6,
   },
@@ -446,8 +455,8 @@ const styles = StyleSheet.create({
   },
   backFieldsSection: {
     paddingHorizontal: 18,
-    paddingTop: 16,
-    paddingBottom: 12,
+    paddingTop: 10,
+    paddingBottom: 8,
     gap: 4,
   },
   backSectionLabel: {
