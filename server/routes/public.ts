@@ -163,14 +163,14 @@ function buildCardHtml(user: UserRow, card: CardRow, fields: FieldRow[], usernam
     .exchange { padding: 14px 18px 18px; border-top: 1px solid rgba(255,255,255,0.06); }
     .save-contact {
       display: block; width: 100%; padding: 13px; border-radius: 13px;
-      background: ${accent}; color: #0C0C0E; font-size: 14px; font-weight: 600;
+      background: transparent; border: 1px solid ${accent}55; color: ${accent};
+      font-size: 14px; font-weight: 600; box-sizing: border-box;
       text-align: center; text-decoration: none; margin-bottom: 10px;
       font-family: inherit;
     }
     .exchange-toggle {
-      width: 100%; padding: 13px; border-radius: 13px;
-      background: transparent; border: 1px solid ${accent}55; color: ${accent};
-      font-size: 14px; font-weight: 600;
+      width: 100%; padding: 13px; border: none; border-radius: 13px;
+      background: ${accent}; color: #0C0C0E; font-size: 14px; font-weight: 600;
       cursor: pointer; font-family: inherit;
     }
     .exchange-form { display: none; flex-direction: column; gap: 10px; margin-top: 12px; }
