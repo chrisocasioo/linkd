@@ -192,6 +192,8 @@ export default function CardScreen() {
                       maxHeight={cardMaxH}
                       onPreview={() => WebBrowser.openBrowserAsync(publicUrl)}
                       onPullRefresh={onRefresh}
+                      analyticsLocked={!isPro}
+                      onUnlockAnalytics={() => setShowPaywall(true)}
                     />
                   </View>
                 );

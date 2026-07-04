@@ -18,8 +18,10 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ColorPicker from 'react-native-wheel-color-picker';
 import { CardFieldSheet } from '../components/Card/CardFieldSheet';
+import { PaywallSheet } from '../components/Card/PaywallSheet';
 import { useApi, Card, CardField, User } from '../lib/api';
 import { APP_FIELD_DISPLAY } from '../lib/appField';
+import { useRevenueCat } from '../lib/RevenueCatContext';
 import { COLORS, FONTS } from '../constants/colors';
 
 const ACCENT_COLORS = ['#C9A84C', '#7C3AED', '#22C55E', '#F43F5E', '#0EA5E9', '#EC4899'];
@@ -83,6 +85,9 @@ export default function EditCardScreen() {
   const [cardName, setCardName] = useState('');
   const [accent, setAccent] = useState('');
   const [cardFont, setCardFont] = useState('dm-sans');
+  const [slug, setSlug] = useState('');
+  const [showPaywall, setShowPaywall] = useState(false);
+  const { isPro } = useRevenueCat();
 
   const [firstName, setFirstName] = useState('');
   const [middleName, setMiddleName] = useState('');
@@ -111,6 +116,7 @@ export default function EditCardScreen() {
         setCardName(found.name);
         setAccent(found.accentColor);
         setCardFont(found.font ?? 'dm-sans');
+        setSlug(found.slug ?? '');
         const nameParts = (u.displayName ?? '').split(' ');
         setFirstName(nameParts[0] ?? '');
         if (nameParts.length === 2) { setLastName(nameParts[1]); }
@@ -146,6 +152,13 @@ export default function EditCardScreen() {
   };
 
   const handleSave = async () => {
+    // Empty slug means "keep the current URL"
+    const newSlug = slug.trim();
+    const slugChanged = isPro && newSlug !== '' && newSlug !== (card?.slug ?? '');
+    if (slugChanged && !/^[a-z0-9-]{3,30}$/.test(newSlug)) {
+      Alert.alert('Invalid URL', 'Card URL must be 3–30 lowercase letters, numbers, or dashes.');
+      return;
+    }
     setSaving(true);
     try {
       const displayName = [firstName.trim(), middleName.trim(), lastName.trim()].filter(Boolean).join(' ');
@@ -158,7 +171,12 @@ export default function EditCardScreen() {
 
       // All independent — run in parallel instead of paying each round trip in sequence
       const ops: Promise<unknown>[] = [
-        api.updateCard(cardId, { name: cardName.trim() || 'Card', accentColor: accent, font: cardFont }),
+        api.updateCard(cardId, {
+          name: cardName.trim() || 'Card',
+          accentColor: accent,
+          font: cardFont,
+          ...(slugChanged ? { slug: newSlug } : {}),
+        }),
         ...infoFieldDefs.map(async ({ type, value }) => {
           const existing = card!.fields.find((f) => f.type === type);
           if (value.trim() && existing)       await api.updateField(cardId, existing.id, { value: value.trim() });
@@ -314,6 +332,33 @@ export default function EditCardScreen() {
                   placeholderTextColor={COLORS.textTertiary}
                   maxLength={30}
                 />
+
+                <Text style={[styles.label, { marginTop: 20 }]}>Card URL</Text>
+                {isPro ? (
+                  <View style={styles.slugRow}>
+                    <Text style={styles.slugPrefix} numberOfLines={1}>{user.username}/</Text>
+                    <TextInput
+                      style={styles.slugInput}
+                      value={slug}
+                      onChangeText={(v) => setSlug(v.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+                      placeholder="your-card"
+                      placeholderTextColor={COLORS.textTertiary}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      maxLength={30}
+                    />
+                  </View>
+                ) : (
+                  <Pressable style={styles.slugRow} onPress={() => setShowPaywall(true)}>
+                    <Text style={[styles.slugPrefix, { flex: 1 }]} numberOfLines={1}>
+                      {user.username}/{card.slug}
+                    </Text>
+                    <View style={styles.slugLockBadge}>
+                      <Ionicons name="lock-closed" size={9} color={COLORS.textTertiary} />
+                      <Text style={styles.slugLockText}>Pro</Text>
+                    </View>
+                  </Pressable>
+                )}
 
                 <Text style={[styles.label, { marginTop: 20 }]}>Accent Color</Text>
                 <View style={styles.colorRow}>
@@ -564,6 +609,7 @@ export default function EditCardScreen() {
         onSave={handleFieldSave}
         onDelete={handleFieldDelete}
       />
+      <PaywallSheet visible={showPaywall} onClose={() => setShowPaywall(false)} />
     </SafeAreaView>
   );
 }
@@ -632,6 +678,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14, fontSize: 15, fontFamily: FONTS.regular, color: COLORS.text,
   },
   inputMultiline: { height: 72, paddingTop: 14 },
+  slugRow: {
+    height: 48, backgroundColor: COLORS.surface2, borderRadius: 12,
+    borderWidth: 1, borderColor: COLORS.border,
+    paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center',
+  },
+  slugPrefix: { fontSize: 15, fontFamily: FONTS.regular, color: COLORS.textSecondary },
+  slugInput: { flex: 1, fontSize: 15, fontFamily: FONTS.regular, color: COLORS.text, paddingVertical: 0 },
+  slugLockBadge: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    backgroundColor: COLORS.surface, borderRadius: 6,
+    paddingHorizontal: 7, paddingVertical: 3,
+    borderWidth: 1, borderColor: COLORS.border,
+  },
+  slugLockText: { fontSize: 9, fontFamily: FONTS.medium, color: COLORS.textTertiary },
 
   colorRow: { flexDirection: 'row', gap: 10 },
   colorDot: {

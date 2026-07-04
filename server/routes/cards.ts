@@ -91,17 +91,27 @@ router.patch('/:id', async (req, res) => {
   try {
     const userId = (req as any).userId as string;
     const { id } = req.params;
-    const { name, accentColor, font, photo } = req.body as {
+    const { name, accentColor, font, photo, slug } = req.body as {
       name?: string;
       accentColor?: string;
       font?: string;
       photo?: string | null;
+      slug?: string;
     };
     const update: Partial<typeof cards.$inferInsert> = {};
     if (name !== undefined) update.name = name;
     if (accentColor !== undefined) update.accentColor = accentColor;
     if (font !== undefined) update.font = font;
     if (photo !== undefined) update.photo = photo;
+    if (slug !== undefined) {
+      const user = await db.query.users.findFirst({ where: eq(users.id, userId) });
+      if (!user?.isPro) return res.status(403).json({ error: 'Custom card URLs are a Pro feature' });
+      const clean = String(slug).toLowerCase().trim();
+      if (!/^[a-z0-9-]{3,30}$/.test(clean)) {
+        return res.status(400).json({ error: 'URL can use 3–30 lowercase letters, numbers, and dashes' });
+      }
+      update.slug = clean;
+    }
     const [updated] = await db
       .update(cards)
       .set(update)
@@ -111,6 +121,8 @@ router.patch('/:id', async (req, res) => {
     const fields = await db.select().from(cardFields).where(eq(cardFields.cardId, id)).orderBy(asc(cardFields.displayOrder));
     res.json({ ...updated, fields });
   } catch (err: any) {
+    // Unique constraint on cards.slug
+    if (err?.code === '23505') return res.status(409).json({ error: 'That URL is already taken' });
     res.status(500).json({ error: err.message });
   }
 });

@@ -4,9 +4,12 @@ import { useRevenueCat } from '../../lib/RevenueCatContext';
 import { COLORS, FONTS } from '../../constants/colors';
 
 const PRO_FEATURES = [
-  { emoji: '🌐', title: 'Custom Domain', sub: 'Your own domain points to your card' },
-  { emoji: '🎨', title: 'Premium Themes', sub: 'Colors, fonts, button styles' },
-  { emoji: '📊', title: 'Analytics', sub: 'Scans, visits, and link clicks' },
+  { emoji: '📊', title: 'Analytics', sub: 'Views, trends, and which links get clicked' },
+  { emoji: '🔗', title: 'Custom Card URL', sub: 'Pick your own link instead of a random code' },
+  { emoji: '🚫', title: 'No Linkd Branding', sub: 'Remove the footer from your public card' },
+  { emoji: '♾️', title: 'Unlimited Cards', sub: 'Free includes 5 — Pro removes the cap' },
+  { emoji: '📇', title: 'Export Contacts', sub: 'Download your contact list as a CSV' },
+  { emoji: '🌐', title: 'Custom Domain', sub: 'Coming soon to Pro' },
 ];
 
 interface Props {
@@ -65,7 +68,7 @@ export function PaywallSheet({ visible, onClose }: Props) {
               <Text style={styles.iconText}>✦</Text>
             </View>
             <Text style={styles.heading}>Upgrade to Pro</Text>
-            <Text style={styles.sub}>Custom domain, premium themes, and see who's visiting your card.</Text>
+            <Text style={styles.sub}>See who's viewing your card and make every link yours.</Text>
           </View>
 
           {/* Features */}

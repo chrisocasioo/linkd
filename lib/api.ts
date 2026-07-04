@@ -169,7 +169,7 @@ export function useApi() {
     getMyCards: () => withToken((t) => request<Card[]>('/api/cards', t)),
     addCard: (body: { name: string; accentColor: string }) =>
       withToken((t) => request<Card>('/api/cards', t, { method: 'POST', body: JSON.stringify(body) })),
-    updateCard: (id: string, body: Partial<{ name: string; accentColor: string; font: string; photo: string | null }>) =>
+    updateCard: (id: string, body: Partial<{ name: string; accentColor: string; font: string; photo: string | null; slug: string }>) =>
       withToken((t) => request<Card>(`/api/cards/${id}`, t, { method: 'PATCH', body: JSON.stringify(body) })),
     uploadCardPhoto: (cardId: string, uri: string) =>
       withToken(async (t) => {

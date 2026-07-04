@@ -83,9 +83,12 @@ interface Props {
   onPreview?: () => void;
   /** Fires when the user pulls down while the card content is at the top. */
   onPullRefresh?: () => void;
+  /** Free tier: back face shows the views teaser and locks the breakdown. */
+  analyticsLocked?: boolean;
+  onUnlockAnalytics?: () => void;
 }
 
-export function CardPreview({ card, user, analytics, maxHeight, onPreview, onPullRefresh }: Props) {
+export function CardPreview({ card, user, analytics, maxHeight, onPreview, onPullRefresh, analyticsLocked, onUnlockAnalytics }: Props) {
   const accent = card.accentColor;
   const fonts = CARD_FONTS[card.font ?? 'dm-sans'] ?? CARD_FONTS['dm-sans'];
   const initial = (user.displayName ?? user.username ?? '?')[0].toUpperCase();
@@ -224,39 +227,54 @@ export function CardPreview({ card, user, analytics, maxHeight, onPreview, onPul
               {analytics ? analytics.views.toLocaleString() : '—'}
             </Text>
             <Text style={styles.backViewsLabel}>card views</Text>
-            {analytics && analytics.prevViews > 0 && (
+            {!analyticsLocked && analytics && analytics.prevViews > 0 && (
               <View style={[styles.backDeltaPill, { backgroundColor: accent + '22' }]}>
                 <Text style={[styles.backDelta, { color: accent }]}>
                   {deltaText(analytics.views, analytics.prevViews)}
                 </Text>
               </View>
             )}
-            {!analytics && (
+            {!analyticsLocked && !analytics && (
               <Text style={styles.backEmpty}>No analytics data yet</Text>
             )}
           </View>
 
-          {/* Field clicks breakdown */}
-          {analytics && analytics.fieldClicks.length > 0 && (
+          {analyticsLocked ? (
             <>
               <View style={[styles.backDivider, { backgroundColor: accent + '22' }]} />
-              <View style={styles.backFieldsSection}>
-                <Text style={styles.backSectionLabel}>FIELD CLICKS</Text>
-                {analytics.fieldClicks.map((fc) => (
-                  <View key={fc.fieldId} style={styles.backFieldRow}>
-                    <View style={[styles.backFieldIcon, { backgroundColor: accent + '22' }]}>
-                      <Ionicons name={FIELD_ICONS[fc.fieldType] ?? FIELD_ICONS.custom} size={13} color={accent} />
-                    </View>
-                    <Text style={styles.backFieldName} numberOfLines={1}>
-                      {fc.label ?? (fc.fieldType === 'app' ? APP_FIELD_DISPLAY : fc.fieldValue)}
-                    </Text>
-                    <Text style={[styles.backFieldClicks, { color: accent }]}>
-                      {fc.clicks}
-                    </Text>
-                  </View>
-                ))}
+              <View style={styles.backLockSection}>
+                <View style={[styles.backLockIcon, { backgroundColor: accent + '22' }]}>
+                  <Ionicons name="lock-closed" size={18} color={accent} />
+                </View>
+                <Text style={styles.backLockText}>See trends and which links get clicked</Text>
+                <Pressable style={[styles.backLockBtn, { backgroundColor: accent }]} onPress={onUnlockAnalytics}>
+                  <Text style={styles.backLockBtnText}>Unlock with Pro</Text>
+                </Pressable>
               </View>
             </>
+          ) : (
+            /* Field clicks breakdown */
+            analytics && analytics.fieldClicks.length > 0 && (
+              <>
+                <View style={[styles.backDivider, { backgroundColor: accent + '22' }]} />
+                <View style={styles.backFieldsSection}>
+                  <Text style={styles.backSectionLabel}>FIELD CLICKS</Text>
+                  {analytics.fieldClicks.map((fc) => (
+                    <View key={fc.fieldId} style={styles.backFieldRow}>
+                      <View style={[styles.backFieldIcon, { backgroundColor: accent + '22' }]}>
+                        <Ionicons name={FIELD_ICONS[fc.fieldType] ?? FIELD_ICONS.custom} size={13} color={accent} />
+                      </View>
+                      <Text style={styles.backFieldName} numberOfLines={1}>
+                        {fc.label ?? (fc.fieldType === 'app' ? APP_FIELD_DISPLAY : fc.fieldValue)}
+                      </Text>
+                      <Text style={[styles.backFieldClicks, { color: accent }]}>
+                        {fc.clicks}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              </>
+            )
           )}
         </ScrollView>
       </Animated.View>
@@ -460,6 +478,39 @@ const styles = StyleSheet.create({
   backDivider: {
     height: 1,
     marginHorizontal: 18,
+  },
+  backLockSection: {
+    alignItems: 'center',
+    paddingHorizontal: 18,
+    paddingTop: 14,
+    paddingBottom: 16,
+    gap: 8,
+  },
+  backLockIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  backLockText: {
+    fontSize: 12,
+    fontFamily: FONTS.regular,
+    color: 'rgba(255,255,255,0.55)',
+    textAlign: 'center',
+  },
+  backLockBtn: {
+    paddingHorizontal: 18,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 2,
+  },
+  backLockBtnText: {
+    fontSize: 12,
+    fontFamily: FONTS.semiBold,
+    color: '#0C0C0E',
   },
   backFieldsSection: {
     paddingHorizontal: 18,

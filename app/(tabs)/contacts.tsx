@@ -14,6 +14,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { PaywallSheet } from '../../components/Card/PaywallSheet';
 import { ContactDetailSheet } from '../../components/Contacts/ContactDetailSheet';
 import { ContactReviewSheet } from '../../components/Contacts/ContactReviewSheet';
 import { useApi, Contact } from '../../lib/api';
@@ -24,6 +25,7 @@ import {
   saveContactToPhone,
   syncNewContactsToPhone,
 } from '../../lib/nativeContacts';
+import { useRevenueCat } from '../../lib/RevenueCatContext';
 import { COLORS, FONTS } from '../../constants/colors';
 
 function getInitials(c: Contact): string {
@@ -38,6 +40,8 @@ function getDisplayName(c: Contact): string {
 
 export default function ContactsScreen() {
   const api = useApi();
+  const { isPro } = useRevenueCat();
+  const [showPaywall, setShowPaywall] = useState(false);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -121,6 +125,7 @@ export default function ContactsScreen() {
   };
 
   const handleExport = async () => {
+    if (!isPro) { setShowPaywall(true); return; }
     if (contacts.length === 0) {
       Alert.alert('Nothing to export', 'Add or scan some contacts first.');
       return;
@@ -222,6 +227,8 @@ export default function ContactsScreen() {
         onSave={handleUpdateContact}
         title="Edit Contact"
       />
+
+      <PaywallSheet visible={showPaywall} onClose={() => setShowPaywall(false)} />
     </SafeAreaView>
   );
 }
