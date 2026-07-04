@@ -66,9 +66,12 @@ export default function OnboardingScreen() {
     }
   };
 
-  const handleFinish = async () => {
+  const handleFinish = async (skipContact = false) => {
     setSubmitting(true);
     const displayName = [firstName.trim(), middleName.trim(), lastName.trim()].filter(Boolean).join(' ');
+    // Skip on the contact step means the cards start without email/phone
+    const contactEmail = skipContact ? '' : email.trim();
+    const contactPhone = skipContact ? '' : phone.trim();
     try {
       await api.updateMe({ displayName: displayName || undefined });
 
@@ -86,15 +89,15 @@ export default function OnboardingScreen() {
 
       const workCard = await api.addCard({ name: 'Work', accentColor: '#C9A84C' });
       const workFieldPromises: Promise<any>[] = [];
-      if (email.trim()) workFieldPromises.push(api.addField(workCard.id, { type: 'email', value: email.trim() }));
-      if (phone.trim()) workFieldPromises.push(api.addField(workCard.id, { type: 'phone', value: phone.trim() }));
+      if (contactEmail) workFieldPromises.push(api.addField(workCard.id, { type: 'email', value: contactEmail }));
+      if (contactPhone) workFieldPromises.push(api.addField(workCard.id, { type: 'phone', value: contactPhone }));
       if (jobTitle.trim()) workFieldPromises.push(api.addField(workCard.id, { type: 'title', value: jobTitle.trim() }));
       if (company.trim()) workFieldPromises.push(api.addField(workCard.id, { type: 'company', value: company.trim() }));
       await Promise.all(workFieldPromises);
 
       const personalCard = await api.addCard({ name: 'Personal', accentColor: '#7C3AED' });
-      if (email.trim()) await api.addField(personalCard.id, { type: 'email', value: email.trim() });
-      if (phone.trim()) await api.addField(personalCard.id, { type: 'phone', value: phone.trim() });
+      if (contactEmail) await api.addField(personalCard.id, { type: 'email', value: contactEmail });
+      if (contactPhone) await api.addField(personalCard.id, { type: 'phone', value: contactPhone });
 
       router.replace('/(tabs)/cards');
     } catch (err: any) {
@@ -199,7 +202,10 @@ export default function OnboardingScreen() {
         <Pressable style={styles.continueBtn} onPress={() => setStep(2)}>
           <Text style={styles.continueBtnText}>Continue</Text>
         </Pressable>
-        <Pressable style={styles.skipBtn} onPress={() => setStep(2)}>
+        <Pressable
+          style={styles.skipBtn}
+          onPress={() => { setJobTitle(''); setCompany(''); setStep(2); }}
+        >
           <Text style={styles.skipBtnText}>Skip</Text>
         </Pressable>
       </>
@@ -224,7 +230,10 @@ export default function OnboardingScreen() {
         <Pressable style={styles.continueBtn} onPress={() => setStep(3)}>
           <Text style={styles.continueBtnText}>Continue</Text>
         </Pressable>
-        <Pressable style={styles.skipBtn} onPress={() => setStep(3)}>
+        <Pressable
+          style={styles.skipBtn}
+          onPress={() => { setPhotoUri(null); setStep(3); }}
+        >
           <Text style={styles.skipBtnText}>Skip</Text>
         </Pressable>
       </>
@@ -262,7 +271,7 @@ export default function OnboardingScreen() {
         </View>
         <Pressable
           style={[styles.continueBtn, submitting && styles.continueBtnDim]}
-          onPress={handleFinish}
+          onPress={() => handleFinish()}
           disabled={submitting}
         >
           {submitting ? (
@@ -271,7 +280,7 @@ export default function OnboardingScreen() {
             <Text style={styles.continueBtnText}>Let's go</Text>
           )}
         </Pressable>
-        <Pressable style={styles.skipBtn} onPress={handleFinish} disabled={submitting}>
+        <Pressable style={styles.skipBtn} onPress={() => handleFinish(true)} disabled={submitting}>
           <Text style={styles.skipBtnText}>Skip</Text>
         </Pressable>
       </>
