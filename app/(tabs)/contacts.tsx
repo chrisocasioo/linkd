@@ -18,6 +18,7 @@ import { ContactDetailSheet } from '../../components/Contacts/ContactDetailSheet
 import { ContactReviewSheet } from '../../components/Contacts/ContactReviewSheet';
 import { useApi, Contact } from '../../lib/api';
 import { loadContactsCache, saveContactsCache } from '../../lib/cache';
+import { requestContactsPermission, saveContactToPhone } from '../../lib/nativeContacts';
 import { COLORS, FONTS } from '../../constants/colors';
 
 function getInitials(c: Contact): string {
@@ -54,6 +55,9 @@ export default function ContactsScreen() {
     // Hydrate from disk once per mount so contacts are viewable offline
     if (!hydratedRef.current) {
       hydratedRef.current = true;
+      // iOS only ever shows the system prompt once, so this is the
+      // "first time the contacts page is opened" ask
+      requestContactsPermission();
       const cached = await loadContactsCache();
       if (cached) {
         setContacts(cached);
@@ -80,6 +84,7 @@ export default function ContactsScreen() {
   const handleAddContact = async (fields: Partial<Contact>) => {
     const created = await api.addContact(fields);
     setContacts((cs) => [created, ...cs]);
+    saveContactToPhone(created);
   };
 
   const handleExport = async () => {
