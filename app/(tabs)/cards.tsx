@@ -104,7 +104,7 @@ export default function CardScreen() {
   // ── Card CRUD ──────────────────────────────────────────────────────────────
 
   const handlePressAddCard = async () => {
-    if (!isPro && cards.length >= 2) { setShowPaywall(true); return; }
+    if (!isPro && cards.length >= 5) { setShowPaywall(true); return; }
     try {
       const created = await api.addCard({ name: 'New Card', accentColor: ACCENT_COLORS[0] });
       setCards((cs) => [...cs, created]);

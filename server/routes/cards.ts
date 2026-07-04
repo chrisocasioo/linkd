@@ -53,7 +53,7 @@ router.post('/', async (req, res) => {
 
     const user = await db.query.users.findFirst({ where: eq(users.id, userId) });
     const existing = await db.select().from(cards).where(eq(cards.userId, userId));
-    if (!user?.isPro && existing.length >= 3) {
+    if (!user?.isPro && existing.length >= 5) {
       return res.status(403).json({ error: 'Upgrade to Pro for unlimited cards' });
     }
 
