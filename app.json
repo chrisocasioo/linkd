@@ -18,6 +18,7 @@
       "bundleIdentifier": "com.santrico.linkd",
       "minimumOsVersion": "16.0",
       "buildNumber": "70",
+      "usesAppleSignIn": true,
       "entitlements": {
         "com.apple.developer.pass-type-identifiers": [
           "GQ725BQR6F.pass.com.santrico.linkd"
