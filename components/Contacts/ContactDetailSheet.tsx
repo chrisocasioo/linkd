@@ -23,6 +23,7 @@ interface Props {
   contact: Contact | null;
   onClose: () => void;
   onDelete: (id: string) => Promise<void>;
+  onEdit: (contact: Contact) => void;
 }
 
 type FieldRow = { icon: keyof typeof Ionicons.glyphMap; label: string; value: string; url: string };
@@ -37,7 +38,7 @@ function getDisplayName(contact: Contact): string {
   return [contact.firstName, contact.lastName].filter(Boolean).join(' ') || 'Unknown';
 }
 
-export function ContactDetailSheet({ visible, contact, onClose, onDelete }: Props) {
+export function ContactDetailSheet({ visible, contact, onClose, onDelete, onEdit }: Props) {
   const slideY = useRef(new Animated.Value(SCREEN_H)).current;
 
   useEffect(() => {
@@ -107,6 +108,10 @@ export function ContactDetailSheet({ visible, contact, onClose, onDelete }: Prop
       <Animated.View style={[styles.sheet, { transform: [{ translateY: slideY }] }]}>
         <View style={styles.handle} />
 
+        <Pressable style={styles.editBtn} hitSlop={8} onPress={() => onEdit(contact)}>
+          <Ionicons name="pencil" size={16} color={COLORS.textSecondary} />
+        </Pressable>
+
         {/* Avatar + Name */}
         <View style={styles.avatarSection}>
           <View style={styles.avatar}>
@@ -164,6 +169,12 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   handle: { width: 36, height: 4, backgroundColor: COLORS.border, borderRadius: 2, alignSelf: 'center', marginTop: 12 },
+  editBtn: {
+    position: 'absolute', top: 20, right: 20,
+    width: 34, height: 34, borderRadius: 17,
+    backgroundColor: COLORS.surface2, borderWidth: 1, borderColor: COLORS.border,
+    alignItems: 'center', justifyContent: 'center',
+  },
   avatarSection: { alignItems: 'center', paddingVertical: 24, gap: 8 },
   avatar: {
     width: 72, height: 72, borderRadius: 36,

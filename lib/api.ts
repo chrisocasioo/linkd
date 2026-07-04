@@ -206,6 +206,8 @@ export function useApi() {
     getMyContacts: () => withToken((t) => request<Contact[]>('/api/contacts', t)),
     addContact: (body: Partial<Omit<Contact, 'id' | 'userId' | 'createdAt'>>) =>
       withToken((t) => request<Contact>('/api/contacts', t, { method: 'POST', body: JSON.stringify(body) })),
+    updateContact: (id: string, body: Partial<Omit<Contact, 'id' | 'userId' | 'createdAt'>>) =>
+      withToken((t) => request<Contact>(`/api/contacts/${id}`, t, { method: 'PATCH', body: JSON.stringify(body) })),
     deleteContact: (id: string) =>
       withToken((t) => request<{ success: boolean }>(`/api/contacts/${id}`, t, { method: 'DELETE' })),
   };

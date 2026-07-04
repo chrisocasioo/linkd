@@ -46,6 +46,7 @@ export default function ContactsScreen() {
   const [showDetail, setShowDetail] = useState(false);
 
   const [showAdd, setShowAdd] = useState(false);
+  const [editingContact, setEditingContact] = useState<Contact | null>(null);
   const hydratedRef = useRef(false);
 
   const fetchFresh = useCallback(async () => {
@@ -93,6 +94,29 @@ export default function ContactsScreen() {
     setContacts((cs) => [created, ...cs]);
     saveContactToPhone(created).then((written) => {
       if (written) markSyncedToPhone(created.id);
+    });
+  };
+
+  const handleUpdateContact = async (fields: Partial<Contact>) => {
+    if (!editingContact) return;
+    // The form omits cleared fields entirely, so send explicit nulls —
+    // otherwise the server keeps the old value. Notes aren't on the form
+    // (exchange contacts carry one), so leave them untouched.
+    const updated = await api.updateContact(editingContact.id, {
+      firstName: fields.firstName ?? null,
+      lastName: fields.lastName ?? null,
+      email: fields.email ?? null,
+      phone: fields.phone ?? null,
+      fax: fields.fax ?? null,
+      company: fields.company ?? null,
+      jobTitle: fields.jobTitle ?? null,
+      website: fields.website ?? null,
+      address: fields.address ?? null,
+    });
+    setContacts((cs) => {
+      const next = cs.map((c) => (c.id === updated.id ? updated : c));
+      saveContactsCache(next);
+      return next;
     });
   };
 
@@ -180,6 +204,7 @@ export default function ContactsScreen() {
         contact={selectedContact}
         onClose={() => { setShowDetail(false); setSelectedContact(null); }}
         onDelete={handleDelete}
+        onEdit={(c) => { setShowDetail(false); setSelectedContact(null); setEditingContact(c); }}
       />
 
       <ContactReviewSheet
@@ -188,6 +213,14 @@ export default function ContactsScreen() {
         onClose={() => setShowAdd(false)}
         onSave={handleAddContact}
         title="Add Contact"
+      />
+
+      <ContactReviewSheet
+        visible={!!editingContact}
+        initial={editingContact}
+        onClose={() => setEditingContact(null)}
+        onSave={handleUpdateContact}
+        title="Edit Contact"
       />
     </SafeAreaView>
   );
