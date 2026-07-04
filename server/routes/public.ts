@@ -161,9 +161,16 @@ function buildCardHtml(user: UserRow, card: CardRow, fields: FieldRow[], usernam
     }
     .footer a { color: inherit; text-decoration: none; }
     .exchange { padding: 14px 18px 18px; border-top: 1px solid rgba(255,255,255,0.06); }
-    .exchange-toggle {
-      width: 100%; padding: 13px; border: none; border-radius: 13px;
+    .save-contact {
+      display: block; width: 100%; padding: 13px; border-radius: 13px;
       background: ${accent}; color: #0C0C0E; font-size: 14px; font-weight: 600;
+      text-align: center; text-decoration: none; margin-bottom: 10px;
+      font-family: inherit;
+    }
+    .exchange-toggle {
+      width: 100%; padding: 13px; border-radius: 13px;
+      background: transparent; border: 1px solid ${accent}55; color: ${accent};
+      font-size: 14px; font-weight: 600;
       cursor: pointer; font-family: inherit;
     }
     .exchange-form { display: none; flex-direction: column; gap: 10px; margin-top: 12px; }
@@ -199,6 +206,7 @@ function buildCardHtml(user: UserRow, card: CardRow, fields: FieldRow[], usernam
     </div>
     ${fieldRowsHtml}
     <div class="exchange">
+      <a class="save-contact" href="/${esc(username)}/${esc(card.slug ?? '')}/vcard">Add to Contacts</a>
       <button class="exchange-toggle" id="xToggle" onclick="toggleExchange()">Share your info with ${name}</button>
       <form class="exchange-form" id="xForm" onsubmit="return submitExchange(event)">
         <input id="xName" placeholder="Your name" maxlength="120" required />
@@ -275,12 +283,16 @@ async function buildVcard(user: UserRow, fields: FieldRow[], username: string): 
   const email = fields.find((f) => f.type === 'email')?.value ?? user.email;
   const phone = fields.find((f) => f.type === 'phone')?.value;
   const website = fields.find((f) => f.type === 'website')?.value;
+  const title = fields.find((f) => f.type === 'title')?.value;
+  const company = fields.find((f) => f.type === 'company')?.value;
 
   const lines = [
     'BEGIN:VCARD',
     'VERSION:3.0',
     `FN:${fn}`,
     `N:${lastName};${firstName};;;`,
+    title ? `TITLE:${title}` : null,
+    company ? `ORG:${company}` : null,
     email ? `EMAIL;TYPE=WORK:${email}` : null,
     phone ? `TEL;TYPE=CELL:${phone}` : null,
     website ? `URL:${website}` : `URL:https://linkd.tattoo/${username}`,
@@ -338,6 +350,28 @@ router.get('/:username/vcard', async (req, res) => {
     const fields = firstCard
       ? await db.select().from(cardFields).where(eq(cardFields.cardId, firstCard.id)).orderBy(asc(cardFields.displayOrder))
       : [];
+    const vcf = await buildVcard(user, fields, username);
+    res.setHeader('Content-Type', 'text/vcard; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="${username}.vcf"`);
+    res.send(vcf);
+  } catch {
+    res.status(500).send('Error');
+  }
+});
+
+// Card-specific vCard — the Add to Contacts button on each public card
+router.get('/:username/:slug/vcard', async (req, res) => {
+  try {
+    const { username, slug } = req.params;
+    const user = await db.query.users.findFirst({ where: eq(users.username, username) });
+    if (!user) return res.status(404).send('Not found');
+    const card = await db.query.cards.findFirst({ where: and(eq(cards.userId, user.id), eq(cards.slug, slug)) });
+    if (!card) return res.status(404).send('Not found');
+    const fields = await db
+      .select()
+      .from(cardFields)
+      .where(eq(cardFields.cardId, card.id))
+      .orderBy(asc(cardFields.displayOrder));
     const vcf = await buildVcard(user, fields, username);
     res.setHeader('Content-Type', 'text/vcard; charset=utf-8');
     res.setHeader('Content-Disposition', `attachment; filename="${username}.vcf"`);
