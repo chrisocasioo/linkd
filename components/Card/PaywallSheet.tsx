@@ -34,17 +34,18 @@ export function PaywallSheet({ visible, onClose }: Props) {
     }
   }, [visible]);
 
-  // Hardcoded strings are the offline fallback only
+  // Hardcoded strings are the offline fallback only — they mirror the App
+  // Store configuration ($7.99/mo, $59.99/yr, 7-day trial on both)
   const monthly = pricing?.monthly ?? null;
   const annual = pricing?.annual ?? null;
-  const trialDays = monthly?.trialDays ?? annual?.trialDays ?? null;
+  const trialDays = monthly?.trialDays ?? annual?.trialDays ?? (pricing ? null : 7);
   const monthlyLabel = monthly ? `${monthly.priceString} / month` : '$7.99 / month';
   const savePct = monthly && annual && monthly.price > 0
     ? Math.max(0, Math.round((1 - annual.price / (monthly.price * 12)) * 100))
-    : 17;
+    : 37;
   const annualLabel = annual
     ? `${annual.priceString} / year · Save ${savePct}%`
-    : '$79 / year · Save 17%';
+    : '$59.99 / year · Save 37%';
   const ctaLabel = trialDays
     ? `Try ${trialDays} days free — then ${monthlyLabel}`
     : `Start Pro — ${monthlyLabel}`;
