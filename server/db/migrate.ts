@@ -94,6 +94,17 @@ export async function runMigrations() {
   await db.execute(sql`
     ALTER TABLE cards ADD COLUMN IF NOT EXISTS font TEXT DEFAULT 'dm-sans';
   `);
+  // One-time: existing cards inherit the owner's profile photo; cards created
+  // after this migration start with no photo unless the user sets one.
+  const photoCol = await db.execute(sql`
+    SELECT 1 FROM information_schema.columns WHERE table_name = 'cards' AND column_name = 'photo';
+  `);
+  if ((photoCol as any).rows?.length === 0) {
+    await db.execute(sql`
+      ALTER TABLE cards ADD COLUMN photo TEXT;
+      UPDATE cards SET photo = (SELECT profile_photo FROM users WHERE users.id = cards.user_id);
+    `);
+  }
   await db.execute(sql`
     ALTER TABLE contacts ADD COLUMN IF NOT EXISTS address TEXT;
   `);

@@ -139,8 +139,8 @@ export function CardPreview({ card, user, analytics, maxHeight, onPreview, onPul
         >
           {/* Banner — tapping opens the public card */}
           <Pressable style={styles.banner} onPress={onPreview}>
-            {user.profilePhoto ? (
-              <Image source={{ uri: user.profilePhoto }} style={styles.bannerImg} />
+            {card.photo ? (
+              <Image source={{ uri: card.photo }} style={styles.bannerImg} />
             ) : (
               <View style={[styles.bannerPlaceholder, { backgroundColor: accent + '22' }]}>
                 <Text style={[styles.bannerInitial, { color: accent }]}>{initial}</Text>

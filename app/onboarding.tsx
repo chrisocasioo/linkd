@@ -75,6 +75,8 @@ export default function OnboardingScreen() {
     try {
       await api.updateMe({ displayName: displayName || undefined });
 
+      // Profile photo still backs the vCard avatar; the two starter cards get
+      // their own copies below so each stays independently editable.
       if (photoUri) {
         await api.uploadPhoto(photoUri);
       }
@@ -89,6 +91,7 @@ export default function OnboardingScreen() {
 
       const workCard = await api.addCard({ name: 'Work', accentColor: '#C9A84C' });
       const workFieldPromises: Promise<any>[] = [];
+      if (photoUri) workFieldPromises.push(api.uploadCardPhoto(workCard.id, photoUri));
       if (contactEmail) workFieldPromises.push(api.addField(workCard.id, { type: 'email', value: contactEmail }));
       if (contactPhone) workFieldPromises.push(api.addField(workCard.id, { type: 'phone', value: contactPhone }));
       if (jobTitle.trim()) workFieldPromises.push(api.addField(workCard.id, { type: 'title', value: jobTitle.trim() }));
@@ -96,6 +99,7 @@ export default function OnboardingScreen() {
       await Promise.all(workFieldPromises);
 
       const personalCard = await api.addCard({ name: 'Personal', accentColor: '#7C3AED' });
+      if (photoUri) await api.uploadCardPhoto(personalCard.id, photoUri);
       if (contactEmail) await api.addField(personalCard.id, { type: 'email', value: contactEmail });
       if (contactPhone) await api.addField(personalCard.id, { type: 'phone', value: contactPhone });
 

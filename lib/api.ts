@@ -93,6 +93,7 @@ export interface Card {
   name: string;
   accentColor: string;
   font: string | null;
+  photo: string | null;
   slug: string | null;
   displayOrder: number;
   createdAt: string;
@@ -168,8 +169,16 @@ export function useApi() {
     getMyCards: () => withToken((t) => request<Card[]>('/api/cards', t)),
     addCard: (body: { name: string; accentColor: string }) =>
       withToken((t) => request<Card>('/api/cards', t, { method: 'POST', body: JSON.stringify(body) })),
-    updateCard: (id: string, body: Partial<{ name: string; accentColor: string; font: string }>) =>
+    updateCard: (id: string, body: Partial<{ name: string; accentColor: string; font: string; photo: string | null }>) =>
       withToken((t) => request<Card>(`/api/cards/${id}`, t, { method: 'PATCH', body: JSON.stringify(body) })),
+    uploadCardPhoto: (cardId: string, uri: string) =>
+      withToken(async (t) => {
+        const base64 = await FileSystem.readAsStringAsync(uri, { encoding: 'base64' as any });
+        return request<{ photoUrl: string }>(`/api/cards/${cardId}/photo`, t, {
+          method: 'POST',
+          body: JSON.stringify({ photo: base64, mimeType: 'image/jpeg' }),
+        });
+      }),
     deleteCard: (id: string) =>
       withToken((t) => request<{ success: boolean }>(`/api/cards/${id}`, t, { method: 'DELETE' })),
 

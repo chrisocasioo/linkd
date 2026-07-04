@@ -163,7 +163,7 @@ export default function EditCardScreen() {
           else if (!value.trim() && existing) await api.deleteField(cardId, existing.id);
         }),
       ];
-      if (photoUri) ops.push(api.uploadPhoto(photoUri));
+      if (photoUri) ops.push(api.uploadCardPhoto(cardId, photoUri));
       if (displayName) ops.push(api.updateMe({ displayName }));
       await Promise.all(ops);
 
@@ -245,7 +245,7 @@ export default function EditCardScreen() {
   const contactFields = card.fields.filter((f) => !INFO_TYPES.has(f.type));
   const existingTypes = new Set(contactFields.map((f) => f.type));
   const suggestedChips = MOST_POPULAR.filter((p) => !existingTypes.has(p.type) || p.type === 'custom');
-  const photoSource = photoUri ?? user.profilePhoto ?? null;
+  const photoSource = photoUri ?? card.photo ?? null;
   const initial = ((user.displayName ?? user.username ?? '?')[0]).toUpperCase();
 
   return (

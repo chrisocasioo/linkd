@@ -47,8 +47,8 @@ function buildCardHtml(user: UserRow, card: CardRow, fields: FieldRow[], usernam
   const headlineVal = fields.find(f => f.type === 'headline')?.value;
   const linkFields = fields.filter(f => !['title', 'company', 'department', 'headline'].includes(f.type));
 
-  const bannerHtml = user.profilePhoto
-    ? `<img class="banner-img" src="${esc(user.profilePhoto)}" alt="${name}" />`
+  const bannerHtml = card.photo
+    ? `<img class="banner-img" src="${esc(card.photo)}" alt="${name}" />`
     : `<div class="banner-placeholder" style="background:${accent}22"><span class="banner-initial" style="color:${accent}">${initial}</span></div>`;
 
   const fieldRowsHtml = linkFields.map(f => {
@@ -68,7 +68,7 @@ function buildCardHtml(user: UserRow, card: CardRow, fields: FieldRow[], usernam
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
   <title>${name} | Linkd</title>
   <meta property="og:title" content="${name}" />
-  ${user.profilePhoto ? `<meta property="og:image" content="${esc(user.profilePhoto)}" />` : ''}
+  ${card.photo ? `<meta property="og:image" content="${esc(card.photo)}" />` : ''}
   <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
   <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
   <style>

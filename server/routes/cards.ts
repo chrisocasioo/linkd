@@ -1,7 +1,18 @@
+import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { and, asc, eq } from 'drizzle-orm';
 import { Router } from 'express';
 import { db } from '../db';
 import { cards, cardFields, users } from '../db/schema';
+
+const s3 = new S3Client({
+  region: process.env.AWS_REGION ?? 'auto',
+  endpoint: process.env.AWS_ENDPOINT_URL_S3 ?? process.env.ENDPOINT,
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID ?? process.env.ACCESS_KEY_ID ?? '',
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY ?? process.env.SECRET_ACCESS_KEY ?? '',
+  },
+  forcePathStyle: true,
+});
 
 const router = Router();
 
@@ -80,11 +91,17 @@ router.patch('/:id', async (req, res) => {
   try {
     const userId = (req as any).userId as string;
     const { id } = req.params;
-    const { name, accentColor, font } = req.body as { name?: string; accentColor?: string; font?: string };
+    const { name, accentColor, font, photo } = req.body as {
+      name?: string;
+      accentColor?: string;
+      font?: string;
+      photo?: string | null;
+    };
     const update: Partial<typeof cards.$inferInsert> = {};
     if (name !== undefined) update.name = name;
     if (accentColor !== undefined) update.accentColor = accentColor;
     if (font !== undefined) update.font = font;
+    if (photo !== undefined) update.photo = photo;
     const [updated] = await db
       .update(cards)
       .set(update)
@@ -93,6 +110,38 @@ router.patch('/:id', async (req, res) => {
     if (!updated) return res.status(404).json({ error: 'Card not found' });
     const fields = await db.select().from(cardFields).where(eq(cardFields.cardId, id)).orderBy(asc(cardFields.displayOrder));
     res.json({ ...updated, fields });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post('/:id/photo', async (req, res) => {
+  try {
+    const userId = (req as any).userId as string;
+    const { id: cardId } = req.params;
+    const card = await db.query.cards.findFirst({ where: and(eq(cards.id, cardId), eq(cards.userId, userId)) });
+    if (!card) return res.status(404).json({ error: 'Card not found' });
+
+    const { photo: base64, mimeType = 'image/jpeg' } = req.body as { photo?: string; mimeType?: string };
+    if (!base64) return res.status(400).json({ error: 'No photo provided' });
+
+    const buffer = Buffer.from(base64, 'base64');
+    const bucket = process.env.BUCKET_NAME ?? process.env.BUCKET ?? '';
+    await s3.send(
+      new PutObjectCommand({
+        Bucket: bucket,
+        Key: `cards/${cardId}.jpg`,
+        Body: buffer,
+        ContentType: mimeType,
+      })
+    );
+
+    const base = process.env.RAILWAY_PUBLIC_DOMAIN
+      ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
+      : (process.env.SERVER_URL ?? '');
+    const photoUrl = `${base}/api/photos/card/${cardId}?v=${Date.now()}`;
+    await db.update(cards).set({ photo: photoUrl }).where(eq(cards.id, cardId));
+    res.json({ photoUrl });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
