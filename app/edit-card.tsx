@@ -19,6 +19,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import ColorPicker from 'react-native-wheel-color-picker';
 import { CardFieldSheet } from '../components/Card/CardFieldSheet';
 import { useApi, Card, CardField, User } from '../lib/api';
+import { APP_FIELD_DISPLAY } from '../lib/appField';
 import { COLORS, FONTS } from '../constants/colors';
 
 const ACCENT_COLORS = ['#C9A84C', '#7C3AED', '#22C55E', '#F43F5E', '#0EA5E9', '#EC4899'];
@@ -44,6 +45,7 @@ const MOST_POPULAR: Array<{ type: string; label: string; icon: keyof typeof Ioni
   { type: 'email',      label: 'Email',      icon: 'mail' },
   { type: 'phone',      label: 'Phone',      icon: 'call' },
   { type: 'website',    label: 'Website',    icon: 'globe-outline' },
+  { type: 'app',        label: 'App',        icon: 'logo-apple-appstore' },
   { type: 'custom',     label: 'Custom',     icon: 'ellipsis-horizontal' },
 ];
 
@@ -59,6 +61,7 @@ const FIELD_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
   facebook:   'logo-facebook',
   whatsapp:   'logo-whatsapp',
   spotify:    'musical-notes-outline',
+  app:        'logo-apple-appstore',
   title:      'briefcase-outline',
   company:    'business-outline',
   department: 'people-outline',
@@ -487,7 +490,9 @@ export default function EditCardScreen() {
                             color={accent}
                           />
                         </View>
-                        <Text style={styles.fieldValue} numberOfLines={1}>{field.label ?? field.value}</Text>
+                        <Text style={styles.fieldValue} numberOfLines={1}>
+                          {field.label ?? (field.type === 'app' ? APP_FIELD_DISPLAY : field.value)}
+                        </Text>
                         <View style={styles.fieldActions}>
                           <Pressable
                             hitSlop={10}

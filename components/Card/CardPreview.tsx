@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import React, { useRef, useState } from 'react';
 import { Animated, Dimensions, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Card, CardAnalytics, CardField, User } from '../../lib/api';
+import { APP_FIELD_DISPLAY, parseAppLinks } from '../../lib/appField';
 import { FONTS } from '../../constants/colors';
 import { formatPhone } from '../../lib/format';
 
@@ -29,6 +30,7 @@ const FIELD_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
   facebook:   'logo-facebook',
   whatsapp:   'logo-whatsapp',
   spotify:    'musical-notes-outline',
+  app:        'logo-apple-appstore',
   department: 'people-outline',
   headline:   'document-text-outline',
   custom:     'ellipsis-horizontal',
@@ -47,6 +49,11 @@ function fieldUrl(field: CardField): string {
     case 'facebook':   return `https://facebook.com/${v.replace('@', '')}`;
     case 'whatsapp':   return `https://wa.me/${v.replace(/\D/g, '')}`;
     case 'spotify':    return `https://open.spotify.com/user/${v.replace('@', '')}`;
+    case 'app': {
+      // This app runs on iOS, so prefer the App Store link
+      const links = parseAppLinks(v);
+      return links.ios ?? links.android ?? '';
+    }
     case 'title':
     case 'company':
     case 'department':
@@ -58,6 +65,7 @@ function fieldUrl(field: CardField): string {
 function fieldDisplayValue(field: CardField): string {
   if (field.label) return field.label;
   if (field.type === 'phone') return formatPhone(field.value);
+  if (field.type === 'app') return APP_FIELD_DISPLAY;
   return field.value;
 }
 
@@ -240,7 +248,7 @@ export function CardPreview({ card, user, analytics, maxHeight, onPreview, onPul
                       <Ionicons name={FIELD_ICONS[fc.fieldType] ?? FIELD_ICONS.custom} size={13} color={accent} />
                     </View>
                     <Text style={styles.backFieldName} numberOfLines={1}>
-                      {fc.label ?? fc.fieldValue}
+                      {fc.label ?? (fc.fieldType === 'app' ? APP_FIELD_DISPLAY : fc.fieldValue)}
                     </Text>
                     <Text style={[styles.backFieldClicks, { color: accent }]}>
                       {fc.clicks}

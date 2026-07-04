@@ -16,6 +16,7 @@ import {
   View,
 } from 'react-native';
 import { CardField } from '../../lib/api';
+import { parseAppLinks, serializeAppLinks } from '../../lib/appField';
 import { COLORS, FONTS } from '../../constants/colors';
 
 const { height: SCREEN_H } = Dimensions.get('window');
@@ -24,6 +25,7 @@ const FIELD_TYPES = [
   { id: 'email',     label: 'Email',     icon: 'mail' as const,             placeholder: 'you@example.com',   keyboardType: 'email-address' as const },
   { id: 'phone',     label: 'Phone',     icon: 'call' as const,             placeholder: '+1 555 000 0000',   keyboardType: 'phone-pad' as const },
   { id: 'website',   label: 'Website',   icon: 'globe-outline' as const,    placeholder: 'https://yoursite.com', keyboardType: 'url' as const },
+  { id: 'app',       label: 'App',       icon: 'logo-apple-appstore' as const, placeholder: '', keyboardType: 'url' as const },
   { id: 'instagram', label: 'Instagram', icon: 'logo-instagram' as const,   placeholder: '@handle',           keyboardType: 'default' as const },
   { id: 'twitter',   label: 'Twitter',   icon: 'logo-twitter' as const,     placeholder: '@handle',           keyboardType: 'default' as const },
   { id: 'linkedin',  label: 'LinkedIn',  icon: 'logo-linkedin' as const,    placeholder: 'username',          keyboardType: 'default' as const },
@@ -54,6 +56,9 @@ export function CardFieldSheet({ visible, cardId, field, initialType, onClose, o
   const [selectedType, setSelectedType] = useState(field?.type ?? initialType ?? 'email');
   const [value, setValue] = useState(field?.value ?? '');
   const [label, setLabel] = useState(field?.label ?? '');
+  // 'app' stores both store links in one field; edited via two dedicated inputs
+  const [iosUrl, setIosUrl] = useState('');
+  const [androidUrl, setAndroidUrl] = useState('');
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -61,6 +66,9 @@ export function CardFieldSheet({ visible, cardId, field, initialType, onClose, o
       setSelectedType(field?.type ?? initialType ?? 'email');
       setValue(field?.value ?? '');
       setLabel(field?.label ?? '');
+      const links = field?.type === 'app' ? parseAppLinks(field.value) : {};
+      setIosUrl(links.ios ?? '');
+      setAndroidUrl(links.android ?? '');
       Animated.spring(slideY, { toValue: 0, useNativeDriver: true, damping: 20, stiffness: 200 }).start();
     } else {
       Animated.timing(slideY, { toValue: SCREEN_H, duration: 220, useNativeDriver: true }).start();
@@ -69,11 +77,15 @@ export function CardFieldSheet({ visible, cardId, field, initialType, onClose, o
 
   const close = () => { Keyboard.dismiss(); onClose(); };
 
+  const isApp = selectedType === 'app';
+  const canSave = isApp ? !!(iosUrl.trim() || androidUrl.trim()) : !!value.trim();
+
   const handleSave = async () => {
-    if (!value.trim()) return;
+    if (!canSave) return;
     setSaving(true);
     try {
-      await onSave(cardId, { type: selectedType, value: value.trim(), label: label.trim() || undefined }, field?.id);
+      const saveValue = isApp ? serializeAppLinks({ ios: iosUrl, android: androidUrl }) : value.trim();
+      await onSave(cardId, { type: selectedType, value: saveValue, label: label.trim() || undefined }, field?.id);
       close();
     } catch (err: any) {
       Alert.alert('Error', err.message);
@@ -136,17 +148,50 @@ export function CardFieldSheet({ visible, cardId, field, initialType, onClose, o
           )}
 
           <View style={styles.body}>
-            <Text style={styles.fieldLabel}>{currentTypeDef.label}</Text>
-            <TextInput
-              style={styles.input}
-              value={value}
-              onChangeText={setValue}
-              placeholder={currentTypeDef.placeholder}
-              placeholderTextColor={COLORS.textTertiary}
-              keyboardType={currentTypeDef.keyboardType}
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
+            {isApp ? (
+              <>
+                <Text style={styles.fieldLabel}>Apple App Store (optional)</Text>
+                <TextInput
+                  style={styles.input}
+                  value={iosUrl}
+                  onChangeText={setIosUrl}
+                  placeholder="https://apps.apple.com/app/…"
+                  placeholderTextColor={COLORS.textTertiary}
+                  keyboardType="url"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+
+                <Text style={[styles.fieldLabel, { marginTop: 16 }]}>Google Play Store (optional)</Text>
+                <TextInput
+                  style={styles.input}
+                  value={androidUrl}
+                  onChangeText={setAndroidUrl}
+                  placeholder="https://play.google.com/store/apps/…"
+                  placeholderTextColor={COLORS.textTertiary}
+                  keyboardType="url"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+                <Text style={styles.appHint}>
+                  Visitors are sent to the store that matches their phone. Fill in at least one link.
+                </Text>
+              </>
+            ) : (
+              <>
+                <Text style={styles.fieldLabel}>{currentTypeDef.label}</Text>
+                <TextInput
+                  style={styles.input}
+                  value={value}
+                  onChangeText={setValue}
+                  placeholder={currentTypeDef.placeholder}
+                  placeholderTextColor={COLORS.textTertiary}
+                  keyboardType={currentTypeDef.keyboardType}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+              </>
+            )}
 
             <Text style={[styles.fieldLabel, { marginTop: 16 }]}>Label (optional)</Text>
             <TextInput
@@ -165,9 +210,9 @@ export function CardFieldSheet({ visible, cardId, field, initialType, onClose, o
               </Pressable>
             )}
             <Pressable
-              style={[styles.saveBtn, (!value.trim() || saving) && styles.saveBtnDim]}
+              style={[styles.saveBtn, (!canSave || saving) && styles.saveBtnDim]}
               onPress={handleSave}
-              disabled={!value.trim() || saving}
+              disabled={!canSave || saving}
             >
               <Text style={styles.saveBtnText}>{saving ? '…' : 'Save'}</Text>
             </Pressable>
@@ -202,6 +247,7 @@ const styles = StyleSheet.create({
   typeChipLabelActive: { color: COLORS.accent },
   body: { paddingHorizontal: 20 },
   fieldLabel: { fontSize: 10, fontFamily: FONTS.medium, color: COLORS.textSecondary, letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 6 },
+  appHint: { fontSize: 11, fontFamily: FONTS.regular, color: COLORS.textTertiary, marginTop: 8, lineHeight: 15 },
   input: {
     height: 48, backgroundColor: COLORS.surface2, borderRadius: 12,
     borderWidth: 1, borderColor: COLORS.border,

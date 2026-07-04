@@ -17,8 +17,22 @@ const ICON_NAME: Record<string, string> = {
   email: 'mail', phone: 'call', website: 'globe-outline',
   instagram: 'logo-instagram', twitter: 'logo-twitter', linkedin: 'logo-linkedin',
   tiktok: 'logo-tiktok', youtube: 'logo-youtube', facebook: 'logo-facebook',
-  whatsapp: 'logo-whatsapp', spotify: 'musical-notes-outline', custom: 'ellipsis-horizontal',
+  whatsapp: 'logo-whatsapp', spotify: 'musical-notes-outline',
+  app: 'logo-apple-appstore', custom: 'ellipsis-horizontal',
 };
+
+// 'app' fields store both store links as JSON: {"ios":"…","android":"…"}
+function parseAppLinks(value: string): { ios: string; android: string } {
+  try {
+    const o = JSON.parse(value);
+    return {
+      ios: typeof o.ios === 'string' ? o.ios : '',
+      android: typeof o.android === 'string' ? o.android : '',
+    };
+  } catch {
+    return { ios: '', android: '' };
+  }
+}
 
 function fieldUrl(type: string, value: string): string {
   const v = value.trim();
@@ -52,8 +66,17 @@ function buildCardHtml(user: UserRow, card: CardRow, fields: FieldRow[], usernam
     : `<div class="banner-placeholder" style="background:${accent}22"><span class="banner-initial" style="color:${accent}">${initial}</span></div>`;
 
   const fieldRowsHtml = linkFields.map(f => {
-    const url  = fieldUrl(f.type, f.value);
     const icon = ICON_NAME[f.type] ?? 'ellipsis-horizontal';
+    if (f.type === 'app') {
+      // Server-rendered fallback href; a script swaps in the visitor's store
+      const { ios, android } = parseAppLinks(f.value);
+      const display = esc(f.label ?? 'Download the App');
+      return `<a href="${esc(ios || android)}" data-app-ios="${esc(ios)}" data-app-android="${esc(android)}" onclick="trackField('${esc(f.id)}')" class="field-row">
+      <span class="field-icon" style="background:${accent}"><ion-icon name="${icon}"></ion-icon></span>
+      <span class="field-value">${display}</span>
+    </a>`;
+    }
+    const url  = fieldUrl(f.type, f.value);
     const display = esc(f.label ?? (f.type === 'phone' ? formatPhone(f.value) : f.value));
     return `<a href="${esc(url)}" onclick="trackField('${esc(f.id)}')" class="field-row">
       <span class="field-icon" style="background:${accent}"><ion-icon name="${icon}"></ion-icon></span>
@@ -189,6 +212,18 @@ function buildCardHtml(user: UserRow, card: CardRow, fields: FieldRow[], usernam
   </div>
   ${!user.isPro ? '<div class="footer"><a href="https://linkd-production-fdce.up.railway.app">Get Linkd</a></div>' : ''}
 <script>
+// App fields: send Android visitors to Google Play, everyone else to the
+// App Store, falling back to whichever store link exists
+(function () {
+  var isAndroid = /android/i.test(navigator.userAgent);
+  var rows = document.querySelectorAll('a[data-app-ios]');
+  for (var i = 0; i < rows.length; i++) {
+    var ios = rows[i].getAttribute('data-app-ios');
+    var android = rows[i].getAttribute('data-app-android');
+    var url = isAndroid ? (android || ios) : (ios || android);
+    if (url) rows[i].setAttribute('href', url);
+  }
+})();
 function trackField(fieldId) {
   try { fetch('/api/analytics/field-click/' + fieldId, { method: 'POST', keepalive: true }).catch(function(){}); } catch(e) {}
 }
