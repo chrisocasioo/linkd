@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Alert, Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRevenueCat } from '../../lib/RevenueCatContext';
+import { getProPricing, ProPricing } from '../../lib/revenuecat';
 import { COLORS, FONTS } from '../../constants/colors';
 
 const PRO_FEATURES = [
@@ -21,14 +22,32 @@ export function PaywallSheet({ visible, onClose }: Props) {
   const { purchasePro } = useRevenueCat();
   const slideAnim = useRef(new Animated.Value(600)).current;
   const [loading, setLoading] = useState(false);
+  const [pricing, setPricing] = useState<ProPricing | null>(null);
 
   useEffect(() => {
     if (visible) {
+      // Live App Store prices so price changes never need an app update
+      getProPricing().then(setPricing).catch(() => {});
       Animated.spring(slideAnim, { toValue: 0, useNativeDriver: true, damping: 20, stiffness: 200 }).start();
     } else {
       Animated.timing(slideAnim, { toValue: 600, duration: 250, useNativeDriver: true }).start();
     }
   }, [visible]);
+
+  // Hardcoded strings are the offline fallback only
+  const monthly = pricing?.monthly ?? null;
+  const annual = pricing?.annual ?? null;
+  const trialDays = monthly?.trialDays ?? annual?.trialDays ?? null;
+  const monthlyLabel = monthly ? `${monthly.priceString} / month` : '$7.99 / month';
+  const savePct = monthly && annual && monthly.price > 0
+    ? Math.max(0, Math.round((1 - annual.price / (monthly.price * 12)) * 100))
+    : 17;
+  const annualLabel = annual
+    ? `${annual.priceString} / year · Save ${savePct}%`
+    : '$79 / year · Save 17%';
+  const ctaLabel = trialDays
+    ? `Try ${trialDays} days free — then ${monthlyLabel}`
+    : `Start Pro — ${monthlyLabel}`;
 
   const handleMonthly = async () => {
     setLoading(true);
@@ -93,10 +112,10 @@ export function PaywallSheet({ visible, onClose }: Props) {
               onPress={handleMonthly}
               disabled={loading}
             >
-              <Text style={styles.startBtnText}>{loading ? 'Loading…' : 'Start Pro — $7.99 / month'}</Text>
+              <Text style={styles.startBtnText}>{loading ? 'Loading…' : ctaLabel}</Text>
             </Pressable>
             <Pressable onPress={handleAnnual} disabled={loading}>
-              <Text style={styles.annualText}>$79 / year · Save 17%</Text>
+              <Text style={styles.annualText}>{annualLabel}</Text>
             </Pressable>
           </View>
 

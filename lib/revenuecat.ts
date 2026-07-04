@@ -16,6 +16,48 @@ export async function getEntitlements(): Promise<{ isPro: boolean }> {
   }
 }
 
+export interface ProPackagePricing {
+  priceString: string;
+  price: number;
+  /** Days of free trial from the product's introductory offer, if any */
+  trialDays: number | null;
+}
+
+export interface ProPricing {
+  monthly: ProPackagePricing | null;
+  annual: ProPackagePricing | null;
+}
+
+function packagePricing(pkg: any): ProPackagePricing | null {
+  if (!pkg?.product) return null;
+  const p = pkg.product;
+  let trialDays: number | null = null;
+  const intro = p.introPrice;
+  if (intro && intro.price === 0) {
+    const unitDays =
+      intro.periodUnit === 'DAY' ? 1 :
+      intro.periodUnit === 'WEEK' ? 7 :
+      intro.periodUnit === 'MONTH' ? 30 : 365;
+    trialDays = (intro.periodNumberOfUnits ?? 1) * unitDays;
+  }
+  return { priceString: p.priceString, price: p.price, trialDays };
+}
+
+/** Live App Store prices for the paywall — null when offline or unconfigured */
+export async function getProPricing(): Promise<ProPricing | null> {
+  try {
+    const offerings = await Purchases.getOfferings();
+    const current = offerings.current;
+    if (!current) return null;
+    return {
+      monthly: packagePricing(current.monthly),
+      annual: packagePricing(current.annual),
+    };
+  } catch {
+    return null;
+  }
+}
+
 export async function purchasePro(type: 'monthly' | 'annual'): Promise<boolean> {
   try {
     const offerings = await Purchases.getOfferings();
