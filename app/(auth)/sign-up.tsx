@@ -30,10 +30,22 @@ export default function SignUpScreen() {
     if (!isLoaded) return;
     setLoading(true);
     try {
-      await signUp.create({ emailAddress: email, password });
+      const result = await signUp.create({ emailAddress: email, password });
+      if (result.status === 'complete') {
+        // Instance doesn't require email verification — session is ready now
+        await setActive({ session: result.createdSessionId });
+        router.replace('/');
+        return;
+      }
       await signUp.prepareEmailAddressVerification({ strategy: 'email_code' });
       setPendingVerification(true);
     } catch (err: any) {
+      // A session already exists (e.g. an earlier half-completed sign-up) —
+      // the user IS signed in, so just enter the app
+      if (err.errors?.[0]?.code === 'session_exists') {
+        router.replace('/');
+        return;
+      }
       Alert.alert('Sign up failed', err.errors?.[0]?.message ?? err.message);
     } finally {
       setLoading(false);
