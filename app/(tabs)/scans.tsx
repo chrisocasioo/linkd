@@ -16,7 +16,7 @@ import { Camera, useCameraDevice, useCameraPermission } from 'react-native-visio
 import TextRecognition from '@react-native-ml-kit/text-recognition';
 import { ContactReviewSheet } from '../../components/Contacts/ContactReviewSheet';
 import { useApi, ScanResult } from '../../lib/api';
-import { saveContactToPhone } from '../../lib/nativeContacts';
+import { markSyncedToPhone, saveContactToPhone } from '../../lib/nativeContacts';
 import { COLORS, FONTS } from '../../constants/colors';
 
 function extractLargeTextLines(result: any): Set<string> {
@@ -293,8 +293,10 @@ export default function ScansScreen() {
   };
 
   const handleSaveContact = async (fields: Partial<ScanResult>) => {
-    await api.addContact(fields);
-    saveContactToPhone(fields);
+    const created = await api.addContact(fields);
+    saveContactToPhone(created).then((written) => {
+      if (written) markSyncedToPhone(created.id);
+    });
     setScanResult(null);
     router.push('/(tabs)/contacts');
   };

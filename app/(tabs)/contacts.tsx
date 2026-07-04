@@ -18,7 +18,12 @@ import { ContactDetailSheet } from '../../components/Contacts/ContactDetailSheet
 import { ContactReviewSheet } from '../../components/Contacts/ContactReviewSheet';
 import { useApi, Contact } from '../../lib/api';
 import { loadContactsCache, saveContactsCache } from '../../lib/cache';
-import { requestContactsPermission, saveContactToPhone } from '../../lib/nativeContacts';
+import {
+  markSyncedToPhone,
+  requestContactsPermission,
+  saveContactToPhone,
+  syncNewContactsToPhone,
+} from '../../lib/nativeContacts';
 import { COLORS, FONTS } from '../../constants/colors';
 
 function getInitials(c: Contact): string {
@@ -48,6 +53,8 @@ export default function ContactsScreen() {
       const data = await api.getMyContacts();
       setContacts(data);
       saveContactsCache(data);
+      // Mirrors contacts created server-side (public-card exchange form)
+      syncNewContactsToPhone(data);
     } catch {} // offline — cached data (if any) stays on screen
   }, [api]);
 
@@ -84,7 +91,9 @@ export default function ContactsScreen() {
   const handleAddContact = async (fields: Partial<Contact>) => {
     const created = await api.addContact(fields);
     setContacts((cs) => [created, ...cs]);
-    saveContactToPhone(created);
+    saveContactToPhone(created).then((written) => {
+      if (written) markSyncedToPhone(created.id);
+    });
   };
 
   const handleExport = async () => {

@@ -1,5 +1,6 @@
 import Storage from 'expo-sqlite/kv-store';
 import { Card, CardAnalytics, Contact, User } from './api';
+import { clearSyncedLedger } from './nativeContacts';
 
 // Offline cache: last-known-good copies of server data so the app works with
 // no network. All errors are swallowed — the cache must never break the app.
@@ -48,5 +49,8 @@ export async function clearAllCaches(): Promise<void> {
   try {
     await Storage.removeItem(HOME_KEY);
     await Storage.removeItem(CONTACTS_KEY);
+    // A different account's ledger would make the next user's entire contact
+    // list look "new" and dump it into their phone on first fetch
+    await clearSyncedLedger();
   } catch {}
 }
