@@ -18,7 +18,7 @@ import {
 import QRCode from 'react-native-qrcode-svg';
 import WalletManager from 'react-native-wallet-manager';
 import { Card, User } from '../../lib/api';
-import { endCardLiveActivity, isCardLiveActivityRunning, startCardLiveActivity } from '../../lib/liveActivity';
+import { triggerLiveActivityOnShare } from '../../lib/liveActivity';
 import { buildVcard, contactFromCard } from '../../lib/vcard';
 import { COLORS, FONTS } from '../../constants/colors';
 import { PASS_TYPE_ID, SHARE_BASE, publicCardUrl } from '../../constants/config';
@@ -38,7 +38,6 @@ export function ShareSheet({ visible, username, user, card, onClose }: Props) {
 
   const [qrMode, setQrMode] = useState<'online' | 'offline'>('online');
   const [inWallet, setInWallet] = useState(false);
-  const [activityOn, setActivityOn] = useState(false);
   // Passes already in Wallet when the sheet opened: their button is hidden
   // outright. A pass added DURING this open keeps the button visible in its
   // green "Added" state until the next open.
@@ -85,7 +84,6 @@ export function ShareSheet({ visible, username, user, card, onClose }: Props) {
   useEffect(() => {
     if (visible) {
       Animated.spring(slideAnim, { toValue: 0, useNativeDriver: true, damping: 20, stiffness: 200 }).start();
-      isCardLiveActivityRunning().then(setActivityOn);
     } else {
       Animated.timing(slideAnim, { toValue: SHEET_HEIGHT, duration: 250, useNativeDriver: true }).start();
       setQrMode('online');
@@ -102,6 +100,7 @@ export function ShareSheet({ visible, username, user, card, onClose }: Props) {
 
   const handleShare = async () => {
     await Share.share({ message: url });
+    if (card) await triggerLiveActivityOnShare(card, username);
   };
 
   const handleShareContact = async () => {
@@ -116,6 +115,7 @@ export function ShareSheet({ visible, username, user, card, onClose }: Props) {
         UTI: 'public.vcard',
         dialogTitle: 'Share contact',
       });
+      await triggerLiveActivityOnShare(card, username);
     } catch (err: any) {
       Alert.alert('Share failed', err.message);
     }
@@ -138,20 +138,6 @@ export function ShareSheet({ visible, username, user, card, onClose }: Props) {
       } catch (err: any) {
         Alert.alert('Could not open pass', err.message ?? 'Try again.');
       }
-    }
-  };
-
-  const handleToggleLiveActivity = async () => {
-    if (!card) return;
-    if (activityOn) {
-      await endCardLiveActivity();
-      setActivityOn(false);
-      return;
-    }
-    const started = await startCardLiveActivity(card, username);
-    setActivityOn(started);
-    if (!started) {
-      Alert.alert('Lock Screen', 'Enable Live Activities for Linkd in Settings to use this.');
     }
   };
 
@@ -250,23 +236,6 @@ export function ShareSheet({ visible, username, user, card, onClose }: Props) {
               </Text>
             </Pressable>
           )}
-
-          {/* Lock Screen Live Activity — pins this card's QR to the Lock
-              Screen / Dynamic Island until removed or the OS times it out */}
-          <Pressable
-            style={[styles.walletBtn, !card && { opacity: 0.4 }, activityOn && styles.walletBtnAdded]}
-            onPress={handleToggleLiveActivity}
-            disabled={!card}
-          >
-            <Ionicons
-              name={activityOn ? 'checkmark-circle' : 'lock-closed-outline'}
-              size={16}
-              color={activityOn ? '#22C55E' : '#fff'}
-            />
-            <Text style={[styles.walletBtnText, activityOn && styles.walletBtnTextAdded]}>
-              {activityOn ? 'On Lock Screen' : 'Show on Lock Screen'}
-            </Text>
-          </Pressable>
         </View>
       </Animated.View>
     </View>
