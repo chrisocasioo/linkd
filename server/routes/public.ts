@@ -186,9 +186,17 @@ function buildCardHtml(user: UserRow, card: CardRow, fields: FieldRow[], usernam
     .field-value { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .footer {
       position: fixed; bottom: 0; left: 0; right: 0;
-      padding: 12px; text-align: center; font-size: 12px; color: rgba(255,255,255,0.4);
+      padding: 12px; text-align: center;
+      display: flex; flex-direction: column; align-items: center; gap: 8px;
     }
-    .footer a { color: inherit; text-decoration: none; }
+    .footer-text { font-size: 12px; color: rgba(255,255,255,0.4); }
+    .footer-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: #fff; color: #000; text-decoration: none;
+      font-size: 12px; font-weight: 600;
+      padding: 9px 16px; border-radius: 20px;
+    }
+    .footer-btn ion-icon { font-size: 16px; }
     .exchange { padding: 14px 18px 18px; border-top: 1px solid rgba(255,255,255,0.06); }
     .save-contact {
       display: block; width: 100%; padding: 13px; border-radius: 13px;
@@ -247,7 +255,13 @@ function buildCardHtml(user: UserRow, card: CardRow, fields: FieldRow[], usernam
       <div class="exchange-done" id="xDone">&#10003; Sent to ${name} — thanks!</div>
     </div>
   </div>
-  <div class="footer"><a href="${APP_STORE_URL}">📲 Get your own Linkd card — download the app</a></div>
+  <div class="footer">
+    <span class="footer-text">Get your own Linkd card</span>
+    <a class="footer-btn" href="${APP_STORE_URL}">
+      <ion-icon name="logo-apple-appstore"></ion-icon>
+      Download on the App Store
+    </a>
+  </div>
 <script>
 // App fields: send Android visitors to Google Play, everyone else to the
 // App Store, falling back to whichever store link exists
