@@ -15,8 +15,18 @@ struct CardProvider: AppIntentTimelineProvider {
     /// configuration, so `configuration.card` can go stale (renamed/deleted)
     /// between reloads. Re-resolve by id against the live store on every
     /// call instead of trusting the embedded struct.
-    private func resolve(_ configuration: SelectCardIntent) -> CardEntity? {
+    ///
+    /// The systemMedium "card" layout also lets arrow buttons page through
+    /// cards independently of the Edit Widget selection — that in-progress
+    /// override takes priority for that family only, and resets itself the
+    /// moment Edit Widget picks a different card.
+    private func resolve(_ configuration: SelectCardIntent, family: WidgetFamily) -> CardEntity? {
         let live = CardStore.loadAll()
+        if family == .systemMedium,
+           let overrideId = CardStore.mediumOverrideCardId(configuredId: configuration.card?.id),
+           let match = live.first(where: { $0.id == overrideId }) {
+            return match
+        }
         if let id = configuration.card?.id, let match = live.first(where: { $0.id == id }) {
             return match
         }
@@ -28,11 +38,11 @@ struct CardProvider: AppIntentTimelineProvider {
     }
 
     func snapshot(for configuration: SelectCardIntent, in context: Context) async -> CardEntry {
-        CardEntry(date: Date(), card: resolve(configuration))
+        CardEntry(date: Date(), card: resolve(configuration, family: context.family))
     }
 
     func timeline(for configuration: SelectCardIntent, in context: Context) async -> Timeline<CardEntry> {
-        let entry = CardEntry(date: Date(), card: resolve(configuration))
+        let entry = CardEntry(date: Date(), card: resolve(configuration, family: context.family))
         // The RN app calls ExtensionStorage.reloadWidget() whenever card data
         // changes, so the timeline doesn't need to re-poll on a schedule.
         return Timeline(entries: [entry], policy: .never)
@@ -122,24 +132,7 @@ struct CardWidgetEntryView: View {
                 }
             }
 
-        case .systemSmall:
-            VStack(spacing: 8) {
-                if let qr {
-                    Image(uiImage: qr)
-                        .interpolation(.none)
-                        .resizable()
-                        .aspectRatio(1, contentMode: .fit)
-                }
-                Text(card.name)
-                    .font(.caption)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(.white)
-                    .lineLimit(1)
-            }
-            .padding(8)
-            .containerBackground(for: .widget) { Color.black }
-
-        default: // .systemMedium
+        case .systemMedium:
             HStack(spacing: 12) {
                 if let qr {
                     Image(uiImage: qr)
@@ -166,9 +159,37 @@ struct CardWidgetEntryView: View {
                             .lineLimit(1)
                     }
                 }
-                Spacer()
+                Spacer(minLength: 4)
+                VStack {
+                    Spacer()
+                    HStack(spacing: 14) {
+                        Button(intent: ShowAdjacentCardIntent(currentCardId: card.id, forward: false)) {
+                            Image(systemName: "chevron.left")
+                                .font(.footnote.weight(.bold))
+                        }
+                        .buttonStyle(.plain)
+                        Button(intent: ShowAdjacentCardIntent(currentCardId: card.id, forward: true)) {
+                            Image(systemName: "chevron.right")
+                                .font(.footnote.weight(.bold))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    .foregroundStyle(.secondary)
+                }
             }
             .padding(12)
+            .containerBackground(for: .widget) { Color.black }
+
+        default: // .systemSmall, .systemLarge — pure QR code, no text
+            VStack {
+                if let qr {
+                    Image(uiImage: qr)
+                        .interpolation(.none)
+                        .resizable()
+                        .aspectRatio(1, contentMode: .fit)
+                }
+            }
+            .padding(family == .systemLarge ? 24 : 10)
             .containerBackground(for: .widget) { Color.black }
         }
     }
@@ -185,6 +206,6 @@ struct CardWidget: Widget {
         }
         .configurationDisplayName("Linkd Card")
         .description("Show one of your Linkd cards' QR code.")
-        .supportedFamilies([.systemSmall, .systemMedium, .accessoryRectangular])
+        .supportedFamilies([.systemSmall, .systemMedium, .systemLarge, .accessoryRectangular])
     }
 }

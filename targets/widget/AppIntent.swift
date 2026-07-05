@@ -36,6 +36,25 @@ enum CardStore {
             )
         }
     }
+
+    /// The "card" (systemMedium) widget lets the user page through all their
+    /// cards with on-face arrow buttons, layered on top of the Edit Widget
+    /// selection. Keyed off which card id Edit Widget last configured so
+    /// picking a new one there resets any in-progress arrow navigation.
+    static func mediumOverrideCardId(configuredId: String?) -> String? {
+        let defaults = UserDefaults(suiteName: appGroup)
+        let lastConfiguredId = defaults?.string(forKey: "mediumWidgetConfiguredId")
+        guard lastConfiguredId == configuredId else {
+            defaults?.set(configuredId, forKey: "mediumWidgetConfiguredId")
+            defaults?.removeObject(forKey: "mediumWidgetCardId")
+            return nil
+        }
+        return defaults?.string(forKey: "mediumWidgetCardId")
+    }
+
+    static func setMediumOverrideCardId(_ id: String) {
+        UserDefaults(suiteName: appGroup)?.set(id, forKey: "mediumWidgetCardId")
+    }
 }
 
 // MARK: - AppEntity (one Linkd card, listed in the "Edit Widget" picker)
@@ -80,4 +99,38 @@ struct SelectCardIntent: WidgetConfigurationIntent {
 
     @Parameter(title: "Card")
     var card: CardEntity?
+}
+
+// MARK: - On-widget card paging (the "card" / systemMedium layout's arrows)
+
+struct ShowAdjacentCardIntent: AppIntent {
+    static var title: LocalizedStringResource = "Show Adjacent Card"
+
+    @Parameter(title: "Current Card ID")
+    var currentCardId: String
+
+    @Parameter(title: "Direction")
+    var forward: Bool
+
+    init() {
+        self.currentCardId = ""
+        self.forward = true
+    }
+
+    init(currentCardId: String, forward: Bool) {
+        self.currentCardId = currentCardId
+        self.forward = forward
+    }
+
+    func perform() async throws -> some IntentResult {
+        let cards = CardStore.loadAll()
+        guard !cards.isEmpty, let index = cards.firstIndex(where: { $0.id == currentCardId }) else {
+            return .result()
+        }
+        let step = forward ? 1 : -1
+        let nextIndex = (index + step + cards.count) % cards.count
+        CardStore.setMediumOverrideCardId(cards[nextIndex].id)
+        WidgetCenter.shared.reloadTimelines(ofKind: "CardWidget")
+        return .result()
+    }
 }
