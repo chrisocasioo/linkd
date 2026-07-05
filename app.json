@@ -16,7 +16,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.santrico.linkd",
-      "minimumOsVersion": "16.0",
+      "minimumOsVersion": "16.4",
       "buildNumber": "73",
       "usesAppleSignIn": true,
       "entitlements": {
@@ -32,7 +32,8 @@
         "NSPhotoLibraryAddUsageDescription": "Linkd saves content to your photo library.",
         "NSContactsUsageDescription": "Linkd adds card details to your address book.",
         "ITSAppUsesNonExemptEncryption": false,
-        "NSLocationWhenInUseUsageDescription": "This app does not use your location."
+        "NSLocationWhenInUseUsageDescription": "This app does not use your location.",
+        "NSSupportsLiveActivities": true
       }
     },
     "android": {

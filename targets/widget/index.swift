@@ -5,5 +5,6 @@ import WidgetKit
 struct LinkdWidgetBundle: WidgetBundle {
     var body: some Widget {
         CardWidget()
+        CardLiveActivity()
     }
 }

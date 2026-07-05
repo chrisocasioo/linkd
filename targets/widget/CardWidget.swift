@@ -51,7 +51,7 @@ struct CardProvider: AppIntentTimelineProvider {
 
 // MARK: - QR + color helpers
 
-private func qrImage(from string: String) -> UIImage? {
+func qrImage(from string: String) -> UIImage? {
     let context = CIContext()
     let filter = CIFilter.qrCodeGenerator()
     filter.message = Data(string.utf8)
@@ -63,7 +63,7 @@ private func qrImage(from string: String) -> UIImage? {
     return UIImage(cgImage: cgImage)
 }
 
-private extension Color {
+extension Color {
     init(hex: String) {
         let cleaned = hex.trimmingCharacters(in: CharacterSet(charactersIn: "#"))
         var value: UInt64 = 0
