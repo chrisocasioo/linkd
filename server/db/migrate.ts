@@ -1,5 +1,6 @@
 import { sql } from 'drizzle-orm';
 import { db } from './index';
+import { slugify, uniqueSlug } from '../util/slugify';
 
 export async function runMigrations() {
   await db.execute(sql`
@@ -94,6 +95,46 @@ export async function runMigrations() {
   await db.execute(sql`
     ALTER TABLE cards ADD COLUMN IF NOT EXISTS font TEXT DEFAULT 'dm-sans';
   `);
+  // Slugs are read as /username/slug, so only need to be unique per user —
+  // the old single-column UNIQUE (from the ALTER above) blocked two
+  // different users from both having a "work" card slug.
+  await db.execute(sql`
+    ALTER TABLE cards DROP CONSTRAINT IF EXISTS cards_slug_key;
+    CREATE UNIQUE INDEX IF NOT EXISTS cards_user_slug_unique ON cards (user_id, slug);
+  `);
+  // Ledger of one-time migrations that can't be guarded by schema shape alone
+  // (e.g. a data backfill whose "already done" state isn't a column to check).
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS schema_migrations (
+      name TEXT PRIMARY KEY,
+      applied_at TIMESTAMP DEFAULT NOW()
+    );
+  `);
+
+  // One-time: give cards their old random 6-10 char code slugs a readable,
+  // name-based one instead. Gated by the ledger (not slug shape) so a Pro
+  // user's later custom slug never gets silently renamed just because it
+  // happens to look like the old random format.
+  const legacySlugMigration = 'legacy_slug_backfill_v1';
+  const alreadyRan = await db.execute(sql`
+    SELECT 1 FROM schema_migrations WHERE name = ${legacySlugMigration};
+  `);
+  if ((alreadyRan as any).rows.length === 0) {
+    const legacySlugCards = await db.execute(sql`
+      SELECT id, user_id, name FROM cards WHERE slug ~ '^[a-z0-9]{6,10}$';
+    `);
+    for (const row of (legacySlugCards as any).rows ?? []) {
+      const base = slugify(row.name);
+      if (!base) continue;
+      const siblings = await db.execute(sql`
+        SELECT slug FROM cards WHERE user_id = ${row.user_id} AND id != ${row.id};
+      `);
+      const taken: Set<string> = new Set((siblings as any).rows.map((r: any) => r.slug).filter(Boolean));
+      const finalSlug = uniqueSlug(base, taken);
+      await db.execute(sql`UPDATE cards SET slug = ${finalSlug} WHERE id = ${row.id};`);
+    }
+    await db.execute(sql`INSERT INTO schema_migrations (name) VALUES (${legacySlugMigration});`);
+  }
   // One-time: existing cards inherit the owner's profile photo; cards created
   // after this migration start with no photo unless the user sets one.
   const photoCol = await db.execute(sql`

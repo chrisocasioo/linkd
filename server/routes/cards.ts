@@ -3,6 +3,7 @@ import { and, asc, eq } from 'drizzle-orm';
 import { Router } from 'express';
 import { db } from '../db';
 import { cards, cardFields, users } from '../db/schema';
+import { slugify, uniqueSlug } from '../util/slugify';
 
 const s3 = new S3Client({
   region: process.env.AWS_REGION ?? 'auto',
@@ -57,7 +58,11 @@ router.post('/', async (req, res) => {
       return res.status(403).json({ error: 'Upgrade to Pro for unlimited cards' });
     }
 
-    const slug = Math.random().toString(36).slice(2, 10);
+    // Readable slug from the card name (e.g. "Work" -> "work"); falls back to
+    // a random code for names with no latin/number characters to slugify
+    const base = slugify(name) || Math.random().toString(36).slice(2, 8);
+    const taken = new Set(existing.map((c) => c.slug).filter((s): s is string => !!s));
+    const slug = uniqueSlug(base, taken);
     // existing.length collides with surviving orders after a delete; always append past the max
     const maxOrder = existing.reduce((m, c) => Math.max(m, c.displayOrder ?? 0), -1);
     const [created] = await db

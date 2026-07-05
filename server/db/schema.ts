@@ -1,4 +1,4 @@
-import { boolean, integer, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { boolean, integer, pgTable, text, timestamp, unique, uuid } from 'drizzle-orm/pg-core';
 
 export const users = pgTable('users', {
   id: text('id').primaryKey(),
@@ -53,10 +53,14 @@ export const cards = pgTable('cards', {
   accentColor: text('accent_color').notNull().default('#C9A84C'),
   font: text('font').default('dm-sans'),
   photo: text('photo'),
-  slug: text('slug').unique(),
+  slug: text('slug'),
   displayOrder: integer('display_order').default(0),
   createdAt: timestamp('created_at').defaultNow(),
-});
+}, (table) => ({
+  // Slugs read as /username/slug, so only need to be unique per user —
+  // lets different users both have a "work" card
+  userSlugUnique: unique('cards_user_slug_unique').on(table.userId, table.slug),
+}));
 
 export const cardViews = pgTable('card_views', {
   id: uuid('id').defaultRandom().primaryKey(),
