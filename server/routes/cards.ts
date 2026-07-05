@@ -67,7 +67,7 @@ router.post('/', async (req, res) => {
     const maxOrder = existing.reduce((m, c) => Math.max(m, c.displayOrder ?? 0), -1);
     const [created] = await db
       .insert(cards)
-      .values({ userId, name, accentColor: accentColor ?? '#C9A84C', slug, displayOrder: maxOrder + 1 })
+      .values({ userId, name, accentColor: accentColor ?? '#C9973A', slug, displayOrder: maxOrder + 1 })
       .returning();
     res.status(201).json({ ...created, fields: [] });
   } catch (err: any) {

@@ -89,7 +89,7 @@ export default function OnboardingScreen() {
       } catch {}
       await api.updateMe({ username });
 
-      const workCard = await api.addCard({ name: 'Work', accentColor: '#C9A84C' });
+      const workCard = await api.addCard({ name: 'Work', accentColor: '#C9973A' });
       const workFieldPromises: Promise<any>[] = [];
       if (photoUri) workFieldPromises.push(api.uploadCardPhoto(workCard.id, photoUri));
       if (contactEmail) workFieldPromises.push(api.addField(workCard.id, { type: 'email', value: contactEmail }));

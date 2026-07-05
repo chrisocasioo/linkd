@@ -24,7 +24,7 @@ import { APP_FIELD_DISPLAY } from '../lib/appField';
 import { useRevenueCat } from '../lib/RevenueCatContext';
 import { COLORS, FONTS } from '../constants/colors';
 
-const ACCENT_COLORS = ['#C9A84C', '#7C3AED', '#22C55E', '#F43F5E', '#0EA5E9', '#EC4899'];
+const ACCENT_COLORS = ['#C9973A', '#7C3AED', '#22C55E', '#F43F5E', '#0EA5E9', '#EC4899'];
 
 const FONT_OPTIONS = [
   { id: 'dm-sans',       label: 'Modern',   preview: 'Aa', family: 'DMSans-SemiBold' },
@@ -413,7 +413,7 @@ export default function EditCardScreen() {
                           setHexDraft(clean);
                           if (/^#[0-9A-Fa-f]{6}$/.test(clean)) setAccent(clean);
                         }}
-                        placeholder="#C9A84C"
+                        placeholder="#C9973A"
                         placeholderTextColor={COLORS.textTertiary}
                         autoCapitalize="characters"
                         maxLength={7}

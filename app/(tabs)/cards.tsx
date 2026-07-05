@@ -25,7 +25,7 @@ import { useRevenueCat } from '../../lib/RevenueCatContext';
 import { COLORS, FONTS } from '../../constants/colors';
 import { publicCardUrl } from '../../constants/config';
 
-const ACCENT_COLORS = ['#C9A84C', '#7C3AED', '#22C55E', '#F43F5E', '#0EA5E9', '#F97316', '#EC4899', '#14B8A6'];
+const ACCENT_COLORS = ['#C9973A', '#7C3AED', '#22C55E', '#F43F5E', '#0EA5E9', '#F97316', '#EC4899', '#14B8A6'];
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 const SIDE_INSET = 24;

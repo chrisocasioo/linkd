@@ -50,7 +50,7 @@ export const cards = pgTable('cards', {
     .notNull()
     .references(() => users.id, { onDelete: 'cascade' }),
   name: text('name').notNull().default('Card'),
-  accentColor: text('accent_color').notNull().default('#C9A84C'),
+  accentColor: text('accent_color').notNull().default('#C9973A'),
   font: text('font').default('dm-sans'),
   photo: text('photo'),
   slug: text('slug'),

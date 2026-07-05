@@ -57,7 +57,7 @@ export async function runMigrations() {
       id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
       user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
       name TEXT NOT NULL DEFAULT 'Card',
-      accent_color TEXT NOT NULL DEFAULT '#C9A84C',
+      accent_color TEXT NOT NULL DEFAULT '#C9973A',
       display_order INTEGER DEFAULT 0,
       created_at TIMESTAMP DEFAULT NOW()
     );
@@ -135,6 +135,24 @@ export async function runMigrations() {
     }
     await db.execute(sql`INSERT INTO schema_migrations (name) VALUES (${legacySlugMigration});`);
   }
+
+  // The lighter gold (#C9A84C) used to be the default card accent; the app
+  // now uses a single gold (#C9973A) everywhere. Update the column default
+  // for future inserts, then one-time-backfill cards still on the old shade.
+  await db.execute(sql`
+    ALTER TABLE cards ALTER COLUMN accent_color SET DEFAULT '#C9973A';
+  `);
+  const legacyGoldMigration = 'legacy_gold_accent_backfill_v1';
+  const goldAlreadyRan = await db.execute(sql`
+    SELECT 1 FROM schema_migrations WHERE name = ${legacyGoldMigration};
+  `);
+  if ((goldAlreadyRan as any).rows.length === 0) {
+    await db.execute(sql`
+      UPDATE cards SET accent_color = '#C9973A' WHERE accent_color = '#C9A84C';
+    `);
+    await db.execute(sql`INSERT INTO schema_migrations (name) VALUES (${legacyGoldMigration});`);
+  }
+
   // One-time: existing cards inherit the owner's profile photo; cards created
   // after this migration start with no photo unless the user sets one.
   const photoCol = await db.execute(sql`

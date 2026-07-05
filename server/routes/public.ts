@@ -53,7 +53,7 @@ function fieldUrl(type: string, value: string): string {
 
 function buildCardHtml(user: UserRow, card: CardRow, fields: FieldRow[], username: string): string {
   const name = esc(user.displayName ?? username);
-  const accent = card.accentColor ?? '#C9A84C';
+  const accent = card.accentColor ?? '#C9973A';
   const initial = esc((user.displayName ?? username ?? '?')[0].toUpperCase());
 
   const titleVal   = fields.find(f => f.type === 'title')?.value;

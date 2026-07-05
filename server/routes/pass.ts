@@ -176,7 +176,7 @@ router.get('/pass/:cardId', async (req, res) => {
       ? buildCompactVcard({ displayName, phone: rawPhone, email, title, company, publicUrl })
       : publicUrl;
 
-    const accent = card.accentColor ?? '#C9A84C';
+    const accent = card.accentColor ?? '#C9973A';
     const passJson = {
       formatVersion: 1,
       passTypeIdentifier: PASS_TYPE_ID,
