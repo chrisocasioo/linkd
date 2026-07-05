@@ -252,7 +252,7 @@ function buildCardHtml(user: UserRow, card: CardRow, fields: FieldRow[], usernam
     </div>
   </div>
   <div class="footer">
-    <span class="footer-text">Get your own Linkd card</span>
+    <span class="footer-text">Want a card like this? — Get Linkd</span>
     <a href="${APP_STORE_URL}">
       <img class="footer-badge" src="https://toolbox.marketingtools.apple.com/api/badges/download-on-the-app-store/black/en-us" alt="Download on the App Store" />
     </a>
