@@ -20,11 +20,29 @@ function profileUrl(type: string, value: string): string {
     case 'youtube':   return `https://youtube.com/@${handle}`;
     case 'facebook':  return `https://facebook.com/${handle}`;
     case 'spotify':   return `https://open.spotify.com/user/${handle}`;
+    case 'venmo':      return `https://venmo.com/${handle}`;
+    case 'telegram':   return `https://t.me/${handle}`;
+    case 'discord':    return v;
+    case 'soundcloud': return `https://soundcloud.com/${handle}`;
+    case 'vimeo':      return `https://vimeo.com/${handle}`;
+    case 'twitch':     return `https://twitch.tv/${handle}`;
+    case 'behance':    return `https://behance.net/${handle}`;
+    case 'dribbble':   return `https://dribbble.com/${handle}`;
+    case 'github':     return `https://github.com/${handle}`;
+    case 'snapchat':   return `https://snapchat.com/add/${handle}`;
+    case 'pinterest':  return `https://pinterest.com/${handle}`;
+    case 'threads':    return `https://threads.net/@${handle}`;
+    case 'calendly':   return v.includes('calendly.com') ? v : `https://calendly.com/${handle}`;
+    case 'patreon':    return v.includes('patreon.com') ? v : `https://patreon.com/${handle}`;
     default:          return v;
   }
 }
 
-const SOCIAL_TYPES = new Set(['instagram', 'twitter', 'linkedin', 'tiktok', 'youtube', 'facebook', 'spotify']);
+const SOCIAL_TYPES = new Set([
+  'instagram', 'twitter', 'linkedin', 'tiktok', 'youtube', 'facebook', 'spotify',
+  'venmo', 'telegram', 'discord', 'soundcloud', 'vimeo', 'twitch', 'behance',
+  'dribbble', 'github', 'snapchat', 'pinterest', 'threads', 'calendly', 'patreon',
+]);
 const MAX_QR_SOCIALS = 3; // QR readability degrades past ~1-1.5KB of payload
 
 export interface VcardOptions {
@@ -80,6 +98,9 @@ export function buildVcard(card: Card, user: User | null, publicUrl: string, opt
       case 'custom':
         notes.push(`${field.label ?? 'Info'}: ${value}`);
         break;
+      case 'address':
+        lines.push(`ADR;TYPE=WORK:;;${esc(value)};;;;`);
+        break;
       default:
         if (SOCIAL_TYPES.has(field.type)) {
           if (compact && socialCount >= MAX_QR_SOCIALS) break;
@@ -112,6 +133,7 @@ export function contactFromCard(card: Card, user: User | null, publicUrl: string
   const emails: any[] = [];
   const phones: any[] = [];
   const urls: any[] = [{ label: 'Linkd', url: publicUrl }];
+  const addresses: any[] = [];
   let company = '';
   let department = '';
   let jobTitle = '';
@@ -127,6 +149,7 @@ export function contactFromCard(card: Card, user: User | null, publicUrl: string
       case 'title':    jobTitle = value; break;
       case 'company':  company = value; break;
       case 'department': department = value; break;
+      case 'address':  addresses.push({ label: 'work', street: value }); break;
       default:
         if (SOCIAL_TYPES.has(field.type)) {
           urls.push({ label: field.type, url: profileUrl(field.type, value) });
@@ -145,5 +168,6 @@ export function contactFromCard(card: Card, user: User | null, publicUrl: string
     emails,
     phoneNumbers: phones,
     urlAddresses: urls,
+    addresses,
   };
 }

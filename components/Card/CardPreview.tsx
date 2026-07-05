@@ -35,6 +35,27 @@ const FIELD_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
   whatsapp:   'logo-whatsapp',
   spotify:    'musical-notes-outline',
   app:        'logo-apple-appstore',
+  venmo:      'logo-venmo',
+  paypal:     'logo-paypal',
+  cashapp:    'cash-outline',
+  zelle:      'card-outline',
+  telegram:   'paper-plane-outline',
+  discord:    'logo-discord',
+  signal:     'chatbubble-ellipses-outline',
+  zoom:       'videocam-outline',
+  soundcloud: 'logo-soundcloud',
+  applemusic: 'logo-apple',
+  vimeo:      'logo-vimeo',
+  twitch:     'logo-twitch',
+  behance:    'logo-behance',
+  dribbble:   'logo-dribbble',
+  github:     'logo-github',
+  snapchat:   'logo-snapchat',
+  pinterest:  'logo-pinterest',
+  threads:    'logo-threads',
+  calendly:   'calendar-outline',
+  patreon:    'heart-outline',
+  address:    'location-outline',
   department: 'people-outline',
   headline:   'document-text-outline',
   custom:     'ellipsis-horizontal',
@@ -58,6 +79,23 @@ function fieldUrl(field: CardField): string {
       const links = parseAppLinks(v);
       return links.ios ?? links.android ?? '';
     }
+    case 'venmo':      return `https://venmo.com/${v.replace('@', '')}`;
+    case 'paypal':     return v.includes('paypal.me') ? (v.startsWith('http') ? v : `https://${v}`) : `https://paypal.me/${v.replace('@', '')}`;
+    case 'cashapp':    return `https://cash.app/$${v.replace(/^\$/, '').replace('@', '')}`;
+    case 'zelle':      return v.includes('@') ? `mailto:${v}` : `tel:${v.replace(/[^\d+]/g, '')}`;
+    case 'telegram':   return `https://t.me/${v.replace('@', '')}`;
+    case 'soundcloud': return `https://soundcloud.com/${v.replace('@', '')}`;
+    case 'vimeo':      return `https://vimeo.com/${v.replace('@', '')}`;
+    case 'twitch':     return `https://twitch.tv/${v.replace('@', '')}`;
+    case 'behance':    return `https://behance.net/${v.replace('@', '')}`;
+    case 'dribbble':   return `https://dribbble.com/${v.replace('@', '')}`;
+    case 'github':     return `https://github.com/${v.replace('@', '')}`;
+    case 'snapchat':   return `https://snapchat.com/add/${v.replace('@', '')}`;
+    case 'pinterest':  return `https://pinterest.com/${v.replace('@', '')}`;
+    case 'threads':    return `https://threads.net/@${v.replace('@', '')}`;
+    case 'calendly':   return v.includes('calendly.com') ? (v.startsWith('http') ? v : `https://${v}`) : `https://calendly.com/${v.replace('@', '')}`;
+    case 'patreon':    return v.includes('patreon.com') ? (v.startsWith('http') ? v : `https://${v}`) : `https://patreon.com/${v.replace('@', '')}`;
+    case 'address':    return `https://maps.apple.com/?q=${encodeURIComponent(v)}`;
     case 'title':
     case 'company':
     case 'department':
