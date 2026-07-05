@@ -133,7 +133,7 @@ function buildCardHtml(user: UserRow, card: CardRow, fields: FieldRow[], usernam
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 32px 20px 130px;
+      padding: 32px 20px 24px;
     }
     .card {
       width: 100%;
@@ -185,8 +185,10 @@ function buildCardHtml(user: UserRow, card: CardRow, fields: FieldRow[], usernam
     .field-icon ion-icon { font-size: 16px; color: #fff; }
     .field-value { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .footer {
-      position: fixed; bottom: 0; left: 0; right: 0;
-      padding: 16px 12px max(16px, env(safe-area-inset-bottom)); text-align: center;
+      width: 100%;
+      margin-top: 22px;
+      padding: 0 12px max(20px, env(safe-area-inset-bottom));
+      text-align: center;
       display: flex; flex-direction: column; align-items: center; gap: 10px;
     }
     .footer-text { font-size: 12px; color: rgba(255,255,255,0.4); }
