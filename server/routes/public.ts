@@ -6,6 +6,8 @@ import { formatPhone } from '../util/format';
 
 const router = Router();
 
+const APP_STORE_URL = 'https://apps.apple.com/us/app/linkd-qr-code-generator/id6785300260';
+
 type UserRow = typeof users.$inferSelect;
 type CardRow = typeof cards.$inferSelect;
 type FieldRow = typeof cardFields.$inferSelect;
@@ -245,7 +247,7 @@ function buildCardHtml(user: UserRow, card: CardRow, fields: FieldRow[], usernam
       <div class="exchange-done" id="xDone">&#10003; Sent to ${name} — thanks!</div>
     </div>
   </div>
-  ${!user.isPro ? '<div class="footer"><a href="https://linkd-production-fdce.up.railway.app">Get Linkd</a></div>' : ''}
+  <div class="footer"><a href="${APP_STORE_URL}">📲 Get your own Linkd card — download the app</a></div>
 <script>
 // App fields: send Android visitors to Google Play, everyone else to the
 // App Store, falling back to whichever store link exists
