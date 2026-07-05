@@ -4,6 +4,7 @@ import { useFocusEffect } from 'expo-router';
 import * as Sharing from 'expo-sharing';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
+  ActionSheetIOS,
   ActivityIndicator,
   Alert,
   FlatList,
@@ -50,6 +51,23 @@ const FILTERS: { key: FilterKey; label: string }[] = [
 
 const RECENT_WINDOW_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
+type SortKey = 'date' | 'firstName' | 'lastName';
+
+const SORT_OPTIONS: { key: SortKey; label: string; shortLabel: string }[] = [
+  { key: 'date', label: 'Date Added', shortLabel: 'Newest' },
+  { key: 'firstName', label: 'First Name', shortLabel: 'First' },
+  { key: 'lastName', label: 'Last Name', shortLabel: 'Last' },
+];
+
+// Contacts missing the sorted-on field fall to the end instead of jumping
+// ahead of everyone alphabetically (an empty string sorts before "A").
+function compareNullable(a: string | null, b: string | null): number {
+  if (!a && !b) return 0;
+  if (!a) return 1;
+  if (!b) return -1;
+  return a.localeCompare(b);
+}
+
 export default function ContactsScreen() {
   const api = useApi();
   const { isPro } = useRevenueCat();
@@ -67,7 +85,7 @@ export default function ContactsScreen() {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [filter, setFilter] = useState<FilterKey>('all');
-  const [sortAz, setSortAz] = useState(false);
+  const [sortKey, setSortKey] = useState<SortKey>('date');
 
   const visibleContacts = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -83,9 +101,21 @@ export default function ContactsScreen() {
         .toLowerCase();
       return haystack.includes(q);
     });
-    if (!sortAz) return filtered;
-    return [...filtered].sort((a, b) => getDisplayName(a).localeCompare(getDisplayName(b)));
-  }, [contacts, searchQuery, filter, sortAz]);
+    return [...filtered].sort((a, b) => {
+      if (sortKey === 'firstName') return compareNullable(a.firstName, b.firstName);
+      if (sortKey === 'lastName') return compareNullable(a.lastName, b.lastName);
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+  }, [contacts, searchQuery, filter, sortKey]);
+
+  const handleSortPress = () => {
+    ActionSheetIOS.showActionSheetWithOptions(
+      { options: [...SORT_OPTIONS.map((o) => o.label), 'Cancel'], cancelButtonIndex: SORT_OPTIONS.length },
+      (index) => {
+        if (index < SORT_OPTIONS.length) setSortKey(SORT_OPTIONS[index].key);
+      }
+    );
+  };
 
   const fetchFresh = useCallback(async () => {
     try {
@@ -236,9 +266,11 @@ export default function ContactsScreen() {
                       </Pressable>
                     ))}
                   </View>
-                  <Pressable style={styles.sortBtn} onPress={() => setSortAz((s) => !s)}>
+                  <Pressable style={styles.sortBtn} onPress={handleSortPress}>
                     <Ionicons name="swap-vertical" size={13} color={COLORS.textSecondary} />
-                    <Text style={styles.sortBtnText}>{sortAz ? 'A–Z' : 'Newest'}</Text>
+                    <Text style={styles.sortBtnText}>
+                      {SORT_OPTIONS.find((o) => o.key === sortKey)?.shortLabel}
+                    </Text>
                   </Pressable>
                 </View>
               </View>
