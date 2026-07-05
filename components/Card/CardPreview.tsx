@@ -3,7 +3,7 @@ import React, { useRef, useState } from 'react';
 import { Animated, Dimensions, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Card, CardAnalytics, CardField, User } from '../../lib/api';
 import { APP_FIELD_DISPLAY, parseAppLinks } from '../../lib/appField';
-import { FONTS } from '../../constants/colors';
+import { COLORS, FONTS } from '../../constants/colors';
 import { formatPhone } from '../../lib/format';
 
 const CARD_FONTS: Record<string, { regular: string; medium: string; semiBold: string }> = {
@@ -83,7 +83,7 @@ interface Props {
   onPreview?: () => void;
   /** Fires when the user pulls down while the card content is at the top. */
   onPullRefresh?: () => void;
-  /** Free tier: back face shows the views teaser and locks the breakdown. */
+  /** Free tier: back face shows the views teaser; field click counts are gold-locked. */
   analyticsLocked?: boolean;
   onUnlockAnalytics?: () => void;
 }
@@ -239,42 +239,39 @@ export function CardPreview({ card, user, analytics, maxHeight, onPreview, onPul
             )}
           </View>
 
-          {analyticsLocked ? (
+          {/* Field clicks breakdown — free tier sees the same list, with a
+              gold lock badge standing in for each click count */}
+          {analytics && analytics.fieldClicks.length > 0 && (
             <>
               <View style={[styles.backDivider, { backgroundColor: accent + '22' }]} />
-              <View style={styles.backLockSection}>
-                <View style={[styles.backLockIcon, { backgroundColor: accent + '22' }]}>
-                  <Ionicons name="lock-closed" size={18} color={accent} />
-                </View>
-                <Text style={styles.backLockText}>See trends and which links get clicked</Text>
-                <Pressable style={[styles.backLockBtn, { backgroundColor: accent }]} onPress={onUnlockAnalytics}>
-                  <Text style={styles.backLockBtnText}>Unlock with Pro</Text>
-                </Pressable>
-              </View>
-            </>
-          ) : (
-            /* Field clicks breakdown */
-            analytics && analytics.fieldClicks.length > 0 && (
-              <>
-                <View style={[styles.backDivider, { backgroundColor: accent + '22' }]} />
-                <View style={styles.backFieldsSection}>
-                  <Text style={styles.backSectionLabel}>FIELD CLICKS</Text>
-                  {analytics.fieldClicks.map((fc) => (
-                    <View key={fc.fieldId} style={styles.backFieldRow}>
-                      <View style={[styles.backFieldIcon, { backgroundColor: accent + '22' }]}>
-                        <Ionicons name={FIELD_ICONS[fc.fieldType] ?? FIELD_ICONS.custom} size={13} color={accent} />
+              <View style={styles.backFieldsSection}>
+                <Text style={styles.backSectionLabel}>FIELD CLICKS</Text>
+                {analytics.fieldClicks.map((fc) => (
+                  <Pressable
+                    key={fc.fieldId}
+                    style={styles.backFieldRow}
+                    disabled={!analyticsLocked}
+                    onPress={analyticsLocked ? onUnlockAnalytics : undefined}
+                  >
+                    <View style={[styles.backFieldIcon, { backgroundColor: accent + '22' }]}>
+                      <Ionicons name={FIELD_ICONS[fc.fieldType] ?? FIELD_ICONS.custom} size={13} color={accent} />
+                    </View>
+                    <Text style={styles.backFieldName} numberOfLines={1}>
+                      {fc.label ?? (fc.fieldType === 'app' ? APP_FIELD_DISPLAY : fc.fieldValue)}
+                    </Text>
+                    {analyticsLocked ? (
+                      <View style={styles.backFieldLock}>
+                        <Ionicons name="lock-closed" size={11} color="#0C0C0E" />
                       </View>
-                      <Text style={styles.backFieldName} numberOfLines={1}>
-                        {fc.label ?? (fc.fieldType === 'app' ? APP_FIELD_DISPLAY : fc.fieldValue)}
-                      </Text>
+                    ) : (
                       <Text style={[styles.backFieldClicks, { color: accent }]}>
                         {fc.clicks}
                       </Text>
-                    </View>
-                  ))}
-                </View>
-              </>
-            )
+                    )}
+                  </Pressable>
+                ))}
+              </View>
+            </>
           )}
         </ScrollView>
       </Animated.View>
@@ -479,38 +476,13 @@ const styles = StyleSheet.create({
     height: 1,
     marginHorizontal: 18,
   },
-  backLockSection: {
-    alignItems: 'center',
-    paddingHorizontal: 18,
-    paddingTop: 14,
-    paddingBottom: 16,
-    gap: 8,
-  },
-  backLockIcon: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+  backFieldLock: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: COLORS.accent,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  backLockText: {
-    fontSize: 12,
-    fontFamily: FONTS.regular,
-    color: 'rgba(255,255,255,0.55)',
-    textAlign: 'center',
-  },
-  backLockBtn: {
-    paddingHorizontal: 18,
-    height: 34,
-    borderRadius: 17,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 2,
-  },
-  backLockBtnText: {
-    fontSize: 12,
-    fontFamily: FONTS.semiBold,
-    color: '#0C0C0E',
   },
   backFieldsSection: {
     paddingHorizontal: 18,
