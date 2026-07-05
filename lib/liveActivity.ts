@@ -11,11 +11,10 @@ export async function endCardLiveActivity(): Promise<void> {
 }
 
 /**
- * Called whenever the user taps Share on a card. The native side decides
- * whether this is the very first Live Activity ever (in which case the Lock
- * Screen card itself shows an Allow/Not Now ask instead of the QR) or
- * whether permission was already settled there — this call is identical
- * either way.
+ * Called whenever the user taps Share on a card. iOS handles the rest: it
+ * shows its own Allow/Don't Allow prompt over the very first Live Activity
+ * this app ever starts, and silently no-ops here (via areActivitiesEnabled)
+ * if the user has since turned Live Activities off for Linkd in Settings.
  */
 export async function triggerLiveActivityOnShare(card: Card, username: string): Promise<void> {
   try {

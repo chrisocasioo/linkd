@@ -11,14 +11,15 @@ struct CardActivityPayload: Record {
 }
 
 public class LiveActivityModule: Module {
-    // Must match targets/widget/AppIntent.swift's CardStore — the Allow/Do
-    // Not Allow buttons rendered on the Live Activity card itself write here.
-    private static let appGroup = "group.com.santrico.linkd"
-    private static let permissionKey = "liveActivityPermission"
-
     public func definition() -> ModuleDefinition {
         Name("LiveActivity")
 
+        // Reflects the real per-app "Live Activities" Settings toggle. iOS
+        // shows its own Allow/Don't Allow prompt the first time this app's
+        // Live Activity appears on the Lock Screen — if the user taps Don't
+        // Allow there, this flips to false until they turn it back on at
+        // Settings > Apps > Linkd > Live Activities. No app-side permission
+        // tracking needed or wanted; this check is the whole story.
         Function("areActivitiesEnabled") { () -> Bool in
             ActivityAuthorizationInfo().areActivitiesEnabled
         }
@@ -28,10 +29,6 @@ public class LiveActivityModule: Module {
         // even for a single frame.
         AsyncFunction("start") { (payload: CardActivityPayload) async -> Bool in
             guard ActivityAuthorizationInfo().areActivitiesEnabled else { return false }
-
-            let permission = UserDefaults(suiteName: Self.appGroup)?.string(forKey: Self.permissionKey)
-            // Declined once on the card itself — don't start another.
-            if permission == "denied" { return false }
 
             // Only one Linkd card should ever be live on the Lock Screen.
             for activity in Activity<CardActivityAttributes>.activities {
@@ -44,9 +41,7 @@ public class LiveActivityModule: Module {
                 title: payload.title,
                 company: payload.company,
                 accentColor: payload.accentColor,
-                publicUrl: payload.publicUrl,
-                // nil means never asked — show the ask right on the card.
-                awaitingPermission: permission == nil
+                publicUrl: payload.publicUrl
             )
 
             do {

@@ -11,9 +11,6 @@ struct CardActivityAttributes: ActivityAttributes {
         var company: String
         var accentColor: String
         var publicUrl: String
-        // True only for the very first Live Activity ever started — the Lock
-        // Screen card itself shows an Allow/Not Now ask instead of the QR.
-        var awaitingPermission: Bool
     }
 
     var cardId: String
