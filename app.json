@@ -22,6 +22,9 @@
       "entitlements": {
         "com.apple.developer.pass-type-identifiers": [
           "GQ725BQR6F.pass.com.santrico.linkd"
+        ],
+        "com.apple.security.application-groups": [
+          "group.com.santrico.linkd"
         ]
       },
       "infoPlist": {
@@ -72,7 +75,8 @@
       ],
       "expo-web-browser",
       "@react-native-community/datetimepicker",
-      "expo-sqlite"
+      "expo-sqlite",
+      "@bacons/apple-targets"
     ],
     "extra": {
       "router": {

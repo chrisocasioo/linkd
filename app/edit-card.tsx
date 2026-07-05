@@ -22,6 +22,7 @@ import { PaywallSheet } from '../components/Card/PaywallSheet';
 import { useApi, Card, CardField, User } from '../lib/api';
 import { APP_FIELD_DISPLAY } from '../lib/appField';
 import { useRevenueCat } from '../lib/RevenueCatContext';
+import { syncWidgetData } from '../lib/widgetSync';
 import { COLORS, FONTS } from '../constants/colors';
 
 const ACCENT_COLORS = ['#C9973A', '#7C3AED', '#22C55E', '#F43F5E', '#0EA5E9', '#EC4899'];
@@ -243,6 +244,10 @@ export default function EditCardScreen() {
       if (displayName) ops.push(api.updateMe({ displayName }));
       await Promise.all(ops);
 
+      if (user?.username) {
+        api.getMyCards().then((cs) => syncWidgetData(cs, user.username!)).catch(() => {});
+      }
+
       savedRef.current = true;
       router.back();
     } catch (err: any) {
@@ -304,6 +309,9 @@ export default function EditCardScreen() {
           setDeleting(true);
           try {
             await api.deleteCard(cardId);
+            if (user?.username) {
+              api.getMyCards().then((cs) => syncWidgetData(cs, user.username!)).catch(() => {});
+            }
             router.back();
           } catch (err: any) {
             Alert.alert('Error', err.message);

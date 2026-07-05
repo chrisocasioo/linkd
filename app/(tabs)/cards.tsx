@@ -22,6 +22,7 @@ import { SettingsSheet } from '../../components/Profile/SettingsSheet';
 import { useApi, Card, CardAnalytics, User } from '../../lib/api';
 import { loadHomeCache, saveHomeCache } from '../../lib/cache';
 import { useRevenueCat } from '../../lib/RevenueCatContext';
+import { syncWidgetData } from '../../lib/widgetSync';
 import { COLORS, FONTS } from '../../constants/colors';
 import { publicCardUrl } from '../../constants/config';
 
@@ -69,6 +70,7 @@ export default function CardScreen() {
       setCardAnalytics(analytics.cardBreakdown ?? []);
       setOffline(false);
       saveHomeCache({ user: u, cards: cs, cardAnalytics: analytics.cardBreakdown ?? [] });
+      if (u.username) syncWidgetData(cs, u.username);
     } catch {
       setOffline(true); // cached data (if any) stays on screen
     }
