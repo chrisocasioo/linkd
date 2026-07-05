@@ -17,7 +17,7 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.santrico.linkd",
       "minimumOsVersion": "16.0",
-      "buildNumber": "72",
+      "buildNumber": "73",
       "usesAppleSignIn": true,
       "entitlements": {
         "com.apple.developer.pass-type-identifiers": [
