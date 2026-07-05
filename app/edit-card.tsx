@@ -31,8 +31,8 @@ const FONT_OPTIONS = [
   { id: 'playfair',       label: 'Elegant',  preview: 'Aa', family: 'PlayfairDisplay-SemiBold' },
   { id: 'space-grotesk',  label: 'Techy',    preview: 'Aa', family: 'SpaceGrotesk-SemiBold' },
   { id: 'nunito',         label: 'Friendly', preview: 'Aa', family: 'Nunito-SemiBold' },
-  { id: 'poppins',        label: 'Bold',     preview: 'Aa', family: 'Poppins-SemiBold' },
-  { id: 'merriweather',   label: 'Classic',  preview: 'Aa', family: 'Merriweather-SemiBold' },
+  { id: 'oswald',         label: 'Bold',     preview: 'Aa', family: 'Oswald-SemiBold' },
+  { id: 'roboto-slab',    label: 'Classic',  preview: 'Aa', family: 'RobotoSlab-SemiBold' },
   { id: 'caveat',         label: 'Casual',   preview: 'Aa', family: 'Caveat-SemiBold' },
   { id: 'jetbrains-mono', label: 'Code',     preview: 'Aa', family: 'JetBrainsMono-SemiBold' },
 ];

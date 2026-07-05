@@ -11,8 +11,8 @@ const CARD_FONTS: Record<string, { regular: string; medium: string; semiBold: st
   'playfair':      { regular: 'PlayfairDisplay-Regular',  medium: 'PlayfairDisplay-Medium',  semiBold: 'PlayfairDisplay-SemiBold' },
   'space-grotesk': { regular: 'SpaceGrotesk-Regular',     medium: 'SpaceGrotesk-Medium',     semiBold: 'SpaceGrotesk-SemiBold' },
   'nunito':        { regular: 'Nunito-Regular',           medium: 'Nunito-Medium',           semiBold: 'Nunito-SemiBold' },
-  'poppins':       { regular: 'Poppins-Regular',           medium: 'Poppins-Medium',           semiBold: 'Poppins-SemiBold' },
-  'merriweather':  { regular: 'Merriweather-Regular',       medium: 'Merriweather-Medium',       semiBold: 'Merriweather-SemiBold' },
+  'oswald':        { regular: 'Oswald-Regular',             medium: 'Oswald-Medium',             semiBold: 'Oswald-SemiBold' },
+  'roboto-slab':   { regular: 'RobotoSlab-Regular',         medium: 'RobotoSlab-Medium',         semiBold: 'RobotoSlab-SemiBold' },
   'caveat':        { regular: 'Caveat-Regular',             medium: 'Caveat-Medium',             semiBold: 'Caveat-SemiBold' },
   'jetbrains-mono': { regular: 'JetBrainsMono-Regular',     medium: 'JetBrainsMono-Medium',       semiBold: 'JetBrainsMono-SemiBold' },
 };

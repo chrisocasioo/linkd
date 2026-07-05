@@ -21,15 +21,15 @@ import {
   Nunito_600SemiBold,
 } from '@expo-google-fonts/nunito';
 import {
-  Poppins_400Regular,
-  Poppins_500Medium,
-  Poppins_600SemiBold,
-} from '@expo-google-fonts/poppins';
+  Oswald_400Regular,
+  Oswald_500Medium,
+  Oswald_600SemiBold,
+} from '@expo-google-fonts/oswald';
 import {
-  Merriweather_400Regular,
-  Merriweather_500Medium,
-  Merriweather_600SemiBold,
-} from '@expo-google-fonts/merriweather';
+  RobotoSlab_400Regular,
+  RobotoSlab_500Medium,
+  RobotoSlab_600SemiBold,
+} from '@expo-google-fonts/roboto-slab';
 import {
   Caveat_400Regular,
   Caveat_500Medium,
@@ -89,12 +89,12 @@ export default function RootLayout() {
     'Nunito-Regular': Nunito_400Regular,
     'Nunito-Medium': Nunito_500Medium,
     'Nunito-SemiBold': Nunito_600SemiBold,
-    'Poppins-Regular': Poppins_400Regular,
-    'Poppins-Medium': Poppins_500Medium,
-    'Poppins-SemiBold': Poppins_600SemiBold,
-    'Merriweather-Regular': Merriweather_400Regular,
-    'Merriweather-Medium': Merriweather_500Medium,
-    'Merriweather-SemiBold': Merriweather_600SemiBold,
+    'Oswald-Regular': Oswald_400Regular,
+    'Oswald-Medium': Oswald_500Medium,
+    'Oswald-SemiBold': Oswald_600SemiBold,
+    'RobotoSlab-Regular': RobotoSlab_400Regular,
+    'RobotoSlab-Medium': RobotoSlab_500Medium,
+    'RobotoSlab-SemiBold': RobotoSlab_600SemiBold,
     'Caveat-Regular': Caveat_400Regular,
     'Caveat-Medium': Caveat_500Medium,
     'Caveat-SemiBold': Caveat_600SemiBold,
