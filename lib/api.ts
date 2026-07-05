@@ -39,6 +39,26 @@ export interface Contact {
   createdAt: string;
 }
 
+export interface SavedQr {
+  id: string;
+  userId: string;
+  type: 'url' | 'wifi';
+  label: string | null;
+  data: string;
+  createdAt: string;
+}
+
+export interface ScanHistoryEntry {
+  id: string;
+  userId: string;
+  type: 'contact' | 'qr';
+  contactId: string | null;
+  label: string;
+  qrData: string | null;
+  qrFormat: 'url' | 'wifi' | 'text' | null;
+  createdAt: string;
+}
+
 export interface ScanResult {
   firstName: string | null;
   lastName: string | null;
@@ -213,5 +233,27 @@ export function useApi() {
       withToken((t) => request<Contact>(`/api/contacts/${id}`, t, { method: 'PATCH', body: JSON.stringify(body) })),
     deleteContact: (id: string) =>
       withToken((t) => request<{ success: boolean }>(`/api/contacts/${id}`, t, { method: 'DELETE' })),
+
+    // Saved QR codes (Scans tab generator)
+    getMyQrs: () => withToken((t) => request<SavedQr[]>('/api/qrs', t)),
+    addQr: (body: { type: 'url' | 'wifi'; label?: string; data: string }) =>
+      withToken((t) => request<SavedQr>('/api/qrs', t, { method: 'POST', body: JSON.stringify(body) })),
+    deleteQr: (id: string) =>
+      withToken((t) => request<{ success: boolean }>(`/api/qrs/${id}`, t, { method: 'DELETE' })),
+
+    // Scan history (Scans tab — contact scans + QR reads)
+    getScanHistory: () => withToken((t) => request<ScanHistoryEntry[]>('/api/scan-history', t)),
+    addScanHistory: (body: {
+      type: 'contact' | 'qr';
+      contactId?: string;
+      label: string;
+      qrData?: string;
+      qrFormat?: 'url' | 'wifi' | 'text';
+    }) =>
+      withToken((t) =>
+        request<ScanHistoryEntry>('/api/scan-history', t, { method: 'POST', body: JSON.stringify(body) })
+      ),
+    deleteScanHistory: (id: string) =>
+      withToken((t) => request<{ success: boolean }>(`/api/scan-history/${id}`, t, { method: 'DELETE' })),
   };
 }

@@ -186,5 +186,17 @@ export async function runMigrations() {
     ALTER TABLE contacts ADD COLUMN IF NOT EXISTS source TEXT NOT NULL DEFAULT 'manual';
     UPDATE contacts SET source = 'card' WHERE source = 'manual' AND notes = 'Shared their info via your Linkd card';
   `);
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS scan_history (
+      id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      type TEXT NOT NULL,
+      contact_id UUID,
+      label TEXT NOT NULL,
+      qr_data TEXT,
+      qr_format TEXT,
+      created_at TIMESTAMP DEFAULT NOW()
+    );
+  `);
   console.log('✓ Database tables ready');
 }

@@ -113,6 +113,23 @@ export const contacts = pgTable('contacts', {
   createdAt: timestamp('created_at').defaultNow(),
 });
 
+// A log of scan events from the Scans tab camera — business-card scans that
+// became a contact, and QR codes read/decoded. Deleting an entry here only
+// removes it from this log; a 'contact' entry's contactId is a snapshot
+// reference (no FK), so the underlying contact is untouched either way.
+export const scanHistory = pgTable('scan_history', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  type: text('type').notNull(), // 'contact' | 'qr'
+  contactId: uuid('contact_id'),
+  label: text('label').notNull(),
+  qrData: text('qr_data'),
+  qrFormat: text('qr_format'), // 'url' | 'wifi' | 'text'
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
 export type User = typeof users.$inferSelect;
 export type SavedQr = typeof savedQrs.$inferSelect;
 export type Link = typeof links.$inferSelect;
@@ -121,3 +138,4 @@ export type CardView = typeof cardViews.$inferSelect;
 export type CardField = typeof cardFields.$inferSelect;
 export type FieldClick = typeof fieldClicks.$inferSelect;
 export type Contact = typeof contacts.$inferSelect;
+export type ScanHistoryEntry = typeof scanHistory.$inferSelect;

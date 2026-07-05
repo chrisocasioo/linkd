@@ -15,7 +15,9 @@ import passRouter from './routes/pass';
 import photoRouter from './routes/photo';
 import photoServeRouter from './routes/photoServe';
 import publicRouter from './routes/public';
+import qrsRouter from './routes/qrs';
 import revenuecatRouter from './routes/revenuecat';
+import scanHistoryRouter from './routes/scanHistory';
 import usersRouter from './routes/users';
 
 process.on('unhandledRejection', (reason: any) => {
@@ -94,6 +96,12 @@ app.use('/api/cards', requireAuth, cardsRouter);
 
 // 6c. Contacts routes
 app.use('/api/contacts', requireAuth, contactsRouter);
+
+// 6d. Saved QR codes (Scans tab generator)
+app.use('/api/qrs', requireAuth, qrsRouter);
+
+// 6e. Scan history (Scans tab — contact scans + QR reads)
+app.use('/api/scan-history', requireAuth, scanHistoryRouter);
 
 // 7. Analytics routes (POST /view is public; GET /me applies requireAuth internally)
 app.use('/api/analytics', analyticsRouter);

@@ -12,11 +12,15 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Camera, useCameraDevice, useCameraPermission } from 'react-native-vision-camera';
+import { Camera, useCameraDevice, useCameraPermission, useCodeScanner } from 'react-native-vision-camera';
 import TextRecognition from '@react-native-ml-kit/text-recognition';
 import { ContactReviewSheet } from '../../components/Contacts/ContactReviewSheet';
+import { QrGeneratorSheet } from '../../components/Scan/QrGeneratorSheet';
+import { QrScanResultSheet } from '../../components/Scan/QrScanResultSheet';
+import { ScanHistorySheet } from '../../components/Scan/ScanHistorySheet';
 import { useApi, ScanResult } from '../../lib/api';
 import { markSyncedToPhone, saveContactToPhone } from '../../lib/nativeContacts';
+import { inferQrFormat, parseWifiQr } from '../../lib/qrFormat';
 import { COLORS, FONTS } from '../../constants/colors';
 
 function extractLargeTextLines(result: any): Set<string> {
@@ -198,6 +202,39 @@ export default function ScansScreen() {
   const [scanResult, setScanResult] = useState<Partial<ScanResult> | null>(null);
   const [showReview, setShowReview] = useState(false);
 
+  const [showQrGenerator, setShowQrGenerator] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [scannedQrValue, setScannedQrValue] = useState<string | null>(null);
+  const [showQrResult, setShowQrResult] = useState(false);
+  const qrCooldownRef = useRef(false);
+
+  const handleQrScanned = (value: string) => {
+    if (qrCooldownRef.current) return;
+    qrCooldownRef.current = true;
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setScannedQrValue(value);
+    setShowQrResult(true);
+    const format = inferQrFormat(value);
+    const wifi = format === 'wifi' ? parseWifiQr(value) : null;
+    const label = wifi ? `Wi-Fi: ${wifi.ssid}` : value.slice(0, 80);
+    api.addScanHistory({ type: 'qr', label, qrData: value, qrFormat: format }).catch(() => {});
+  };
+
+  const handleCloseQrResult = () => {
+    setShowQrResult(false);
+    setScannedQrValue(null);
+    qrCooldownRef.current = false;
+  };
+
+  const codeScanner = useCodeScanner({
+    codeTypes: ['qr'],
+    onCodeScanned: (codes) => {
+      if (showReview || showQrResult || showQrGenerator || showHistory) return;
+      const value = codes[0]?.value;
+      if (value) handleQrScanned(value);
+    },
+  });
+
   // Pulsing bracket animation
   const pulseAnim = useRef(new Animated.Value(1)).current;
   useEffect(() => {
@@ -213,7 +250,7 @@ export default function ScansScreen() {
 
   // Live scan loop
   useEffect(() => {
-    if (!hasPermission || !device || showReview) {
+    if (!hasPermission || !device || showReview || showQrResult || showQrGenerator || showHistory) {
       clearInterval(intervalRef.current);
       return;
     }
@@ -248,7 +285,7 @@ export default function ScansScreen() {
     }, 1200);
 
     return () => clearInterval(intervalRef.current);
-  }, [hasPermission, device, showReview]);
+  }, [hasPermission, device, showReview, showQrResult, showQrGenerator, showHistory]);
 
   // Manual capture — for cards the auto-detect loop can't read. Always opens
   // the review sheet with whatever OCR found (even nothing) so the user can
@@ -297,6 +334,8 @@ export default function ScansScreen() {
     saveContactToPhone(created).then((written) => {
       if (written) markSyncedToPhone(created.id);
     });
+    const label = [created.firstName, created.lastName].filter(Boolean).join(' ') || 'Unknown';
+    api.addScanHistory({ type: 'contact', contactId: created.id, label }).catch(() => {});
     setScanResult(null);
     router.push('/(tabs)/contacts');
   };
@@ -307,7 +346,7 @@ export default function ScansScreen() {
         <View style={styles.permissionBox}>
           <Ionicons name="camera-outline" size={48} color={COLORS.accent} />
           <Text style={styles.permTitle}>Camera Access</Text>
-          <Text style={styles.permSub}>Allow camera access to scan business cards</Text>
+          <Text style={styles.permSub}>Allow camera access to scan business cards and QR codes</Text>
           <Pressable style={styles.permBtn} onPress={requestPermission}>
             <Text style={styles.permBtnText}>Allow Camera</Text>
           </Pressable>
@@ -327,9 +366,10 @@ export default function ScansScreen() {
           ref={cameraRef}
           style={StyleSheet.absoluteFill}
           device={device}
-          isActive={!showReview}
+          isActive={!showReview && !showQrResult && !showQrGenerator && !showHistory}
           torch={flash}
           video
+          codeScanner={codeScanner}
         />
 
         {/* Viewfinder */}
@@ -353,6 +393,10 @@ export default function ScansScreen() {
 
         {/* Controls — float over the camera preview */}
         <View style={styles.controls}>
+          <Pressable style={styles.secondaryBtn} onPress={() => setShowQrGenerator(true)}>
+            <Ionicons name="qr-code-outline" size={20} color="#fff" />
+          </Pressable>
+
           <Pressable style={styles.secondaryBtn} onPress={pickFromLibrary}>
             <Ionicons name="images-outline" size={22} color="#fff" />
           </Pressable>
@@ -372,6 +416,10 @@ export default function ScansScreen() {
               color={flash === 'on' ? COLORS.accent : '#fff'}
             />
           </Pressable>
+
+          <Pressable style={styles.secondaryBtn} onPress={() => setShowHistory(true)}>
+            <Ionicons name="time-outline" size={20} color="#fff" />
+          </Pressable>
         </View>
       </View>
 
@@ -382,6 +430,10 @@ export default function ScansScreen() {
         onSave={handleSaveContact}
         title="Review Contact"
       />
+
+      <QrScanResultSheet visible={showQrResult} value={scannedQrValue} onClose={handleCloseQrResult} />
+      <QrGeneratorSheet visible={showQrGenerator} onClose={() => setShowQrGenerator(false)} />
+      <ScanHistorySheet visible={showHistory} onClose={() => setShowHistory(false)} />
     </SafeAreaView>
   );
 }
@@ -431,7 +483,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 48,
+    paddingHorizontal: 24,
     paddingVertical: 20,
   },
   secondaryBtn: {
