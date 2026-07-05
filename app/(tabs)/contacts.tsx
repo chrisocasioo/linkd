@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as FileSystem from 'expo-file-system/legacy';
 import { useFocusEffect } from 'expo-router';
 import * as Sharing from 'expo-sharing';
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -11,6 +11,7 @@ import {
   RefreshControl,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -38,6 +39,15 @@ function getDisplayName(c: Contact): string {
   return [c.firstName, c.lastName].filter(Boolean).join(' ') || 'Unknown';
 }
 
+type FilterKey = 'all' | 'email' | 'phone' | 'missing';
+
+const FILTERS: { key: FilterKey; label: string }[] = [
+  { key: 'all', label: 'All' },
+  { key: 'email', label: 'Has Email' },
+  { key: 'phone', label: 'Has Phone' },
+  { key: 'missing', label: 'Missing Info' },
+];
+
 export default function ContactsScreen() {
   const api = useApi();
   const { isPro } = useRevenueCat();
@@ -52,6 +62,27 @@ export default function ContactsScreen() {
   const [showAdd, setShowAdd] = useState(false);
   const [editingContact, setEditingContact] = useState<Contact | null>(null);
   const hydratedRef = useRef(false);
+
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filter, setFilter] = useState<FilterKey>('all');
+  const [sortAz, setSortAz] = useState(false);
+
+  const visibleContacts = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    const filtered = contacts.filter((c) => {
+      if (filter === 'email' && !c.email) return false;
+      if (filter === 'phone' && !c.phone) return false;
+      if (filter === 'missing' && (c.email || c.phone)) return false;
+      if (!q) return true;
+      const haystack = [c.firstName, c.lastName, c.company, c.jobTitle, c.email, c.phone]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+      return haystack.includes(q);
+    });
+    if (!sortAz) return filtered;
+    return [...filtered].sort((a, b) => getDisplayName(a).localeCompare(getDisplayName(b)));
+  }, [contacts, searchQuery, filter, sortAz]);
 
   const fetchFresh = useCallback(async () => {
     try {
@@ -170,17 +201,60 @@ export default function ContactsScreen() {
         </View>
       ) : (
         <FlatList
-          data={contacts}
+          data={visibleContacts}
           keyExtractor={(c) => c.id}
-          contentContainerStyle={[styles.list, contacts.length === 0 && styles.listEmpty]}
+          contentContainerStyle={[styles.list, visibleContacts.length === 0 && styles.listEmpty]}
           ItemSeparatorComponent={() => <View style={styles.separator} />}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.accent} />}
+          ListHeaderComponent={
+            contacts.length === 0 ? null : (
+              <View style={styles.toolbar}>
+                <View style={styles.searchBar}>
+                  <Ionicons name="search" size={16} color={COLORS.textSecondary} />
+                  <TextInput
+                    style={styles.searchInput}
+                    placeholder="Search contacts"
+                    placeholderTextColor={COLORS.textSecondary}
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
+                    autoCorrect={false}
+                    clearButtonMode="while-editing"
+                  />
+                </View>
+                <View style={styles.filterRow}>
+                  <View style={styles.filterChips}>
+                    {FILTERS.map((f) => (
+                      <Pressable
+                        key={f.key}
+                        style={[styles.chip, filter === f.key && styles.chipActive]}
+                        onPress={() => setFilter(f.key)}
+                      >
+                        <Text style={[styles.chipText, filter === f.key && styles.chipTextActive]}>{f.label}</Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                  <Pressable style={styles.sortBtn} onPress={() => setSortAz((s) => !s)}>
+                    <Ionicons name="swap-vertical" size={13} color={COLORS.textSecondary} />
+                    <Text style={styles.sortBtnText}>{sortAz ? 'A–Z' : 'Recent'}</Text>
+                  </Pressable>
+                </View>
+              </View>
+            )
+          }
           ListEmptyComponent={
-            <View style={styles.empty}>
-              <Ionicons name="people-outline" size={48} color={COLORS.border} />
-              <Text style={styles.emptyTitle}>No contacts yet</Text>
-              <Text style={styles.emptySub}>Scan a business card to add your first contact</Text>
-            </View>
+            contacts.length === 0 ? (
+              <View style={styles.empty}>
+                <Ionicons name="people-outline" size={48} color={COLORS.border} />
+                <Text style={styles.emptyTitle}>No contacts yet</Text>
+                <Text style={styles.emptySub}>Scan a business card to add your first contact</Text>
+              </View>
+            ) : (
+              <View style={styles.empty}>
+                <Ionicons name="search" size={40} color={COLORS.border} />
+                <Text style={styles.emptyTitle}>No matches</Text>
+                <Text style={styles.emptySub}>Try a different search or filter</Text>
+              </View>
+            )
           }
           renderItem={({ item }) => (
             <Pressable
@@ -251,6 +325,27 @@ const styles = StyleSheet.create({
   emptySub: { fontSize: 13, fontFamily: FONTS.regular, color: COLORS.textSecondary, textAlign: 'center' },
   list: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 16 },
   listEmpty: { flex: 1 },
+  toolbar: { gap: 10, marginBottom: 12 },
+  searchBar: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    backgroundColor: COLORS.surface, borderRadius: 12, borderWidth: 1, borderColor: COLORS.border,
+    paddingHorizontal: 12, height: 40,
+  },
+  searchInput: { flex: 1, fontSize: 14, fontFamily: FONTS.regular, color: COLORS.text, padding: 0 },
+  filterRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  filterChips: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  chip: {
+    paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20,
+    backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border,
+  },
+  chipActive: { backgroundColor: COLORS.accentDim, borderColor: COLORS.accent },
+  chipText: { fontSize: 12, fontFamily: FONTS.medium, color: COLORS.textSecondary },
+  chipTextActive: { color: COLORS.accent, fontFamily: FONTS.semiBold },
+  sortBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    paddingHorizontal: 10, paddingVertical: 6,
+  },
+  sortBtnText: { fontSize: 12, fontFamily: FONTS.medium, color: COLORS.textSecondary },
   separator: { height: 1, backgroundColor: COLORS.border, marginLeft: 70 },
   row: {
     flexDirection: 'row', alignItems: 'center', gap: 14,
