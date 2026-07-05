@@ -25,6 +25,7 @@ const ICON_NAME: Record<string, string> = {
   vimeo: 'logo-vimeo', twitch: 'logo-twitch', behance: 'logo-behance', dribbble: 'logo-dribbble',
   github: 'logo-github', snapchat: 'logo-snapchat', pinterest: 'logo-pinterest', threads: 'logo-threads',
   calendly: 'calendar-outline', patreon: 'heart-outline', address: 'location-outline',
+  cal: 'time-outline', acuity: 'calendar-clear-outline', booksy: 'today-outline',
 };
 
 // 'app' fields store both store links as JSON: {"ios":"…","android":"…"}
@@ -68,6 +69,9 @@ function fieldUrl(type: string, value: string): string {
     case 'pinterest':  return `https://pinterest.com/${v.replace('@', '')}`;
     case 'threads':    return `https://threads.net/@${v.replace('@', '')}`;
     case 'calendly':   return v.includes('calendly.com') ? (v.startsWith('http') ? v : `https://${v}`) : `https://calendly.com/${v.replace('@', '')}`;
+    case 'cal':        return v.includes('cal.com') ? (v.startsWith('http') ? v : `https://${v}`) : `https://cal.com/${v.replace('@', '')}`;
+    case 'acuity':     return (v.includes('acuityscheduling.com') || v.includes('as.me')) ? (v.startsWith('http') ? v : `https://${v}`) : `https://${v.replace('@', '')}.as.me`;
+    case 'booksy':     return v.includes('booksy.com') ? (v.startsWith('http') ? v : `https://${v}`) : `https://booksy.com/en-us/${v.replace('@', '')}`;
     case 'patreon':    return v.includes('patreon.com') ? (v.startsWith('http') ? v : `https://${v}`) : `https://patreon.com/${v.replace('@', '')}`;
     case 'address':    return `https://maps.apple.com/?q=${encodeURIComponent(v)}`;
     default:          return v.startsWith('http') ? v : `https://${v}`;

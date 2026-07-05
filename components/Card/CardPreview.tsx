@@ -54,6 +54,9 @@ const FIELD_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
   pinterest:  'logo-pinterest',
   threads:    'logo-threads',
   calendly:   'calendar-outline',
+  cal:        'time-outline',
+  acuity:     'calendar-clear-outline',
+  booksy:     'today-outline',
   patreon:    'heart-outline',
   address:    'location-outline',
   department: 'people-outline',
@@ -94,6 +97,9 @@ function fieldUrl(field: CardField): string {
     case 'pinterest':  return `https://pinterest.com/${v.replace('@', '')}`;
     case 'threads':    return `https://threads.net/@${v.replace('@', '')}`;
     case 'calendly':   return v.includes('calendly.com') ? (v.startsWith('http') ? v : `https://${v}`) : `https://calendly.com/${v.replace('@', '')}`;
+    case 'cal':        return v.includes('cal.com') ? (v.startsWith('http') ? v : `https://${v}`) : `https://cal.com/${v.replace('@', '')}`;
+    case 'acuity':     return (v.includes('acuityscheduling.com') || v.includes('as.me')) ? (v.startsWith('http') ? v : `https://${v}`) : `https://${v.replace('@', '')}.as.me`;
+    case 'booksy':     return v.includes('booksy.com') ? (v.startsWith('http') ? v : `https://${v}`) : `https://booksy.com/en-us/${v.replace('@', '')}`;
     case 'patreon':    return v.includes('patreon.com') ? (v.startsWith('http') ? v : `https://${v}`) : `https://patreon.com/${v.replace('@', '')}`;
     case 'address':    return `https://maps.apple.com/?q=${encodeURIComponent(v)}`;
     case 'title':

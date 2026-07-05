@@ -33,6 +33,9 @@ function profileUrl(type: string, value: string): string {
     case 'pinterest':  return `https://pinterest.com/${handle}`;
     case 'threads':    return `https://threads.net/@${handle}`;
     case 'calendly':   return v.includes('calendly.com') ? v : `https://calendly.com/${handle}`;
+    case 'cal':        return v.includes('cal.com') ? v : `https://cal.com/${handle}`;
+    case 'acuity':     return (v.includes('acuityscheduling.com') || v.includes('as.me')) ? v : `https://${handle}.as.me`;
+    case 'booksy':     return v.includes('booksy.com') ? v : `https://booksy.com/en-us/${handle}`;
     case 'patreon':    return v.includes('patreon.com') ? v : `https://patreon.com/${handle}`;
     default:          return v;
   }
@@ -41,7 +44,7 @@ function profileUrl(type: string, value: string): string {
 const SOCIAL_TYPES = new Set([
   'instagram', 'twitter', 'linkedin', 'tiktok', 'youtube', 'facebook', 'spotify',
   'venmo', 'telegram', 'discord', 'soundcloud', 'vimeo', 'twitch', 'behance',
-  'dribbble', 'github', 'snapchat', 'pinterest', 'threads', 'calendly', 'patreon',
+  'dribbble', 'github', 'snapchat', 'pinterest', 'threads', 'calendly', 'cal', 'acuity', 'booksy', 'patreon',
 ]);
 const MAX_QR_SOCIALS = 3; // QR readability degrades past ~1-1.5KB of payload
 
