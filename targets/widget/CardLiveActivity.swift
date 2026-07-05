@@ -52,6 +52,51 @@ private struct LockScreenView: View {
     let state: CardActivityAttributes.ContentState
 
     var body: some View {
+        Group {
+            if state.awaitingPermission {
+                askView
+            } else {
+                cardView
+            }
+        }
+        .padding()
+        .activityBackgroundTint(Color.black)
+        .activitySystemActionForegroundColor(Color.white)
+    }
+
+    // Shown only for the very first Live Activity ever — the "permission ask"
+    // lives on the card itself since ActivityKit has no system prompt of its
+    // own. Allow/Not Now are real buttons, backed by AppIntents.
+    private var askView: some View {
+        HStack(spacing: 14) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Keep \(state.name) on your Lock Screen?")
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(.white)
+                    .lineLimit(2)
+                Text("People nearby can scan it to open your card.")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+            }
+            Spacer(minLength: 8)
+            VStack(spacing: 8) {
+                Button(intent: AllowLiveActivityIntent()) {
+                    Text("Allow").font(.footnote.weight(.semibold))
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(Color(hex: state.accentColor))
+                Button(intent: DenyLiveActivityIntent()) {
+                    Text("Not Now").font(.footnote)
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private var cardView: some View {
         HStack(spacing: 14) {
             if let qr = qrImage(from: state.publicUrl) {
                 Image(uiImage: qr)
@@ -80,8 +125,5 @@ private struct LockScreenView: View {
             }
             Spacer()
         }
-        .padding()
-        .activityBackgroundTint(Color.black)
-        .activitySystemActionForegroundColor(Color.white)
     }
 }

@@ -5,9 +5,6 @@ const stub: LiveActivityModuleInterface = {
   async areActivitiesEnabled() {
     return false;
   },
-  async isRunning() {
-    return false;
-  },
   async start() {
     return false;
   },

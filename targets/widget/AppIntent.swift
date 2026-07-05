@@ -1,3 +1,4 @@
+import ActivityKit
 import AppIntents
 import WidgetKit
 
@@ -54,6 +55,12 @@ enum CardStore {
 
     static func setMediumOverrideCardId(_ id: String) {
         UserDefaults(suiteName: appGroup)?.set(id, forKey: "mediumWidgetCardId")
+    }
+
+    /// Same key the main app's LiveActivityModule reads before starting a
+    /// new Activity, so a choice made from the Lock Screen card sticks.
+    static func setLiveActivityPermission(_ value: String) {
+        UserDefaults(suiteName: appGroup)?.set(value, forKey: "liveActivityPermission")
     }
 }
 
@@ -131,6 +138,34 @@ struct ShowAdjacentCardIntent: AppIntent {
         let nextIndex = (index + step + cards.count) % cards.count
         CardStore.setMediumOverrideCardId(cards[nextIndex].id)
         WidgetCenter.shared.reloadTimelines(ofKind: "CardWidget")
+        return .result()
+    }
+}
+
+// MARK: - Live Activity permission ask (buttons rendered on the card itself)
+
+struct AllowLiveActivityIntent: AppIntent {
+    static var title: LocalizedStringResource = "Keep on Lock Screen"
+
+    func perform() async throws -> some IntentResult {
+        CardStore.setLiveActivityPermission("granted")
+        if let activity = Activity<CardActivityAttributes>.activities.first {
+            var state = activity.content.state
+            state.awaitingPermission = false
+            await activity.update(ActivityContent(state: state, staleDate: nil))
+        }
+        return .result()
+    }
+}
+
+struct DenyLiveActivityIntent: AppIntent {
+    static var title: LocalizedStringResource = "Remove from Lock Screen"
+
+    func perform() async throws -> some IntentResult {
+        CardStore.setLiveActivityPermission("denied")
+        for activity in Activity<CardActivityAttributes>.activities {
+            await activity.end(nil, dismissalPolicy: .immediate)
+        }
         return .result()
     }
 }

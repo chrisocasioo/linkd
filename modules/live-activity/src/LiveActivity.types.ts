@@ -9,7 +9,6 @@ export interface CardActivityPayload {
 
 export interface LiveActivityModuleInterface {
   areActivitiesEnabled(): Promise<boolean>;
-  isRunning(): Promise<boolean>;
   start(payload: CardActivityPayload): Promise<boolean>;
   end(): Promise<void>;
 }
