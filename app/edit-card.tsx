@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -127,7 +127,9 @@ const FIELD_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
 export default function EditCardScreen() {
   const api = useApi();
   const router = useRouter();
-  const { cardId } = useLocalSearchParams<{ cardId: string }>();
+  const { cardId, isNew } = useLocalSearchParams<{ cardId: string; isNew?: string }>();
+  // Unsaved new cards are scratch drafts — leaving via back (not Save) discards them
+  const savedRef = useRef(false);
 
   const [tab, setTab] = useState<'display' | 'information' | 'fields'>('display');
   const [card, setCard] = useState<Card | null>(null);
@@ -241,6 +243,7 @@ export default function EditCardScreen() {
       if (displayName) ops.push(api.updateMe({ displayName }));
       await Promise.all(ops);
 
+      savedRef.current = true;
       router.back();
     } catch (err: any) {
       Alert.alert('Error', err.message);
@@ -280,6 +283,16 @@ export default function EditCardScreen() {
     const items = reordered.map((f, i) => ({ id: f.id, order: i }));
     setCard((c) => c ? { ...c, fields: [...infoFields, ...reordered] } : c);
     try { await api.reorderFields(cardId, items); } catch {}
+  };
+
+  const handleBack = () => {
+    // A brand-new card the user never explicitly saved is just a scratch
+    // draft — leaving without saving discards it instead of leaving an
+    // empty "New Card" behind
+    if (isNew === 'true' && !savedRef.current) {
+      api.deleteCard(cardId).catch(() => {});
+    }
+    router.back();
   };
 
   const handleDeleteCard = () => {
@@ -326,7 +339,7 @@ export default function EditCardScreen() {
     <SafeAreaView style={styles.safe}>
       {/* Header */}
       <View style={styles.header}>
-        <Pressable style={styles.headerIconBtn} onPress={() => router.back()} hitSlop={8}>
+        <Pressable style={styles.headerIconBtn} onPress={handleBack} hitSlop={8}>
           <Ionicons name="arrow-back" size={20} color={COLORS.text} />
         </Pressable>
         <Text style={styles.headerTitle}>Edit Card</Text>

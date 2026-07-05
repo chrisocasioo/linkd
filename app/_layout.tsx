@@ -124,7 +124,8 @@ export default function RootLayout() {
             <Stack.Screen name="onboarding" options={{ animation: 'fade' }} />
             <Stack.Screen name="(tabs)" options={{ animation: 'fade', gestureEnabled: false }} />
             <Stack.Screen name="analytics" options={{ animation: 'slide_from_right' }} />
-            <Stack.Screen name="edit-card" options={{ animation: 'slide_from_right' }} />
+            {/* gestureEnabled: false — swipe-back would skip the cancel-deletes-new-card logic */}
+            <Stack.Screen name="edit-card" options={{ animation: 'slide_from_right', gestureEnabled: false }} />
           </Stack>
         </RevenueCatProvider>
       </ClerkProvider>

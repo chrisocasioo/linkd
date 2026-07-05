@@ -108,7 +108,7 @@ export default function CardScreen() {
     try {
       const created = await api.addCard({ name: 'New Card', accentColor: ACCENT_COLORS[0] });
       setCards((cs) => [...cs, created]);
-      router.push({ pathname: '/edit-card', params: { cardId: created.id } });
+      router.push({ pathname: '/edit-card', params: { cardId: created.id, isNew: 'true' } });
     } catch {
       Alert.alert('No connection', 'Creating a card needs an internet connection.');
     }
