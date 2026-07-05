@@ -117,7 +117,7 @@ function buildCardHtml(user: UserRow, card: CardRow, fields: FieldRow[], usernam
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover" />
   <title>${name} | Linkd</title>
   <meta property="og:title" content="${name}" />
   ${card.photo ? `<meta property="og:image" content="${esc(card.photo)}" />` : ''}
@@ -133,7 +133,7 @@ function buildCardHtml(user: UserRow, card: CardRow, fields: FieldRow[], usernam
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 32px 20px 80px;
+      padding: 32px 20px 130px;
     }
     .card {
       width: 100%;
@@ -186,8 +186,8 @@ function buildCardHtml(user: UserRow, card: CardRow, fields: FieldRow[], usernam
     .field-value { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .footer {
       position: fixed; bottom: 0; left: 0; right: 0;
-      padding: 12px; text-align: center;
-      display: flex; flex-direction: column; align-items: center; gap: 8px;
+      padding: 16px 12px max(16px, env(safe-area-inset-bottom)); text-align: center;
+      display: flex; flex-direction: column; align-items: center; gap: 10px;
     }
     .footer-text { font-size: 12px; color: rgba(255,255,255,0.4); }
     .footer-badge { height: 42px; width: auto; }
