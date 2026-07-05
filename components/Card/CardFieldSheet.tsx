@@ -65,13 +65,21 @@ const FIELD_TYPES = [
   { id: 'custom',     label: 'Custom',     icon: 'ellipsis-horizontal' as const,    placeholder: 'Value',                    keyboardType: 'default' as const },
 ];
 
+// Icon choices for 'custom' fields, which have no fixed per-type icon
+const CUSTOM_ICONS: Array<keyof typeof Ionicons.glyphMap> = [
+  'ellipsis-horizontal', 'star-outline', 'heart-outline', 'flag-outline', 'gift-outline',
+  'ticket-outline', 'megaphone-outline', 'book-outline', 'camera-outline', 'musical-note-outline',
+  'game-controller-outline', 'sparkles-outline', 'thumbs-up-outline', 'chatbubbles-outline', 'trophy-outline',
+  'rocket-outline', 'bulb-outline', 'pricetag-outline', 'link-outline', 'home-outline',
+];
+
 interface Props {
   visible: boolean;
   cardId: string;
   field: CardField | null;
   initialType?: string;
   onClose: () => void;
-  onSave: (cardId: string, data: { type: string; value: string; label?: string }, fieldId?: string) => Promise<void>;
+  onSave: (cardId: string, data: { type: string; value: string; label?: string; icon?: string }, fieldId?: string) => Promise<void>;
   onDelete?: (cardId: string, fieldId: string) => Promise<void>;
 }
 
@@ -80,6 +88,7 @@ export function CardFieldSheet({ visible, cardId, field, initialType, onClose, o
   const [selectedType, setSelectedType] = useState(field?.type ?? initialType ?? 'email');
   const [value, setValue] = useState(field?.value ?? '');
   const [label, setLabel] = useState(field?.label ?? '');
+  const [customIcon, setCustomIcon] = useState<string>(CUSTOM_ICONS[0]);
   // 'app' stores both store links in one field; edited via two dedicated inputs
   const [iosUrl, setIosUrl] = useState('');
   const [androidUrl, setAndroidUrl] = useState('');
@@ -90,6 +99,7 @@ export function CardFieldSheet({ visible, cardId, field, initialType, onClose, o
       setSelectedType(field?.type ?? initialType ?? 'email');
       setValue(field?.value ?? '');
       setLabel(field?.label ?? '');
+      setCustomIcon(field?.icon ?? CUSTOM_ICONS[0]);
       const links = field?.type === 'app' ? parseAppLinks(field.value) : {};
       setIosUrl(links.ios ?? '');
       setAndroidUrl(links.android ?? '');
@@ -102,6 +112,7 @@ export function CardFieldSheet({ visible, cardId, field, initialType, onClose, o
   const close = () => { Keyboard.dismiss(); onClose(); };
 
   const isApp = selectedType === 'app';
+  const isCustom = selectedType === 'custom';
   const canSave = isApp ? !!(iosUrl.trim() || androidUrl.trim()) : !!value.trim();
 
   const handleSave = async () => {
@@ -109,7 +120,11 @@ export function CardFieldSheet({ visible, cardId, field, initialType, onClose, o
     setSaving(true);
     try {
       const saveValue = isApp ? serializeAppLinks({ ios: iosUrl, android: androidUrl }) : value.trim();
-      await onSave(cardId, { type: selectedType, value: saveValue, label: label.trim() || undefined }, field?.id);
+      await onSave(
+        cardId,
+        { type: selectedType, value: saveValue, label: label.trim() || undefined, icon: isCustom ? customIcon : undefined },
+        field?.id
+      );
       close();
     } catch (err: any) {
       Alert.alert('Error', err.message);
@@ -217,6 +232,23 @@ export function CardFieldSheet({ visible, cardId, field, initialType, onClose, o
               </>
             )}
 
+            {isCustom && (
+              <>
+                <Text style={[styles.fieldLabel, { marginTop: 16 }]}>Icon</Text>
+                <View style={styles.iconGrid}>
+                  {CUSTOM_ICONS.map((iconName) => (
+                    <Pressable
+                      key={iconName}
+                      style={[styles.iconOption, customIcon === iconName && styles.iconOptionActive]}
+                      onPress={() => setCustomIcon(iconName)}
+                    >
+                      <Ionicons name={iconName} size={18} color={customIcon === iconName ? COLORS.accent : COLORS.textSecondary} />
+                    </Pressable>
+                  ))}
+                </View>
+              </>
+            )}
+
             <Text style={[styles.fieldLabel, { marginTop: 16 }]}>Label (optional)</Text>
             <TextInput
               style={styles.input}
@@ -272,6 +304,13 @@ const styles = StyleSheet.create({
   body: { paddingHorizontal: 20 },
   fieldLabel: { fontSize: 10, fontFamily: FONTS.medium, color: COLORS.textSecondary, letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 6 },
   appHint: { fontSize: 11, fontFamily: FONTS.regular, color: COLORS.textTertiary, marginTop: 8, lineHeight: 15 },
+  iconGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  iconOption: {
+    width: 40, height: 40, borderRadius: 12,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: COLORS.surface2, borderWidth: 1, borderColor: COLORS.border,
+  },
+  iconOptionActive: { borderColor: COLORS.accent, backgroundColor: COLORS.accentDim },
   input: {
     height: 48, backgroundColor: COLORS.surface2, borderRadius: 12,
     borderWidth: 1, borderColor: COLORS.border,

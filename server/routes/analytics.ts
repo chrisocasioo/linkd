@@ -114,6 +114,7 @@ router.get('/me', requireAuth, async (req, res) => {
           fieldId: f.id,
           fieldType: f.type,
           fieldValue: f.value,
+          fieldIcon: f.icon,
           label: f.label,
           clicks: Number(fieldClicksCurrent.find((fc) => fc.fieldId === f.id)?.count ?? 0),
           prevClicks: Number(fieldClicksPrev.find((fc) => fc.fieldId === f.id)?.count ?? 0),

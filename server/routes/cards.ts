@@ -5,6 +5,11 @@ import { db } from '../db';
 import { cards, cardFields, users } from '../db/schema';
 import { slugify, uniqueSlug } from '../util/slugify';
 
+// Icon is embedded unescaped into an <ion-icon name="..."> attribute on the
+// public page, so constrain it to a safe charset regardless of whether the
+// name is a real Ionicons glyph (a typo just renders no icon, harmlessly)
+const ICON_NAME_RE = /^[a-z0-9-]+$/;
+
 const s3 = new S3Client({
   region: process.env.AWS_REGION ?? 'auto',
   endpoint: process.env.AWS_ENDPOINT_URL_S3 ?? process.env.ENDPOINT,
@@ -183,12 +188,15 @@ router.post('/:id/fields', async (req, res) => {
     const { id: cardId } = req.params;
     const card = await db.query.cards.findFirst({ where: and(eq(cards.id, cardId), eq(cards.userId, userId)) });
     if (!card) return res.status(404).json({ error: 'Card not found' });
-    const { type, value, label } = req.body as { type?: string; value?: string; label?: string };
+    const { type, value, label, icon } = req.body as { type?: string; value?: string; label?: string; icon?: string };
     if (!type || !value) return res.status(400).json({ error: 'type and value required' });
+    if (icon !== undefined && icon !== null && !ICON_NAME_RE.test(icon)) {
+      return res.status(400).json({ error: 'Invalid icon name' });
+    }
     const existing = await db.select().from(cardFields).where(eq(cardFields.cardId, cardId));
     const [created] = await db
       .insert(cardFields)
-      .values({ cardId, type, value, label: label ?? null, displayOrder: existing.length })
+      .values({ cardId, type, value, label: label ?? null, icon: type === 'custom' ? (icon ?? null) : null, displayOrder: existing.length })
       .returning();
     res.status(201).json(created);
   } catch (err: any) {
@@ -221,10 +229,14 @@ router.patch('/:id/fields/:fieldId', async (req, res) => {
     const { id: cardId, fieldId } = req.params;
     const card = await db.query.cards.findFirst({ where: and(eq(cards.id, cardId), eq(cards.userId, userId)) });
     if (!card) return res.status(404).json({ error: 'Card not found' });
-    const { value, label } = req.body as { value?: string; label?: string };
+    const { value, label, icon } = req.body as { value?: string; label?: string; icon?: string };
+    if (icon !== undefined && icon !== null && !ICON_NAME_RE.test(icon)) {
+      return res.status(400).json({ error: 'Invalid icon name' });
+    }
     const update: Partial<typeof cardFields.$inferInsert> = {};
     if (value !== undefined) update.value = value;
     if (label !== undefined) update.label = label;
+    if (icon !== undefined) update.icon = icon;
     const [updated] = await db
       .update(cardFields)
       .set(update)

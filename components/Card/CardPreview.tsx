@@ -240,7 +240,7 @@ export function CardPreview({ card, user, analytics, maxHeight, onPreview, onPul
                   onPress={onPreview}
                 >
                   <View style={[styles.fieldIcon, { backgroundColor: accent }]}>
-                    <Ionicons name={FIELD_ICONS[field.type] ?? FIELD_ICONS.custom} size={16} color="#fff" />
+                    <Ionicons name={(field.icon as keyof typeof Ionicons.glyphMap) || FIELD_ICONS[field.type] || FIELD_ICONS.custom} size={16} color="#fff" />
                   </View>
                   <Text style={[styles.fieldValue, { fontFamily: fonts.regular }]} numberOfLines={1}>
                     {fieldDisplayValue(field)}
@@ -302,7 +302,7 @@ export function CardPreview({ card, user, analytics, maxHeight, onPreview, onPul
                     onPress={analyticsLocked ? onUnlockAnalytics : undefined}
                   >
                     <View style={[styles.backFieldIcon, { backgroundColor: accent + '22' }]}>
-                      <Ionicons name={FIELD_ICONS[fc.fieldType] ?? FIELD_ICONS.custom} size={13} color={accent} />
+                      <Ionicons name={(fc.fieldIcon as keyof typeof Ionicons.glyphMap) || FIELD_ICONS[fc.fieldType] || FIELD_ICONS.custom} size={13} color={accent} />
                     </View>
                     <Text style={styles.backFieldName} numberOfLines={1}>
                       {fc.label ?? (fc.fieldType === 'app' ? APP_FIELD_DISPLAY : fc.fieldValue)}

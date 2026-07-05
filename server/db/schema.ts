@@ -80,6 +80,9 @@ export const cardFields = pgTable('card_fields', {
   type: text('type').notNull(),
   label: text('label'),
   value: text('value').notNull(),
+  // User-picked Ionicons name — only meaningful for type 'custom'; other
+  // types render from the fixed per-type icon map instead
+  icon: text('icon'),
   displayOrder: integer('display_order').default(0),
 });
 

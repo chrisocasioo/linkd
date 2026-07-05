@@ -57,6 +57,7 @@ export interface FieldClickStat {
   fieldId: string;
   fieldType: string;
   fieldValue: string;
+  fieldIcon: string | null;
   label: string | null;
   clicks: number;
   prevClicks: number;
@@ -84,6 +85,7 @@ export interface CardField {
   type: string;
   label: string | null;
   value: string;
+  icon: string | null;
   displayOrder: number;
 }
 
@@ -182,11 +184,11 @@ export function useApi() {
     deleteCard: (id: string) =>
       withToken((t) => request<{ success: boolean }>(`/api/cards/${id}`, t, { method: 'DELETE' })),
 
-    addField: (cardId: string, body: { type: string; value: string; label?: string }) =>
+    addField: (cardId: string, body: { type: string; value: string; label?: string; icon?: string }) =>
       withToken((t) =>
         request<CardField>(`/api/cards/${cardId}/fields`, t, { method: 'POST', body: JSON.stringify(body) })
       ),
-    updateField: (cardId: string, fieldId: string, body: { value?: string; label?: string }) =>
+    updateField: (cardId: string, fieldId: string, body: { value?: string; label?: string; icon?: string }) =>
       withToken((t) =>
         request<CardField>(`/api/cards/${cardId}/fields/${fieldId}`, t, { method: 'PATCH', body: JSON.stringify(body) })
       ),

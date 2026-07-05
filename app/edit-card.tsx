@@ -250,11 +250,11 @@ export default function EditCardScreen() {
 
   const handleFieldSave = async (
     cId: string,
-    data: { type: string; value: string; label?: string },
+    data: { type: string; value: string; label?: string; icon?: string },
     fieldId?: string,
   ) => {
     if (fieldId) {
-      const updated = await api.updateField(cId, fieldId, { value: data.value, label: data.label });
+      const updated = await api.updateField(cId, fieldId, { value: data.value, label: data.label, icon: data.icon });
       setCard((c) => c ? { ...c, fields: c.fields.map((f) => f.id === fieldId ? updated : f) } : c);
     } else {
       const created = await api.addField(cId, data);
@@ -585,7 +585,7 @@ export default function EditCardScreen() {
                       >
                         <View style={[styles.fieldIconWrap, { backgroundColor: accent + '22' }]}>
                           <Ionicons
-                            name={FIELD_ICONS[field.type] ?? 'ellipsis-horizontal'}
+                            name={(field.icon as keyof typeof Ionicons.glyphMap) || FIELD_ICONS[field.type] || 'ellipsis-horizontal'}
                             size={17}
                             color={accent}
                           />

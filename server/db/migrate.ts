@@ -179,5 +179,8 @@ export async function runMigrations() {
       clicked_at TIMESTAMP DEFAULT NOW()
     );
   `);
+  await db.execute(sql`
+    ALTER TABLE card_fields ADD COLUMN IF NOT EXISTS icon TEXT;
+  `);
   console.log('✓ Database tables ready');
 }

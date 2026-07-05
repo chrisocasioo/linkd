@@ -93,7 +93,7 @@ function buildCardHtml(user: UserRow, card: CardRow, fields: FieldRow[], usernam
     : `<div class="banner-placeholder" style="background:${accent}22"><span class="banner-initial" style="color:${accent}">${initial}</span></div>`;
 
   const fieldRowsHtml = linkFields.map(f => {
-    const icon = ICON_NAME[f.type] ?? 'ellipsis-horizontal';
+    const icon = esc(f.icon || ICON_NAME[f.type] || 'ellipsis-horizontal');
     if (f.type === 'app') {
       // Server-rendered fallback href; a script swaps in the visitor's store
       const { ios, android } = parseAppLinks(f.value);

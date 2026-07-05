@@ -26,7 +26,7 @@ function formatTrackingSince(iso: string | null): string {
 }
 
 function FieldClickRow({ stat }: { stat: FieldClickStat }) {
-  const icon = FIELD_ICONS[stat.fieldType] ?? 'ellipsis-horizontal';
+  const icon = (stat.fieldIcon as keyof typeof Ionicons.glyphMap) || FIELD_ICONS[stat.fieldType] || 'ellipsis-horizontal';
   const label = stat.label ?? stat.fieldValue;
   const d = delta(stat.clicks, stat.prevClicks);
   const hasChange = stat.prevClicks > 0;
