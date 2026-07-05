@@ -11,8 +11,8 @@ struct CardActivityPayload: Record {
 }
 
 public class LiveActivityModule: Module {
-    // Must match targets/widget/AppIntent.swift's CardStore — the Allow/Not
-    // Now buttons rendered on the Live Activity card itself write here.
+    // Must match targets/widget/AppIntent.swift's CardStore — the Allow/Do
+    // Not Allow buttons rendered on the Live Activity card itself write here.
     private static let appGroup = "group.com.santrico.linkd"
     private static let permissionKey = "liveActivityPermission"
 
@@ -23,16 +23,19 @@ public class LiveActivityModule: Module {
             ActivityAuthorizationInfo().areActivitiesEnabled
         }
 
-        Function("start") { (payload: CardActivityPayload) -> Bool in
+        // AsyncFunction (not Function) so the old activity's `end` is fully
+        // awaited before a new one is requested — never two on screen at once,
+        // even for a single frame.
+        AsyncFunction("start") { (payload: CardActivityPayload) async -> Bool in
             guard ActivityAuthorizationInfo().areActivitiesEnabled else { return false }
 
             let permission = UserDefaults(suiteName: Self.appGroup)?.string(forKey: Self.permissionKey)
             // Declined once on the card itself — don't start another.
             if permission == "denied" { return false }
 
-            // Only one Linkd card should be live on the Lock Screen at a time.
+            // Only one Linkd card should ever be live on the Lock Screen.
             for activity in Activity<CardActivityAttributes>.activities {
-                Task { await activity.end(nil, dismissalPolicy: .immediate) }
+                await activity.end(nil, dismissalPolicy: .immediate)
             }
 
             let attributes = CardActivityAttributes(cardId: payload.cardId)
@@ -54,9 +57,9 @@ public class LiveActivityModule: Module {
             }
         }
 
-        Function("end") { () -> Void in
+        AsyncFunction("end") { () async -> Void in
             for activity in Activity<CardActivityAttributes>.activities {
-                Task { await activity.end(nil, dismissalPolicy: .immediate) }
+                await activity.end(nil, dismissalPolicy: .immediate)
             }
         }
     }

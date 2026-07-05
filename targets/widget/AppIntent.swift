@@ -145,7 +145,7 @@ struct ShowAdjacentCardIntent: AppIntent {
 // MARK: - Live Activity permission ask (buttons rendered on the card itself)
 
 struct AllowLiveActivityIntent: AppIntent {
-    static var title: LocalizedStringResource = "Keep on Lock Screen"
+    static var title: LocalizedStringResource = "Allow"
 
     func perform() async throws -> some IntentResult {
         CardStore.setLiveActivityPermission("granted")
@@ -159,7 +159,7 @@ struct AllowLiveActivityIntent: AppIntent {
 }
 
 struct DenyLiveActivityIntent: AppIntent {
-    static var title: LocalizedStringResource = "Remove from Lock Screen"
+    static var title: LocalizedStringResource = "Do Not Allow"
 
     func perform() async throws -> some IntentResult {
         CardStore.setLiveActivityPermission("denied")

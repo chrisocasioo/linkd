@@ -66,7 +66,7 @@ private struct LockScreenView: View {
 
     // Shown only for the very first Live Activity ever — the "permission ask"
     // lives on the card itself since ActivityKit has no system prompt of its
-    // own. Allow/Not Now are real buttons, backed by AppIntents.
+    // own. Allow/Do Not Allow are real buttons, backed by AppIntents.
     private var askView: some View {
         HStack(spacing: 14) {
             VStack(alignment: .leading, spacing: 4) {
@@ -88,7 +88,7 @@ private struct LockScreenView: View {
                 .buttonStyle(.borderedProminent)
                 .tint(Color(hex: state.accentColor))
                 Button(intent: DenyLiveActivityIntent()) {
-                    Text("Not Now").font(.footnote)
+                    Text("Do Not Allow").font(.footnote)
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(.secondary)
