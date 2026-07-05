@@ -182,5 +182,9 @@ export async function runMigrations() {
   await db.execute(sql`
     ALTER TABLE card_fields ADD COLUMN IF NOT EXISTS icon TEXT;
   `);
+  await db.execute(sql`
+    ALTER TABLE contacts ADD COLUMN IF NOT EXISTS source TEXT NOT NULL DEFAULT 'manual';
+    UPDATE contacts SET source = 'card' WHERE source = 'manual' AND notes = 'Shared their info via your Linkd card';
+  `);
   console.log('✓ Database tables ready');
 }

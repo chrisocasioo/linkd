@@ -35,6 +35,7 @@ export interface Contact {
   website: string | null;
   address: string | null;
   notes: string | null;
+  source: 'manual' | 'scan' | 'card';
   createdAt: string;
 }
 

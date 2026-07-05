@@ -5,6 +5,8 @@ import { contacts } from '../db/schema';
 
 const router = Router();
 
+const VALID_SOURCES = new Set(['manual', 'scan', 'card']);
+
 // GET / — list all contacts for the authenticated user
 router.get('/', async (req, res) => {
   try {
@@ -24,10 +26,13 @@ router.get('/', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const userId = (req as any).userId as string;
-    const { firstName, lastName, email, phone, fax, company, jobTitle, website, address, notes } = req.body;
+    const { firstName, lastName, email, phone, fax, company, jobTitle, website, address, notes, source } = req.body;
     const [created] = await db
       .insert(contacts)
-      .values({ userId, firstName, lastName, email, phone, fax, company, jobTitle, website, address, notes })
+      .values({
+        userId, firstName, lastName, email, phone, fax, company, jobTitle, website, address, notes,
+        source: VALID_SOURCES.has(source) ? source : 'manual',
+      })
       .returning();
     res.json(created);
   } catch (err: any) {

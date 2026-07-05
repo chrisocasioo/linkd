@@ -39,14 +39,16 @@ function getDisplayName(c: Contact): string {
   return [c.firstName, c.lastName].filter(Boolean).join(' ') || 'Unknown';
 }
 
-type FilterKey = 'all' | 'email' | 'phone' | 'missing';
+type FilterKey = 'all' | 'card' | 'scan' | 'recent';
 
 const FILTERS: { key: FilterKey; label: string }[] = [
   { key: 'all', label: 'All' },
-  { key: 'email', label: 'Has Email' },
-  { key: 'phone', label: 'Has Phone' },
-  { key: 'missing', label: 'Missing Info' },
+  { key: 'card', label: 'By Card' },
+  { key: 'scan', label: 'Scanned' },
+  { key: 'recent', label: 'Recents' },
 ];
+
+const RECENT_WINDOW_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
 export default function ContactsScreen() {
   const api = useApi();
@@ -69,10 +71,11 @@ export default function ContactsScreen() {
 
   const visibleContacts = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
+    const now = Date.now();
     const filtered = contacts.filter((c) => {
-      if (filter === 'email' && !c.email) return false;
-      if (filter === 'phone' && !c.phone) return false;
-      if (filter === 'missing' && (c.email || c.phone)) return false;
+      if (filter === 'card' && c.source !== 'card') return false;
+      if (filter === 'scan' && c.source !== 'scan') return false;
+      if (filter === 'recent' && now - new Date(c.createdAt).getTime() > RECENT_WINDOW_MS) return false;
       if (!q) return true;
       const haystack = [c.firstName, c.lastName, c.company, c.jobTitle, c.email, c.phone]
         .filter(Boolean)
@@ -235,7 +238,7 @@ export default function ContactsScreen() {
                   </View>
                   <Pressable style={styles.sortBtn} onPress={() => setSortAz((s) => !s)}>
                     <Ionicons name="swap-vertical" size={13} color={COLORS.textSecondary} />
-                    <Text style={styles.sortBtnText}>{sortAz ? 'A–Z' : 'Recent'}</Text>
+                    <Text style={styles.sortBtnText}>{sortAz ? 'A–Z' : 'Newest'}</Text>
                   </Pressable>
                 </View>
               </View>

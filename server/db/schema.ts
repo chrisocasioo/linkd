@@ -107,6 +107,9 @@ export const contacts = pgTable('contacts', {
   fax: text('fax'),
   address: text('address'),
   notes: text('notes'),
+  // How the contact was added: 'manual' (+ button), 'scan' (business card
+  // OCR), or 'card' (someone shared their info via a public card exchange).
+  source: text('source').notNull().default('manual'),
   createdAt: timestamp('created_at').defaultNow(),
 });
 

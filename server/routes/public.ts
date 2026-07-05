@@ -358,6 +358,7 @@ router.post('/exchange/:cardId', async (req, res) => {
       phone: phone || null,
       company: company || null,
       notes: 'Shared their info via your Linkd card',
+      source: 'card',
     });
     res.status(201).json({ success: true });
   } catch {

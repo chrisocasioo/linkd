@@ -293,7 +293,7 @@ export default function ScansScreen() {
   };
 
   const handleSaveContact = async (fields: Partial<ScanResult>) => {
-    const created = await api.addContact(fields);
+    const created = await api.addContact({ ...fields, source: 'scan' });
     saveContactToPhone(created).then((written) => {
       if (written) markSyncedToPhone(created.id);
     });
