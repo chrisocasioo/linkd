@@ -20,6 +20,26 @@ import {
   Nunito_500Medium,
   Nunito_600SemiBold,
 } from '@expo-google-fonts/nunito';
+import {
+  Poppins_400Regular,
+  Poppins_500Medium,
+  Poppins_600SemiBold,
+} from '@expo-google-fonts/poppins';
+import {
+  Merriweather_400Regular,
+  Merriweather_500Medium,
+  Merriweather_600SemiBold,
+} from '@expo-google-fonts/merriweather';
+import {
+  Caveat_400Regular,
+  Caveat_500Medium,
+  Caveat_600SemiBold,
+} from '@expo-google-fonts/caveat';
+import {
+  JetBrainsMono_400Regular,
+  JetBrainsMono_500Medium,
+  JetBrainsMono_600SemiBold,
+} from '@expo-google-fonts/jetbrains-mono';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
@@ -69,6 +89,18 @@ export default function RootLayout() {
     'Nunito-Regular': Nunito_400Regular,
     'Nunito-Medium': Nunito_500Medium,
     'Nunito-SemiBold': Nunito_600SemiBold,
+    'Poppins-Regular': Poppins_400Regular,
+    'Poppins-Medium': Poppins_500Medium,
+    'Poppins-SemiBold': Poppins_600SemiBold,
+    'Merriweather-Regular': Merriweather_400Regular,
+    'Merriweather-Medium': Merriweather_500Medium,
+    'Merriweather-SemiBold': Merriweather_600SemiBold,
+    'Caveat-Regular': Caveat_400Regular,
+    'Caveat-Medium': Caveat_500Medium,
+    'Caveat-SemiBold': Caveat_600SemiBold,
+    'JetBrainsMono-Regular': JetBrainsMono_400Regular,
+    'JetBrainsMono-Medium': JetBrainsMono_500Medium,
+    'JetBrainsMono-SemiBold': JetBrainsMono_600SemiBold,
   });
 
   useEffect(() => {

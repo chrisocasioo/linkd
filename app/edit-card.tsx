@@ -27,11 +27,16 @@ import { COLORS, FONTS } from '../constants/colors';
 const ACCENT_COLORS = ['#C9973A', '#7C3AED', '#22C55E', '#F43F5E', '#0EA5E9', '#EC4899'];
 
 const FONT_OPTIONS = [
-  { id: 'dm-sans',       label: 'Modern',   preview: 'Aa', family: 'DMSans-SemiBold' },
-  { id: 'playfair',      label: 'Elegant',  preview: 'Aa', family: 'PlayfairDisplay-SemiBold' },
-  { id: 'space-grotesk', label: 'Techy',    preview: 'Aa', family: 'SpaceGrotesk-SemiBold' },
-  { id: 'nunito',        label: 'Friendly', preview: 'Aa', family: 'Nunito-SemiBold' },
+  { id: 'dm-sans',        label: 'Modern',   preview: 'Aa', family: 'DMSans-SemiBold' },
+  { id: 'playfair',       label: 'Elegant',  preview: 'Aa', family: 'PlayfairDisplay-SemiBold' },
+  { id: 'space-grotesk',  label: 'Techy',    preview: 'Aa', family: 'SpaceGrotesk-SemiBold' },
+  { id: 'nunito',         label: 'Friendly', preview: 'Aa', family: 'Nunito-SemiBold' },
+  { id: 'poppins',        label: 'Bold',     preview: 'Aa', family: 'Poppins-SemiBold' },
+  { id: 'merriweather',   label: 'Classic',  preview: 'Aa', family: 'Merriweather-SemiBold' },
+  { id: 'caveat',         label: 'Casual',   preview: 'Aa', family: 'Caveat-SemiBold' },
+  { id: 'jetbrains-mono', label: 'Code',     preview: 'Aa', family: 'JetBrainsMono-SemiBold' },
 ];
+const FONT_ROWS = [FONT_OPTIONS.slice(0, 4), FONT_OPTIONS.slice(4, 8)];
 
 const INFO_TYPES = new Set(['title', 'company', 'department', 'headline']);
 
@@ -423,18 +428,20 @@ export default function EditCardScreen() {
                 )}
 
                 <Text style={[styles.label, { marginTop: 20 }]}>Font</Text>
-                <View style={styles.fontRow}>
-                  {FONT_OPTIONS.map((f) => (
-                    <Pressable
-                      key={f.id}
-                      style={[styles.fontOption, cardFont === f.id && { borderColor: accent, backgroundColor: accent + '18' }]}
-                      onPress={() => setCardFont(f.id)}
-                    >
-                      <Text style={[styles.fontPreview, { fontFamily: f.family }]}>{f.preview}</Text>
-                      <Text style={[styles.fontLabel, cardFont === f.id && { color: accent }]}>{f.label}</Text>
-                    </Pressable>
-                  ))}
-                </View>
+                {FONT_ROWS.map((row, rowIdx) => (
+                  <View key={rowIdx} style={[styles.fontRow, rowIdx > 0 && { marginTop: 8 }]}>
+                    {row.map((f) => (
+                      <Pressable
+                        key={f.id}
+                        style={[styles.fontOption, cardFont === f.id && { borderColor: accent, backgroundColor: accent + '18' }]}
+                        onPress={() => setCardFont(f.id)}
+                      >
+                        <Text style={[styles.fontPreview, { fontFamily: f.family }]}>{f.preview}</Text>
+                        <Text style={[styles.fontLabel, cardFont === f.id && { color: accent }]}>{f.label}</Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                ))}
               </View>
             </>
           )}

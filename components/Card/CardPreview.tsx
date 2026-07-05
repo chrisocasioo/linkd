@@ -11,6 +11,10 @@ const CARD_FONTS: Record<string, { regular: string; medium: string; semiBold: st
   'playfair':      { regular: 'PlayfairDisplay-Regular',  medium: 'PlayfairDisplay-Medium',  semiBold: 'PlayfairDisplay-SemiBold' },
   'space-grotesk': { regular: 'SpaceGrotesk-Regular',     medium: 'SpaceGrotesk-Medium',     semiBold: 'SpaceGrotesk-SemiBold' },
   'nunito':        { regular: 'Nunito-Regular',           medium: 'Nunito-Medium',           semiBold: 'Nunito-SemiBold' },
+  'poppins':       { regular: 'Poppins-Regular',           medium: 'Poppins-Medium',           semiBold: 'Poppins-SemiBold' },
+  'merriweather':  { regular: 'Merriweather-Regular',       medium: 'Merriweather-Medium',       semiBold: 'Merriweather-SemiBold' },
+  'caveat':        { regular: 'Caveat-Regular',             medium: 'Caveat-Medium',             semiBold: 'Caveat-SemiBold' },
+  'jetbrains-mono': { regular: 'JetBrainsMono-Regular',     medium: 'JetBrainsMono-Medium',       semiBold: 'JetBrainsMono-SemiBold' },
 };
 
 const { height: SCREEN_H } = Dimensions.get('window');
