@@ -209,5 +209,8 @@ export async function runMigrations() {
     ALTER TABLE saved_qrs ADD COLUMN IF NOT EXISTS color TEXT;
     ALTER TABLE saved_qrs ADD COLUMN IF NOT EXISTS bg_color TEXT;
   `);
+  await db.execute(sql`
+    ALTER TABLE saved_qrs ADD COLUMN IF NOT EXISTS logo TEXT;
+  `);
   console.log('✓ Database tables ready');
 }

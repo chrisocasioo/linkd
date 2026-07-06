@@ -1,10 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
   Animated,
   Dimensions,
+  Image,
   Keyboard,
   KeyboardAvoidingView,
   Modal,
@@ -50,6 +52,7 @@ export function QrGeneratorSheet({ visible, onClose }: Props) {
   const [qrBgColor, setQrBgColor] = useState('#FFFFFF');
   const [showColorHex, setShowColorHex] = useState<'color' | 'bg' | null>(null);
   const [hexDraft, setHexDraft] = useState('');
+  const [logoUri, setLogoUri] = useState<string | null>(null);
 
   const [savedQrs, setSavedQrs] = useState<SavedQr[]>([]);
   const [loadingSaved, setLoadingSaved] = useState(false);
@@ -64,10 +67,28 @@ export function QrGeneratorSheet({ visible, onClose }: Props) {
       setGenerated(null);
       setUrl(''); setSsid(''); setPassword(''); setSecurity('WPA');
       setQrColor('#000000'); setQrBgColor('#FFFFFF'); setShowColorHex(null);
+      setLogoUri(null);
     }
   }, [visible]);
 
   const close = () => { Keyboard.dismiss(); onClose(); };
+
+  const handlePickLogo = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission required', 'Allow photo library access to set a QR logo.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'] as any,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.85,
+    });
+    if (!result.canceled && result.assets[0]) {
+      setLogoUri(result.assets[0].uri);
+    }
+  };
 
   const canGenerate = mode === 'url' ? url.trim().length > 0 : ssid.trim().length > 0;
 
@@ -87,10 +108,20 @@ export function QrGeneratorSheet({ visible, onClose }: Props) {
     setSaving(true);
     try {
       const created = await api.addQr({ type: mode, label: generated.label, data: generated.data, color: qrColor, bgColor: qrBgColor });
-      setSavedQrs((qs) => [created, ...qs]);
+      let saved = created;
+      if (logoUri) {
+        try {
+          const { logoUrl } = await api.uploadQrLogo(created.id, logoUri);
+          saved = { ...created, logo: logoUrl };
+        } catch {
+          // QR itself is already saved — a failed logo upload shouldn't lose that
+        }
+      }
+      setSavedQrs((qs) => [saved, ...qs]);
       setGenerated(null);
       setUrl(''); setSsid(''); setPassword('');
       setQrColor('#000000'); setQrBgColor('#FFFFFF'); setShowColorHex(null);
+      setLogoUri(null);
     } catch (err: any) {
       Alert.alert('Could not save', err.message ?? 'Try again.');
     }
@@ -199,9 +230,40 @@ export function QrGeneratorSheet({ visible, onClose }: Props) {
             {generated && (
               <View style={styles.previewBox}>
                 <View style={[styles.qrWrap, { backgroundColor: qrBgColor }]}>
-                  <QRCode value={generated.data} size={160} backgroundColor={qrBgColor} color={qrColor} ecl="M" />
+                  <QRCode
+                    value={generated.data}
+                    size={160}
+                    backgroundColor={qrBgColor}
+                    color={qrColor}
+                    ecl={logoUri ? 'H' : 'M'}
+                    logo={logoUri ? { uri: logoUri } : undefined}
+                    logoSize={40}
+                    logoBackgroundColor={qrBgColor}
+                    logoBorderRadius={8}
+                    logoMargin={2}
+                  />
                 </View>
                 <Text style={styles.previewLabel} numberOfLines={1}>{generated.label}</Text>
+
+                <View style={styles.logoRow}>
+                  <Pressable onPress={handlePickLogo} style={styles.logoWrap}>
+                    {logoUri ? (
+                      <Image source={{ uri: logoUri }} style={styles.logoImg} />
+                    ) : (
+                      <View style={styles.logoPlaceholder}>
+                        <Ionicons name="image-outline" size={16} color={COLORS.textTertiary} />
+                      </View>
+                    )}
+                  </Pressable>
+                  <Pressable onPress={handlePickLogo}>
+                    <Text style={styles.logoActionText}>{logoUri ? 'Change Logo' : 'Add Logo'}</Text>
+                  </Pressable>
+                  {logoUri && (
+                    <Pressable onPress={() => setLogoUri(null)}>
+                      <Text style={styles.logoActionTextRemove}>Remove</Text>
+                    </Pressable>
+                  )}
+                </View>
 
                 <Text style={styles.swatchLabel}>Color</Text>
                 <View style={styles.swatchRow}>
@@ -336,6 +398,16 @@ const styles = StyleSheet.create({
   },
   qrWrap: { padding: 10, backgroundColor: '#fff', borderRadius: 10 },
   previewLabel: { fontSize: 12, fontFamily: FONTS.regular, color: COLORS.textSecondary, maxWidth: '100%' },
+
+  logoRow: { flexDirection: 'row', alignItems: 'center', gap: 10, alignSelf: 'stretch' },
+  logoWrap: { width: 36, height: 36, borderRadius: 10, overflow: 'hidden' },
+  logoImg: { width: 36, height: 36, borderRadius: 10 },
+  logoPlaceholder: {
+    width: 36, height: 36, borderRadius: 10, backgroundColor: COLORS.surface,
+    borderWidth: 1, borderColor: COLORS.border, alignItems: 'center', justifyContent: 'center',
+  },
+  logoActionText: { fontSize: 12, fontFamily: FONTS.semiBold, color: COLORS.accent },
+  logoActionTextRemove: { fontSize: 12, fontFamily: FONTS.semiBold, color: '#EF4444' },
 
   swatchLabel: {
     fontSize: 10, fontFamily: FONTS.medium, color: COLORS.textTertiary,

@@ -30,6 +30,7 @@ export const savedQrs = pgTable('saved_qrs', {
   // Custom styling, independent of any card's own branding
   color: text('color'),
   bgColor: text('bg_color'),
+  logo: text('logo'),
 });
 
 export const links = pgTable('links', {

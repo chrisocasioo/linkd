@@ -48,6 +48,7 @@ export interface SavedQr {
   createdAt: string;
   color: string | null;
   bgColor: string | null;
+  logo: string | null;
 }
 
 export interface ScanHistoryEntry {
@@ -257,6 +258,14 @@ export function useApi() {
       withToken((t) => request<SavedQr>('/api/qrs', t, { method: 'POST', body: JSON.stringify(body) })),
     deleteQr: (id: string) =>
       withToken((t) => request<{ success: boolean }>(`/api/qrs/${id}`, t, { method: 'DELETE' })),
+    uploadQrLogo: (qrId: string, uri: string) =>
+      withToken(async (t) => {
+        const base64 = await FileSystem.readAsStringAsync(uri, { encoding: 'base64' as any });
+        return request<{ logoUrl: string }>(`/api/qrs/${qrId}/logo`, t, {
+          method: 'POST',
+          body: JSON.stringify({ photo: base64, mimeType: 'image/jpeg' }),
+        });
+      }),
 
     // Scan history (Scans tab — contact scans + QR reads)
     getScanHistory: () => withToken((t) => request<ScanHistoryEntry[]>('/api/scan-history', t)),
