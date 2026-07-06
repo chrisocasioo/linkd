@@ -419,10 +419,9 @@ export default function EditCardScreen() {
   }
 
   const contactFields = card.fields.filter((f) => !INFO_TYPES.has(f.type));
-  const existingTypes = new Set(contactFields.map((f) => f.type));
-  const suggestedCategories = FIELD_CATEGORIES
-    .map((cat) => ({ ...cat, items: cat.items.filter((p) => !existingTypes.has(p.type) || p.type === 'custom') }))
-    .filter((cat) => cat.items.length > 0);
+  // Every type stays tappable even once added — users can add multiple
+  // phone numbers, emails, social handles, etc. instead of just one each.
+  const suggestedCategories = FIELD_CATEGORIES;
   const photoSource = photoUri ?? card.photo ?? null;
   const qrLogoSource = qrLogoUri ?? (removeQrLogo ? null : card.qrLogo ?? null);
   const initial = ((user.displayName ?? user.username ?? '?')[0]).toUpperCase();
