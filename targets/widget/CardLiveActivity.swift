@@ -86,15 +86,17 @@ private struct LockScreenView: View {
                 }
             }
             Spacer()
-            Button(intent: ToggleQrModeIntent()) {
-                VStack(spacing: 3) {
-                    Image(systemName: state.mode == "offline" ? "wifi.slash" : "wifi")
-                        .font(.footnote.weight(.semibold))
-                    Text(state.mode == "offline" ? "Offline" : "Online")
-                        .font(.system(size: 9, weight: .medium))
+            VStack(spacing: 3) {
+                Toggle(isOn: state.mode == "offline", intent: ToggleQrModeIntent()) {
+                    EmptyView()
                 }
+                .toggleStyle(.switch)
+                .labelsHidden()
+                .scaleEffect(0.72)
+                .frame(width: 38, height: 24)
+                Text(state.mode == "offline" ? "Offline" : "Online")
+                    .font(.system(size: 9, weight: .medium))
             }
-            .buttonStyle(.plain)
             .foregroundStyle(.secondary)
         }
         .padding()

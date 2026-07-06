@@ -173,11 +173,13 @@ struct CardWidgetEntryView: View {
                 Spacer(minLength: 4)
                 VStack(spacing: 8) {
                     Spacer()
-                    Button(intent: ToggleWidgetQrModeIntent()) {
-                        Image(systemName: mode == "offline" ? "wifi.slash" : "wifi")
-                            .font(.footnote.weight(.semibold))
+                    Toggle(isOn: mode == "offline", intent: ToggleWidgetQrModeIntent()) {
+                        EmptyView()
                     }
-                    .buttonStyle(.plain)
+                    .toggleStyle(.switch)
+                    .labelsHidden()
+                    .scaleEffect(0.65)
+                    .frame(width: 34, height: 20)
                     HStack(spacing: 14) {
                         Button(intent: ShowAdjacentCardIntent(currentCardId: card.id, forward: false)) {
                             Image(systemName: "chevron.left")
