@@ -68,7 +68,13 @@ func qrImage(from string: String) -> UIImage? {
     guard let output = filter.outputImage else { return nil }
     // CIQRCodeGenerator outputs one point per module — scale up for crispness
     let scaled = output.transformed(by: CGAffineTransform(scaleX: 10, y: 10))
-    guard let cgImage = context.createCGImage(scaled, from: scaled.extent) else { return nil }
+    // CIQRCodeGenerator's "off" modules are transparent, not opaque white —
+    // composite over a solid white backing so a dark background (this app's
+    // widgets/Live Activity are always on black) can't bleed through and
+    // turn the whole code into a solid black square.
+    let whiteBackground = CIImage(color: .white).cropped(to: scaled.extent)
+    let composited = scaled.composited(over: whiteBackground)
+    guard let cgImage = context.createCGImage(composited, from: composited.extent) else { return nil }
     return UIImage(cgImage: cgImage)
 }
 
