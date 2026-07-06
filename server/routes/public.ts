@@ -189,7 +189,7 @@ function buildCardHtml(user: UserRow, card: CardRow, fields: FieldRow[], usernam
       margin-top: 22px;
       padding: 0 12px max(20px, env(safe-area-inset-bottom));
       text-align: center;
-      display: flex; flex-direction: column; align-items: center; gap: 10px;
+      display: flex; flex-direction: column; align-items: center; gap: 16px;
     }
     .footer-text { font-size: 12px; color: rgba(255,255,255,0.4); }
     .footer-badge { height: 42px; width: auto; }
