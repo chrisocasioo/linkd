@@ -181,7 +181,10 @@ struct ToggleWidgetQrModeIntent: AppIntent {
 
 // MARK: - Live Activity online/offline QR toggle
 
-struct ToggleQrModeIntent: AppIntent {
+// LiveActivityIntent (not plain AppIntent) — buttons inside a Live Activity
+// need this so the intent runs in place against the live Activity instead of
+// risking a launch of the containing app.
+struct ToggleQrModeIntent: LiveActivityIntent {
     static var title: LocalizedStringResource = "Toggle QR Mode"
 
     func perform() async throws -> some IntentResult {
