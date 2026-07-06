@@ -21,6 +21,7 @@ import { ShareSheet } from '../../components/Card/ShareSheet';
 import { SettingsSheet } from '../../components/Profile/SettingsSheet';
 import { useApi, Card, CardAnalytics, User } from '../../lib/api';
 import { loadHomeCache, saveHomeCache } from '../../lib/cache';
+import { triggerLiveActivityOnShare } from '../../lib/liveActivity';
 import { useRevenueCat } from '../../lib/RevenueCatContext';
 import { syncWidgetData } from '../../lib/widgetSync';
 import { COLORS, FONTS } from '../../constants/colors';
@@ -226,7 +227,10 @@ export default function CardScreen() {
         </Pressable>
         <Pressable
           style={[styles.shareBtn, { backgroundColor: activeAccent }]}
-          onPress={() => setShowShare(true)}
+          onPress={() => {
+            setShowShare(true);
+            if (activeCard) triggerLiveActivityOnShare(activeCard, user, user?.username ?? '');
+          }}
         >
           <Text style={styles.shareBtnText}>SHARE</Text>
         </Pressable>

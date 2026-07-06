@@ -1,3 +1,4 @@
+import ActivityKit
 import AppIntents
 import WidgetKit
 
@@ -131,6 +132,21 @@ struct ShowAdjacentCardIntent: AppIntent {
         let nextIndex = (index + step + cards.count) % cards.count
         CardStore.setMediumOverrideCardId(cards[nextIndex].id)
         WidgetCenter.shared.reloadTimelines(ofKind: "CardWidget")
+        return .result()
+    }
+}
+
+// MARK: - Live Activity online/offline QR toggle
+
+struct ToggleQrModeIntent: AppIntent {
+    static var title: LocalizedStringResource = "Toggle QR Mode"
+
+    func perform() async throws -> some IntentResult {
+        if let activity = Activity<CardActivityAttributes>.activities.first {
+            var state = activity.content.state
+            state.mode = state.mode == "offline" ? "online" : "offline"
+            await activity.update(ActivityContent(state: state, staleDate: nil))
+        }
         return .result()
     }
 }

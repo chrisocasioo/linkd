@@ -2,6 +2,10 @@ import ActivityKit
 import SwiftUI
 import WidgetKit
 
+private func currentQrValue(for state: CardActivityAttributes.ContentState) -> String {
+    state.mode == "offline" ? state.offlineValue : state.onlineUrl
+}
+
 struct CardLiveActivity: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: CardActivityAttributes.self) { context in
@@ -39,7 +43,7 @@ struct CardLiveActivity: Widget {
 
     @ViewBuilder
     private func qrView(for state: CardActivityAttributes.ContentState, size: CGFloat) -> some View {
-        if let qr = qrImage(from: state.publicUrl) {
+        if let qr = qrImage(from: currentQrValue(for: state)) {
             Image(uiImage: qr)
                 .interpolation(.none)
                 .resizable()
@@ -56,7 +60,7 @@ private struct LockScreenView: View {
     // one of our own would just duplicate/compete with the real one.
     var body: some View {
         HStack(spacing: 14) {
-            if let qr = qrImage(from: state.publicUrl) {
+            if let qr = qrImage(from: currentQrValue(for: state)) {
                 Image(uiImage: qr)
                     .interpolation(.none)
                     .resizable()
@@ -82,6 +86,16 @@ private struct LockScreenView: View {
                 }
             }
             Spacer()
+            Button(intent: ToggleQrModeIntent()) {
+                VStack(spacing: 3) {
+                    Image(systemName: state.mode == "offline" ? "wifi.slash" : "wifi")
+                        .font(.footnote.weight(.semibold))
+                    Text(state.mode == "offline" ? "Offline" : "Online")
+                        .font(.system(size: 9, weight: .medium))
+                }
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(.secondary)
         }
         .padding()
         .activityBackgroundTint(Color.black)

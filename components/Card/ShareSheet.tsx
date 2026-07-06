@@ -18,7 +18,6 @@ import {
 import QRCode from 'react-native-qrcode-svg';
 import WalletManager from 'react-native-wallet-manager';
 import { Card, User } from '../../lib/api';
-import { triggerLiveActivityOnShare } from '../../lib/liveActivity';
 import { buildVcard, contactFromCard } from '../../lib/vcard';
 import { COLORS, FONTS } from '../../constants/colors';
 import { PASS_TYPE_ID, SHARE_BASE, publicCardUrl } from '../../constants/config';
@@ -100,7 +99,6 @@ export function ShareSheet({ visible, username, user, card, onClose }: Props) {
 
   const handleShare = async () => {
     await Share.share({ message: url });
-    if (card) await triggerLiveActivityOnShare(card, username);
   };
 
   const handleShareContact = async () => {
@@ -115,7 +113,6 @@ export function ShareSheet({ visible, username, user, card, onClose }: Props) {
         UTI: 'public.vcard',
         dialogTitle: 'Share contact',
       });
-      await triggerLiveActivityOnShare(card, username);
     } catch (err: any) {
       Alert.alert('Share failed', err.message);
     }

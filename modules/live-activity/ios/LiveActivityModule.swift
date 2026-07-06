@@ -7,7 +7,8 @@ struct CardActivityPayload: Record {
     @Field var title: String = ""
     @Field var company: String = ""
     @Field var accentColor: String = "#C9973A"
-    @Field var publicUrl: String = ""
+    @Field var onlineUrl: String = ""
+    @Field var offlineValue: String = ""
 }
 
 public class LiveActivityModule: Module {
@@ -41,7 +42,9 @@ public class LiveActivityModule: Module {
                 title: payload.title,
                 company: payload.company,
                 accentColor: payload.accentColor,
-                publicUrl: payload.publicUrl
+                onlineUrl: payload.onlineUrl,
+                offlineValue: payload.offlineValue,
+                mode: "online"
             )
 
             do {

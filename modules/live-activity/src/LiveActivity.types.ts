@@ -4,7 +4,8 @@ export interface CardActivityPayload {
   title: string;
   company: string;
   accentColor: string;
-  publicUrl: string;
+  onlineUrl: string;
+  offlineValue: string;
 }
 
 export interface LiveActivityModuleInterface {

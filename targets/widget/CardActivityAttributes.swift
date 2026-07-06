@@ -10,7 +10,11 @@ struct CardActivityAttributes: ActivityAttributes {
         var title: String
         var company: String
         var accentColor: String
-        var publicUrl: String
+        var onlineUrl: String
+        var offlineValue: String
+        // "online" | "offline" — which QR value is currently displayed;
+        // flipped by the toggle button on the card itself.
+        var mode: String
     }
 
     var cardId: String
