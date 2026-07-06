@@ -516,6 +516,7 @@ export default function EditCardScreen() {
                     </View>
                   </Pressable>
                 )}
+                <Text style={styles.slugHint}>Format: username/card-name</Text>
 
                 <Text style={[styles.label, { marginTop: 20 }]}>Accent Color</Text>
                 <View style={styles.colorRow}>
@@ -1039,6 +1040,7 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: COLORS.border,
   },
   slugLockText: { fontSize: 9, fontFamily: FONTS.medium, color: COLORS.textTertiary },
+  slugHint: { fontSize: 11, fontFamily: FONTS.regular, color: COLORS.textTertiary, marginTop: 6 },
 
   colorRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   colorDot: {
