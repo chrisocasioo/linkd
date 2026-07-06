@@ -649,7 +649,7 @@ export default function EditCardScreen() {
                     />
                   </Pressable>
 
-                  {['#000000', ...ACCENT_COLORS].map((c) => (
+                  {ACCENT_COLORS.map((c) => (
                     <Pressable
                       key={c}
                       style={[styles.colorDot, { backgroundColor: c }, qrColor === c && styles.colorDotActive]}
