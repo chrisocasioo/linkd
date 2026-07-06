@@ -33,7 +33,8 @@ enum CardStore {
                 slug: dict["slug"] as? String ?? "",
                 title: dict["title"] as? String ?? "",
                 company: dict["company"] as? String ?? "",
-                publicUrl: publicUrl
+                publicUrl: publicUrl,
+                offlineValue: dict["offlineValue"] as? String ?? publicUrl
             )
         }
     }
@@ -56,6 +57,17 @@ enum CardStore {
     static func setMediumOverrideCardId(_ id: String) {
         UserDefaults(suiteName: appGroup)?.set(id, forKey: "mediumWidgetCardId")
     }
+
+    /// The "card" widget's online/offline QR toggle — a display preference,
+    /// not tied to any one card, so it doesn't reset when paging or when
+    /// Edit Widget picks a different card.
+    static func mediumQrMode() -> String {
+        UserDefaults(suiteName: appGroup)?.string(forKey: "mediumWidgetQrMode") ?? "online"
+    }
+
+    static func setMediumQrMode(_ mode: String) {
+        UserDefaults(suiteName: appGroup)?.set(mode, forKey: "mediumWidgetQrMode")
+    }
 }
 
 // MARK: - AppEntity (one Linkd card, listed in the "Edit Widget" picker)
@@ -69,6 +81,7 @@ struct CardEntity: AppEntity {
     var title: String
     var company: String
     var publicUrl: String
+    var offlineValue: String
 
     static var typeDisplayRepresentation: TypeDisplayRepresentation = "Linkd Card"
     static var defaultQuery = CardEntityQuery()
@@ -131,6 +144,19 @@ struct ShowAdjacentCardIntent: AppIntent {
         let step = forward ? 1 : -1
         let nextIndex = (index + step + cards.count) % cards.count
         CardStore.setMediumOverrideCardId(cards[nextIndex].id)
+        WidgetCenter.shared.reloadTimelines(ofKind: "CardWidget")
+        return .result()
+    }
+}
+
+// MARK: - Widget online/offline QR toggle (the "card" / systemMedium layout)
+
+struct ToggleWidgetQrModeIntent: AppIntent {
+    static var title: LocalizedStringResource = "Toggle Widget QR Mode"
+
+    func perform() async throws -> some IntentResult {
+        let next = CardStore.mediumQrMode() == "offline" ? "online" : "offline"
+        CardStore.setMediumQrMode(next)
         WidgetCenter.shared.reloadTimelines(ofKind: "CardWidget")
         return .result()
     }

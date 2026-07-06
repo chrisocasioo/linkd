@@ -245,7 +245,7 @@ export default function EditCardScreen() {
       await Promise.all(ops);
 
       if (user?.username) {
-        api.getMyCards().then((cs) => syncWidgetData(cs, user.username!)).catch(() => {});
+        api.getMyCards().then((cs) => syncWidgetData(cs, user, user.username!)).catch(() => {});
       }
 
       savedRef.current = true;
@@ -310,7 +310,7 @@ export default function EditCardScreen() {
           try {
             await api.deleteCard(cardId);
             if (user?.username) {
-              api.getMyCards().then((cs) => syncWidgetData(cs, user.username!)).catch(() => {});
+              api.getMyCards().then((cs) => syncWidgetData(cs, user, user.username!)).catch(() => {});
             }
             router.back();
           } catch (err: any) {

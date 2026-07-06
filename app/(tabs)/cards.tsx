@@ -71,7 +71,7 @@ export default function CardScreen() {
       setCardAnalytics(analytics.cardBreakdown ?? []);
       setOffline(false);
       saveHomeCache({ user: u, cards: cs, cardAnalytics: analytics.cardBreakdown ?? [] });
-      if (u.username) syncWidgetData(cs, u.username);
+      if (u.username) syncWidgetData(cs, u, u.username);
     } catch {
       setOffline(true); // cached data (if any) stays on screen
     }

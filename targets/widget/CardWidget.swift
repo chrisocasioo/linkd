@@ -133,9 +133,11 @@ struct CardWidgetEntryView: View {
             }
 
         case .systemMedium:
+            let mode = CardStore.mediumQrMode()
+            let mediumQr = qrImage(from: mode == "offline" ? card.offlineValue : card.publicUrl)
             HStack(spacing: 12) {
-                if let qr {
-                    Image(uiImage: qr)
+                if let mediumQr {
+                    Image(uiImage: mediumQr)
                         .interpolation(.none)
                         .resizable()
                         .frame(width: 90, height: 90)
@@ -160,8 +162,13 @@ struct CardWidgetEntryView: View {
                     }
                 }
                 Spacer(minLength: 4)
-                VStack {
+                VStack(spacing: 8) {
                     Spacer()
+                    Button(intent: ToggleWidgetQrModeIntent()) {
+                        Image(systemName: mode == "offline" ? "wifi.slash" : "wifi")
+                            .font(.footnote.weight(.semibold))
+                    }
+                    .buttonStyle(.plain)
                     HStack(spacing: 14) {
                         Button(intent: ShowAdjacentCardIntent(currentCardId: card.id, forward: false)) {
                             Image(systemName: "chevron.left")
@@ -174,8 +181,8 @@ struct CardWidgetEntryView: View {
                         }
                         .buttonStyle(.plain)
                     }
-                    .foregroundStyle(.secondary)
                 }
+                .foregroundStyle(.secondary)
             }
             .padding(12)
             .containerBackground(for: .widget) { Color.black }
