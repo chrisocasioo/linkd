@@ -147,12 +147,15 @@ export function useApi() {
 
   const withToken = useCallback(
     async <T>(fn: (token: string) => Promise<T>): Promise<T> => {
-      // Clerk's cached session can be stale after the app sits in the background;
-      // a null/expired token here surfaced as "unauthenticated" errors in the UI.
+      // Right after the app resumes from the background/lock screen, Clerk
+      // can take a moment to rehydrate its session — getToken() (even with
+      // skipCache) transiently returns null in that window, not just a stale
+      // cached value. A single retry doesn't ride that out, so back off and
+      // retry a few times before surfacing "not authenticated" to the user.
       let token: string | null = null;
-      try { token = await getToken(); } catch {}
-      if (!token) {
-        try { token = await getToken({ skipCache: true }); } catch {}
+      for (let attempt = 0; attempt < 4 && !token; attempt++) {
+        if (attempt > 0) await new Promise((r) => setTimeout(r, attempt * 350));
+        try { token = await getToken({ skipCache: attempt > 0 }); } catch {}
       }
       if (!token) throw new Error('Not authenticated — check your connection and try again');
       try {
