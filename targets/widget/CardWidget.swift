@@ -57,7 +57,11 @@ struct CardProvider: AppIntentTimelineProvider {
 // MARK: - QR + color helpers
 
 func qrImage(from string: String) -> UIImage? {
-    let context = CIContext()
+    // Software renderer — a GPU-backed CIContext can fail to produce output
+    // when this runs on the Lock Screen while the device is actually locked
+    // (the Live Activity's rendering context), unlike Home Screen widgets
+    // which never render in that state.
+    let context = CIContext(options: [.useSoftwareRenderer: true])
     let filter = CIFilter.qrCodeGenerator()
     filter.message = Data(string.utf8)
     filter.correctionLevel = "M"
