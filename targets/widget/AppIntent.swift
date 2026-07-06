@@ -107,12 +107,29 @@ struct CardEntityQuery: EntityQuery {
 
 // MARK: - Widget configuration intent
 
+/// Only meaningful for the Small/Large (pure-QR) families, which have no
+/// room for the medium widget's own runtime toggle button — this is set
+/// once via long-press ▸ Edit Widget instead, per widget instance.
+enum QrModeOption: String, AppEnum {
+    case online
+    case offline
+
+    static var typeDisplayRepresentation: TypeDisplayRepresentation = "QR Code"
+    static var caseDisplayRepresentations: [QrModeOption: DisplayRepresentation] = [
+        .online: "Online (Link)",
+        .offline: "Offline (Contact Card)",
+    ]
+}
+
 struct SelectCardIntent: WidgetConfigurationIntent {
     static var title: LocalizedStringResource = "Select Card"
     static var description = IntentDescription("Choose which Linkd card this widget shows.")
 
     @Parameter(title: "Card")
     var card: CardEntity?
+
+    @Parameter(title: "QR Code", default: .online)
+    var qrMode: QrModeOption
 }
 
 // MARK: - On-widget card paging (the "card" / systemMedium layout's arrows)

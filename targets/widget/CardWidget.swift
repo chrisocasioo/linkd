@@ -8,6 +8,7 @@ import WidgetKit
 struct CardEntry: TimelineEntry {
     let date: Date
     let card: CardEntity?
+    let qrMode: QrModeOption
 }
 
 struct CardProvider: AppIntentTimelineProvider {
@@ -34,15 +35,19 @@ struct CardProvider: AppIntentTimelineProvider {
     }
 
     func placeholder(in context: Context) -> CardEntry {
-        CardEntry(date: Date(), card: CardStore.loadAll().first)
+        CardEntry(date: Date(), card: CardStore.loadAll().first, qrMode: .online)
     }
 
     func snapshot(for configuration: SelectCardIntent, in context: Context) async -> CardEntry {
-        CardEntry(date: Date(), card: resolve(configuration, family: context.family))
+        CardEntry(date: Date(), card: resolve(configuration, family: context.family), qrMode: configuration.qrMode)
     }
 
     func timeline(for configuration: SelectCardIntent, in context: Context) async -> Timeline<CardEntry> {
-        let entry = CardEntry(date: Date(), card: resolve(configuration, family: context.family))
+        let entry = CardEntry(
+            date: Date(),
+            card: resolve(configuration, family: context.family),
+            qrMode: configuration.qrMode
+        )
         // The RN app calls ExtensionStorage.reloadWidget() whenever card data
         // changes, so the timeline doesn't need to re-poll on a schedule.
         return Timeline(entries: [entry], policy: .never)
@@ -84,7 +89,7 @@ struct CardWidgetEntryView: View {
 
     var body: some View {
         if let card = entry.card {
-            content(for: card)
+            content(for: card, qrMode: entry.qrMode)
         } else {
             emptyState
         }
@@ -104,7 +109,7 @@ struct CardWidgetEntryView: View {
     }
 
     @ViewBuilder
-    private func content(for card: CardEntity) -> some View {
+    private func content(for card: CardEntity, qrMode: QrModeOption) -> some View {
         let accent = Color(hex: card.accentColor)
         let qr = qrImage(from: card.publicUrl)
 
@@ -188,9 +193,10 @@ struct CardWidgetEntryView: View {
             .containerBackground(for: .widget) { Color.black }
 
         default: // .systemSmall, .systemLarge — pure QR code, no text
+            let plainQr = qrImage(from: qrMode == .offline ? card.offlineValue : card.publicUrl)
             VStack {
-                if let qr {
-                    Image(uiImage: qr)
+                if let plainQr {
+                    Image(uiImage: plainQr)
                         .interpolation(.none)
                         .resizable()
                         .aspectRatio(1, contentMode: .fit)
