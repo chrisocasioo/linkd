@@ -185,6 +185,7 @@ function hasEnoughInfo(r: Partial<ScanResult>): boolean {
 
 const BRACKET = 28;
 const BRACKET_THICKNESS = 3;
+const QR_BRACKET_PADDING = 16;
 
 export default function ScansScreen() {
   const api = useApi();
@@ -206,32 +207,42 @@ export default function ScansScreen() {
   const [showHistory, setShowHistory] = useState(false);
   const [scannedQrValue, setScannedQrValue] = useState<string | null>(null);
   const [showQrResult, setShowQrResult] = useState(false);
+  const [qrFrame, setQrFrame] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
   const qrCooldownRef = useRef(false);
 
   const handleQrScanned = (value: string) => {
     if (qrCooldownRef.current) return;
     qrCooldownRef.current = true;
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    setScannedQrValue(value);
-    setShowQrResult(true);
-    const format = inferQrFormat(value);
-    const wifi = format === 'wifi' ? parseWifiQr(value) : null;
-    const label = wifi ? `Wi-Fi: ${wifi.ssid}` : value.slice(0, 80);
-    api.addScanHistory({ type: 'qr', label, qrData: value, qrFormat: format }).catch(() => {});
+    // Brief pause so the brackets are visibly snapped onto the code before
+    // the result sheet takes over — mirrors the business-card detect delay.
+    setTimeout(() => {
+      setScannedQrValue(value);
+      setShowQrResult(true);
+      const format = inferQrFormat(value);
+      const wifi = format === 'wifi' ? parseWifiQr(value) : null;
+      const label = wifi ? `Wi-Fi: ${wifi.ssid}` : value.slice(0, 80);
+      api.addScanHistory({ type: 'qr', label, qrData: value, qrFormat: format }).catch(() => {});
+    }, 350);
   };
 
   const handleCloseQrResult = () => {
     setShowQrResult(false);
     setScannedQrValue(null);
     qrCooldownRef.current = false;
+    setQrFrame(null);
   };
 
   const codeScanner = useCodeScanner({
     codeTypes: ['qr'],
     onCodeScanned: (codes) => {
       if (showReview || showQrResult || showQrGenerator || showHistory) return;
-      const value = codes[0]?.value;
-      if (value) handleQrScanned(value);
+      const code = codes[0];
+      if (!code?.value) { setQrFrame(null); return; }
+      // Frame is already relative to the Camera Preview (in dp), so it can
+      // be used to position the brackets directly — no coordinate math needed.
+      setQrFrame(code.frame ?? null);
+      handleQrScanned(code.value);
     },
   });
 
@@ -357,7 +368,8 @@ export default function ScansScreen() {
 
   if (!device) return <View style={styles.safe} />;
 
-  const bracketColor = detected ? '#22C55E' : COLORS.accent;
+  const qrDetected = !!qrFrame;
+  const bracketColor = (detected || qrDetected) ? '#22C55E' : COLORS.accent;
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -382,15 +394,29 @@ export default function ScansScreen() {
           </Pressable>
         </View>
 
-        {/* Viewfinder */}
+        {/* Viewfinder — snaps onto a detected QR code's actual bounds; falls
+            back to a fixed centered guide for framing a business card */}
         <View style={styles.viewfinderWrap} pointerEvents="none">
-          <Animated.View style={[styles.viewfinder, { transform: [{ scale: pulseAnim }] }]}>
+          <Animated.View
+            style={[
+              qrFrame
+                ? {
+                    position: 'absolute',
+                    left: qrFrame.x - QR_BRACKET_PADDING,
+                    top: qrFrame.y - QR_BRACKET_PADDING,
+                    width: qrFrame.width + QR_BRACKET_PADDING * 2,
+                    height: qrFrame.height + QR_BRACKET_PADDING * 2,
+                  }
+                : styles.viewfinder,
+              { transform: [{ scale: pulseAnim }] },
+            ]}
+          >
             <View style={[styles.corner, styles.cornerTL, { borderColor: bracketColor }]} />
             <View style={[styles.corner, styles.cornerTR, { borderColor: bracketColor }]} />
             <View style={[styles.corner, styles.cornerBL, { borderColor: bracketColor }]} />
             <View style={[styles.corner, styles.cornerBR, { borderColor: bracketColor }]} />
-            <Text style={[styles.hint, { color: detected ? '#22C55E' : 'rgba(255,255,255,0.65)' }]}>
-              {detected ? 'Card detected!' : 'Hold card steady in frame'}
+            <Text style={[styles.hint, { color: (detected || qrDetected) ? '#22C55E' : 'rgba(255,255,255,0.65)' }]}>
+              {qrDetected ? 'QR code detected!' : detected ? 'Card detected!' : 'Hold a card steady, or scan a QR code'}
             </Text>
           </Animated.View>
         </View>
