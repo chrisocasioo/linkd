@@ -4,7 +4,6 @@ import { useFocusEffect } from 'expo-router';
 import * as Sharing from 'expo-sharing';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
-  ActionSheetIOS,
   ActivityIndicator,
   Alert,
   FlatList,
@@ -19,6 +18,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { PaywallSheet } from '../../components/Card/PaywallSheet';
 import { ContactDetailSheet } from '../../components/Contacts/ContactDetailSheet';
 import { ContactReviewSheet } from '../../components/Contacts/ContactReviewSheet';
+import { SelectorSheet } from '../../components/SelectorSheet';
 import { useApi, Contact } from '../../lib/api';
 import { loadContactsCache, saveContactsCache } from '../../lib/cache';
 import {
@@ -86,6 +86,8 @@ export default function ContactsScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filter, setFilter] = useState<FilterKey>('all');
   const [sortKey, setSortKey] = useState<SortKey>('date');
+  const [showFilterSheet, setShowFilterSheet] = useState(false);
+  const [showSortSheet, setShowSortSheet] = useState(false);
 
   const visibleContacts = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -108,14 +110,6 @@ export default function ContactsScreen() {
     });
   }, [contacts, searchQuery, filter, sortKey]);
 
-  const handleSortPress = () => {
-    ActionSheetIOS.showActionSheetWithOptions(
-      { options: [...SORT_OPTIONS.map((o) => o.label), 'Cancel'], cancelButtonIndex: SORT_OPTIONS.length },
-      (index) => {
-        if (index < SORT_OPTIONS.length) setSortKey(SORT_OPTIONS[index].key);
-      }
-    );
-  };
 
   const fetchFresh = useCallback(async () => {
     try {
@@ -255,22 +249,19 @@ export default function ContactsScreen() {
                   />
                 </View>
                 <View style={styles.filterRow}>
-                  <View style={styles.filterChips}>
-                    {FILTERS.map((f) => (
-                      <Pressable
-                        key={f.key}
-                        style={[styles.chip, filter === f.key && styles.chipActive]}
-                        onPress={() => setFilter(f.key)}
-                      >
-                        <Text style={[styles.chipText, filter === f.key && styles.chipTextActive]}>{f.label}</Text>
-                      </Pressable>
-                    ))}
-                  </View>
-                  <Pressable style={styles.sortBtn} onPress={handleSortPress}>
+                  <Pressable style={styles.selectorBtn} onPress={() => setShowFilterSheet(true)}>
+                    <Ionicons name="filter-outline" size={13} color={COLORS.textSecondary} />
+                    <Text style={styles.selectorBtnText} numberOfLines={1}>
+                      {FILTERS.find((f) => f.key === filter)?.label}
+                    </Text>
+                    <Ionicons name="chevron-down" size={12} color={COLORS.textSecondary} />
+                  </Pressable>
+                  <Pressable style={styles.selectorBtn} onPress={() => setShowSortSheet(true)}>
                     <Ionicons name="swap-vertical" size={13} color={COLORS.textSecondary} />
-                    <Text style={styles.sortBtnText}>
+                    <Text style={styles.selectorBtnText} numberOfLines={1}>
                       {SORT_OPTIONS.find((o) => o.key === sortKey)?.shortLabel}
                     </Text>
+                    <Ionicons name="chevron-down" size={12} color={COLORS.textSecondary} />
                   </Pressable>
                 </View>
               </View>
@@ -338,6 +329,24 @@ export default function ContactsScreen() {
       />
 
       <PaywallSheet visible={showPaywall} onClose={() => setShowPaywall(false)} />
+
+      <SelectorSheet
+        visible={showFilterSheet}
+        title="Filter Contacts"
+        options={FILTERS}
+        selectedKey={filter}
+        onSelect={setFilter}
+        onClose={() => setShowFilterSheet(false)}
+      />
+
+      <SelectorSheet
+        visible={showSortSheet}
+        title="Sort Contacts"
+        options={SORT_OPTIONS}
+        selectedKey={sortKey}
+        onSelect={setSortKey}
+        onClose={() => setShowSortSheet(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -367,20 +376,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12, height: 40,
   },
   searchInput: { flex: 1, fontSize: 14, fontFamily: FONTS.regular, color: COLORS.text, padding: 0 },
-  filterRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
-  filterChips: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  chip: {
-    paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20,
-    backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border,
+  filterRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  selectorBtn: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6,
+    backgroundColor: COLORS.surface, borderRadius: 12, borderWidth: 1, borderColor: COLORS.border,
+    paddingHorizontal: 12, height: 38,
   },
-  chipActive: { backgroundColor: COLORS.accentDim, borderColor: COLORS.accent },
-  chipText: { fontSize: 12, fontFamily: FONTS.medium, color: COLORS.textSecondary },
-  chipTextActive: { color: COLORS.accent, fontFamily: FONTS.semiBold },
-  sortBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 4,
-    paddingHorizontal: 10, paddingVertical: 6,
-  },
-  sortBtnText: { fontSize: 12, fontFamily: FONTS.medium, color: COLORS.textSecondary },
+  selectorBtnText: { flex: 1, fontSize: 13, fontFamily: FONTS.medium, color: COLORS.text },
   separator: { height: 1, backgroundColor: COLORS.border, marginLeft: 70 },
   row: {
     flexDirection: 'row', alignItems: 'center', gap: 14,
