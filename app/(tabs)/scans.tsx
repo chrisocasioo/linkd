@@ -372,6 +372,16 @@ export default function ScansScreen() {
           codeScanner={codeScanner}
         />
 
+        {/* Top controls — QR generator/browser (left), scan history (right) */}
+        <View style={styles.topControls}>
+          <Pressable style={styles.secondaryBtn} onPress={() => setShowQrGenerator(true)}>
+            <Ionicons name="qr-code-outline" size={20} color="#fff" />
+          </Pressable>
+          <Pressable style={styles.secondaryBtn} onPress={() => setShowHistory(true)}>
+            <Ionicons name="time-outline" size={20} color="#fff" />
+          </Pressable>
+        </View>
+
         {/* Viewfinder */}
         <View style={styles.viewfinderWrap} pointerEvents="none">
           <Animated.View style={[styles.viewfinder, { transform: [{ scale: pulseAnim }] }]}>
@@ -393,10 +403,6 @@ export default function ScansScreen() {
 
         {/* Controls — float over the camera preview */}
         <View style={styles.controls}>
-          <Pressable style={styles.secondaryBtn} onPress={() => setShowQrGenerator(true)}>
-            <Ionicons name="qr-code-outline" size={20} color="#fff" />
-          </Pressable>
-
           <Pressable style={styles.secondaryBtn} onPress={pickFromLibrary}>
             <Ionicons name="images-outline" size={22} color="#fff" />
           </Pressable>
@@ -415,10 +421,6 @@ export default function ScansScreen() {
               size={22}
               color={flash === 'on' ? COLORS.accent : '#fff'}
             />
-          </Pressable>
-
-          <Pressable style={styles.secondaryBtn} onPress={() => setShowHistory(true)}>
-            <Ionicons name="time-outline" size={20} color="#fff" />
           </Pressable>
         </View>
       </View>
@@ -483,8 +485,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 24,
+    paddingHorizontal: 48,
     paddingVertical: 20,
+  },
+  topControls: {
+    position: 'absolute',
+    left: 0, right: 0, top: 0,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
   },
   secondaryBtn: {
     width: 48, height: 48, borderRadius: 24,
