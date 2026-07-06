@@ -110,6 +110,7 @@ struct CardWidgetEntryView: View {
 
     @ViewBuilder
     private func content(for card: CardEntity, qrMode: QrModeOption) -> some View {
+        let accent = Color(hex: card.accentColor)
         let qr = qrImage(from: card.publicUrl)
 
         switch family {
@@ -145,6 +146,25 @@ struct CardWidgetEntryView: View {
                         .interpolation(.none)
                         .resizable()
                         .frame(width: 90, height: 90)
+                }
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(card.name)
+                        .font(.headline)
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+                    if !card.title.isEmpty {
+                        Text(card.title)
+                            .font(.subheadline)
+                            .foregroundStyle(accent)
+                            .lineLimit(1)
+                    }
+                    if !card.company.isEmpty {
+                        Text(card.company)
+                            .font(.subheadline)
+                            .italic()
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
                 }
                 Spacer(minLength: 4)
                 VStack(spacing: 8) {
