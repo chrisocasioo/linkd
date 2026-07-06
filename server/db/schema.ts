@@ -56,6 +56,10 @@ export const cards = pgTable('cards', {
   slug: text('slug'),
   displayOrder: integer('display_order').default(0),
   createdAt: timestamp('created_at').defaultNow(),
+  // QR branding — independent from the card's own accentColor/photo, so a
+  // card's colors and its QR code's colors/logo don't have to match.
+  qrColor: text('qr_color'),
+  qrLogo: text('qr_logo'),
 }, (table) => ({
   // Slugs read as /username/slug, so only need to be unique per user —
   // lets different users both have a "work" card

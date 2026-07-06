@@ -121,6 +121,9 @@ export interface Card {
   displayOrder: number;
   createdAt: string;
   fields: CardField[];
+  // QR branding — independent from the card's own accentColor/photo
+  qrColor: string | null;
+  qrLogo: string | null;
 }
 
 async function request<T>(path: string, token: string | null, options: RequestInit = {}): Promise<T> {
@@ -192,12 +195,20 @@ export function useApi() {
     getMyCards: () => withToken((t) => request<Card[]>('/api/cards', t)),
     addCard: (body: { name: string; accentColor: string }) =>
       withToken((t) => request<Card>('/api/cards', t, { method: 'POST', body: JSON.stringify(body) })),
-    updateCard: (id: string, body: Partial<{ name: string; accentColor: string; font: string; photo: string | null; slug: string }>) =>
+    updateCard: (id: string, body: Partial<{ name: string; accentColor: string; font: string; photo: string | null; slug: string; qrColor: string | null; qrLogo: string | null }>) =>
       withToken((t) => request<Card>(`/api/cards/${id}`, t, { method: 'PATCH', body: JSON.stringify(body) })),
     uploadCardPhoto: (cardId: string, uri: string) =>
       withToken(async (t) => {
         const base64 = await FileSystem.readAsStringAsync(uri, { encoding: 'base64' as any });
         return request<{ photoUrl: string }>(`/api/cards/${cardId}/photo`, t, {
+          method: 'POST',
+          body: JSON.stringify({ photo: base64, mimeType: 'image/jpeg' }),
+        });
+      }),
+    uploadCardQrLogo: (cardId: string, uri: string) =>
+      withToken(async (t) => {
+        const base64 = await FileSystem.readAsStringAsync(uri, { encoding: 'base64' as any });
+        return request<{ logoUrl: string }>(`/api/cards/${cardId}/qr-logo`, t, {
           method: 'POST',
           body: JSON.stringify({ photo: base64, mimeType: 'image/jpeg' }),
         });

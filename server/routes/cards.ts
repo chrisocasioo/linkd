@@ -101,18 +101,22 @@ router.patch('/:id', async (req, res) => {
   try {
     const userId = (req as any).userId as string;
     const { id } = req.params;
-    const { name, accentColor, font, photo, slug } = req.body as {
+    const { name, accentColor, font, photo, slug, qrColor, qrLogo } = req.body as {
       name?: string;
       accentColor?: string;
       font?: string;
       photo?: string | null;
       slug?: string;
+      qrColor?: string | null;
+      qrLogo?: string | null;
     };
     const update: Partial<typeof cards.$inferInsert> = {};
     if (name !== undefined) update.name = name;
     if (accentColor !== undefined) update.accentColor = accentColor;
     if (font !== undefined) update.font = font;
     if (photo !== undefined) update.photo = photo;
+    if (qrColor !== undefined) update.qrColor = qrColor;
+    if (qrLogo !== undefined) update.qrLogo = qrLogo;
     if (slug !== undefined) {
       const user = await db.query.users.findFirst({ where: eq(users.id, userId) });
       if (!user?.isPro) return res.status(403).json({ error: 'Custom card URLs are a Pro feature' });
@@ -164,6 +168,38 @@ router.post('/:id/photo', async (req, res) => {
     const photoUrl = `${base}/api/photos/card/${cardId}?v=${Date.now()}`;
     await db.update(cards).set({ photo: photoUrl }).where(eq(cards.id, cardId));
     res.json({ photoUrl });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post('/:id/qr-logo', async (req, res) => {
+  try {
+    const userId = (req as any).userId as string;
+    const { id: cardId } = req.params;
+    const card = await db.query.cards.findFirst({ where: and(eq(cards.id, cardId), eq(cards.userId, userId)) });
+    if (!card) return res.status(404).json({ error: 'Card not found' });
+
+    const { photo: base64, mimeType = 'image/jpeg' } = req.body as { photo?: string; mimeType?: string };
+    if (!base64) return res.status(400).json({ error: 'No photo provided' });
+
+    const buffer = Buffer.from(base64, 'base64');
+    const bucket = process.env.BUCKET_NAME ?? process.env.BUCKET ?? '';
+    await s3.send(
+      new PutObjectCommand({
+        Bucket: bucket,
+        Key: `cards/${cardId}-qr-logo.jpg`,
+        Body: buffer,
+        ContentType: mimeType,
+      })
+    );
+
+    const base = process.env.RAILWAY_PUBLIC_DOMAIN
+      ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
+      : (process.env.SERVER_URL ?? '');
+    const logoUrl = `${base}/api/photos/card/${cardId}/qr-logo?v=${Date.now()}`;
+    await db.update(cards).set({ qrLogo: logoUrl }).where(eq(cards.id, cardId));
+    res.json({ logoUrl });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }

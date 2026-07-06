@@ -198,5 +198,9 @@ export async function runMigrations() {
       created_at TIMESTAMP DEFAULT NOW()
     );
   `);
+  await db.execute(sql`
+    ALTER TABLE cards ADD COLUMN IF NOT EXISTS qr_color TEXT;
+    ALTER TABLE cards ADD COLUMN IF NOT EXISTS qr_logo TEXT;
+  `);
   console.log('✓ Database tables ready');
 }

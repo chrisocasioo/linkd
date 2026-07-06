@@ -200,6 +200,13 @@ export default function EditCardScreen() {
   const [showHexInput, setShowHexInput] = useState(false);
   const [hexDraft, setHexDraft] = useState('');
 
+  // QR branding — deliberately separate from the card's own accentColor/photo
+  const [qrColor, setQrColor] = useState('#000000');
+  const [qrLogoUri, setQrLogoUri] = useState<string | null>(null);
+  const [removeQrLogo, setRemoveQrLogo] = useState(false);
+  const [showQrHexInput, setShowQrHexInput] = useState(false);
+  const [qrHexDraft, setQrHexDraft] = useState('');
+
   const [showFieldSheet, setShowFieldSheet] = useState(false);
   const [fieldSheetCtx, setFieldSheetCtx] = useState<{ field: CardField | null; initialType?: string } | null>(null);
 
@@ -214,6 +221,7 @@ export default function EditCardScreen() {
         setCardName(found.name);
         setAccent(found.accentColor);
         setCardFont(found.font ?? 'dm-sans');
+        setQrColor(found.qrColor ?? '#000000');
         setSlug(found.slug ?? '');
         const nameParts = (u.displayName ?? '').split(' ');
         setFirstName(nameParts[0] ?? '');
@@ -249,6 +257,29 @@ export default function EditCardScreen() {
     }
   };
 
+  const handlePickQrLogo = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission required', 'Allow photo library access to set a QR logo.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'] as any,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.85,
+    });
+    if (!result.canceled && result.assets[0]) {
+      setQrLogoUri(result.assets[0].uri);
+      setRemoveQrLogo(false);
+    }
+  };
+
+  const handleRemoveQrLogo = () => {
+    setQrLogoUri(null);
+    setRemoveQrLogo(true);
+  };
+
   const handleSave = async () => {
     // Empty slug means "keep the current URL"
     const newSlug = slug.trim();
@@ -273,7 +304,9 @@ export default function EditCardScreen() {
           name: cardName.trim() || 'Card',
           accentColor: accent,
           font: cardFont,
+          qrColor,
           ...(slugChanged ? { slug: newSlug } : {}),
+          ...(removeQrLogo ? { qrLogo: null } : {}),
         }),
         ...infoFieldDefs.map(async ({ type, value }) => {
           const existing = card!.fields.find((f) => f.type === type);
@@ -283,6 +316,7 @@ export default function EditCardScreen() {
         }),
       ];
       if (photoUri) ops.push(api.uploadCardPhoto(cardId, photoUri));
+      if (qrLogoUri) ops.push(api.uploadCardQrLogo(cardId, qrLogoUri));
       if (displayName) ops.push(api.updateMe({ displayName }));
       await Promise.all(ops);
 
@@ -385,6 +419,7 @@ export default function EditCardScreen() {
     .map((cat) => ({ ...cat, items: cat.items.filter((p) => !existingTypes.has(p.type) || p.type === 'custom') }))
     .filter((cat) => cat.items.length > 0);
   const photoSource = photoUri ?? card.photo ?? null;
+  const qrLogoSource = qrLogoUri ?? (removeQrLogo ? null : card.qrLogo ?? null);
   const initial = ((user.displayName ?? user.username ?? '?')[0]).toUpperCase();
 
   return (
@@ -555,6 +590,104 @@ export default function EditCardScreen() {
                     ))}
                   </View>
                 ))}
+              </View>
+
+              <Text style={styles.sectionHeader}>QR CODE</Text>
+              <View style={styles.card}>
+                <Text style={styles.label}>Logo</Text>
+                <View style={styles.qrLogoRow}>
+                  <Pressable onPress={handlePickQrLogo} style={styles.qrLogoWrap}>
+                    {qrLogoSource ? (
+                      <Image source={{ uri: qrLogoSource }} style={styles.qrLogoImg} />
+                    ) : (
+                      <View style={styles.qrLogoPlaceholder}>
+                        <Ionicons name="image-outline" size={20} color={COLORS.textTertiary} />
+                      </View>
+                    )}
+                  </Pressable>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.qrLogoHint}>
+                      Shown in the center of this card's QR code — independent from the card's own photo.
+                    </Text>
+                    <View style={styles.qrLogoActions}>
+                      <Pressable onPress={handlePickQrLogo}>
+                        <Text style={[styles.qrLogoActionText, { color: accent }]}>
+                          {qrLogoSource ? 'Change' : 'Add Logo'}
+                        </Text>
+                      </Pressable>
+                      {qrLogoSource && (
+                        <Pressable onPress={handleRemoveQrLogo}>
+                          <Text style={styles.qrLogoActionTextRemove}>Remove</Text>
+                        </Pressable>
+                      )}
+                    </View>
+                  </View>
+                </View>
+
+                <Text style={[styles.label, { marginTop: 20 }]}>QR Color</Text>
+                <View style={styles.colorRow}>
+                  <Pressable
+                    style={[
+                      styles.colorDot, styles.colorPickerDot,
+                      !ACCENT_COLORS.includes(qrColor) && qrColor !== '#000000' && styles.colorDotActive,
+                      !ACCENT_COLORS.includes(qrColor) && qrColor !== '#000000' && { borderColor: qrColor },
+                    ]}
+                    onPress={() => {
+                      setQrHexDraft(qrColor);
+                      setShowQrHexInput((v) => !v);
+                    }}
+                  >
+                    <Ionicons
+                      name="color-palette-outline"
+                      size={16}
+                      color={!ACCENT_COLORS.includes(qrColor) && qrColor !== '#000000' ? qrColor : 'rgba(255,255,255,0.6)'}
+                    />
+                  </Pressable>
+
+                  {['#000000', ...ACCENT_COLORS].map((c) => (
+                    <Pressable
+                      key={c}
+                      style={[styles.colorDot, { backgroundColor: c }, qrColor === c && styles.colorDotActive]}
+                      onPress={() => { setQrColor(c); setShowQrHexInput(false); }}
+                    >
+                      {qrColor === c && <Ionicons name="checkmark" size={14} color="#fff" />}
+                    </Pressable>
+                  ))}
+                </View>
+
+                {showQrHexInput && (
+                  <>
+                    <View style={styles.wheelWrap}>
+                      <ColorPicker
+                        color={qrColor}
+                        onColorChangeComplete={(c: string) => {
+                          setQrColor(c);
+                          setQrHexDraft(c);
+                        }}
+                        thumbSize={26}
+                        sliderSize={26}
+                        gapSize={20}
+                        swatches={false}
+                      />
+                    </View>
+                    <View style={styles.hexRow}>
+                      <View style={[styles.hexPreview, { backgroundColor: /^#[0-9A-Fa-f]{6}$/.test(qrHexDraft) ? qrHexDraft : COLORS.border }]} />
+                      <TextInput
+                        style={styles.hexInput}
+                        value={qrHexDraft}
+                        onChangeText={(v) => {
+                          const clean = v.startsWith('#') ? v : '#' + v;
+                          setQrHexDraft(clean);
+                          if (/^#[0-9A-Fa-f]{6}$/.test(clean)) setQrColor(clean);
+                        }}
+                        placeholder="#000000"
+                        placeholderTextColor={COLORS.textTertiary}
+                        autoCapitalize="characters"
+                        maxLength={7}
+                      />
+                    </View>
+                  </>
+                )}
               </View>
             </>
           )}
@@ -785,6 +918,21 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
     borderWidth: 2, borderColor: COLORS.bg,
   },
+
+  qrLogoRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  qrLogoWrap: {
+    width: 56, height: 56, borderRadius: 14, overflow: 'hidden',
+  },
+  qrLogoImg: { width: 56, height: 56, borderRadius: 14 },
+  qrLogoPlaceholder: {
+    width: 56, height: 56, borderRadius: 14,
+    backgroundColor: COLORS.surface2, borderWidth: 1, borderColor: COLORS.border,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  qrLogoHint: { fontSize: 12, fontFamily: FONTS.regular, color: COLORS.textSecondary, lineHeight: 16 },
+  qrLogoActions: { flexDirection: 'row', gap: 16, marginTop: 8 },
+  qrLogoActionText: { fontSize: 13, fontFamily: FONTS.semiBold },
+  qrLogoActionTextRemove: { fontSize: 13, fontFamily: FONTS.semiBold, color: '#EF4444' },
 
   card: {
     marginHorizontal: 16, marginBottom: 4,
