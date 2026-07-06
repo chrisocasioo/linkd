@@ -493,7 +493,7 @@ const styles = StyleSheet.create({
     left: 0, right: 0, top: 0,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
+    paddingHorizontal: 48,
     paddingVertical: 16,
   },
   secondaryBtn: {
