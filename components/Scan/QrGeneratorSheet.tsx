@@ -47,6 +47,7 @@ export function QrGeneratorSheet({ visible, onClose }: Props) {
   const [security, setSecurity] = useState<Security>('WPA');
 
   const [generated, setGenerated] = useState<{ data: string; label: string } | null>(null);
+  const [customName, setCustomName] = useState('');
   const [saving, setSaving] = useState(false);
   const [qrColor, setQrColor] = useState('#000000');
   const [qrBgColor, setQrBgColor] = useState('#FFFFFF');
@@ -65,6 +66,7 @@ export function QrGeneratorSheet({ visible, onClose }: Props) {
     } else {
       Animated.timing(slideY, { toValue: SCREEN_H, duration: 220, useNativeDriver: true }).start();
       setGenerated(null);
+      setCustomName('');
       setUrl(''); setSsid(''); setPassword(''); setSecurity('WPA');
       setQrColor('#000000'); setQrBgColor('#FFFFFF'); setShowColorHex(null);
       setLogoUri(null);
@@ -107,7 +109,8 @@ export function QrGeneratorSheet({ visible, onClose }: Props) {
     if (!generated) return;
     setSaving(true);
     try {
-      const created = await api.addQr({ type: mode, label: generated.label, data: generated.data, color: qrColor, bgColor: qrBgColor });
+      const label = customName.trim() || generated.label;
+      const created = await api.addQr({ type: mode, label, data: generated.data, color: qrColor, bgColor: qrBgColor });
       let saved = created;
       if (logoUri) {
         try {
@@ -119,6 +122,7 @@ export function QrGeneratorSheet({ visible, onClose }: Props) {
       }
       setSavedQrs((qs) => [saved, ...qs]);
       setGenerated(null);
+      setCustomName('');
       setUrl(''); setSsid(''); setPassword('');
       setQrColor('#000000'); setQrBgColor('#FFFFFF'); setShowColorHex(null);
       setLogoUri(null);
@@ -160,7 +164,7 @@ export function QrGeneratorSheet({ visible, onClose }: Props) {
                 <Pressable
                   key={m}
                   style={[styles.modeItem, mode === m && styles.modeItemActive]}
-                  onPress={() => { setMode(m); setGenerated(null); }}
+                  onPress={() => { setMode(m); setGenerated(null); setCustomName(''); }}
                 >
                   <Text style={[styles.modeText, mode === m && styles.modeTextActive]}>
                     {m === 'url' ? 'URL' : 'Wi-Fi'}
@@ -244,6 +248,14 @@ export function QrGeneratorSheet({ visible, onClose }: Props) {
                   />
                 </View>
                 <Text style={styles.previewLabel} numberOfLines={1}>{generated.label}</Text>
+
+                <TextInput
+                  style={styles.nameInput}
+                  value={customName}
+                  onChangeText={setCustomName}
+                  placeholder="Name (optional)"
+                  placeholderTextColor={COLORS.textTertiary}
+                />
 
                 <View style={styles.logoRow}>
                   <Pressable onPress={handlePickLogo} style={styles.logoWrap}>
@@ -344,8 +356,18 @@ export function QrGeneratorSheet({ visible, onClose }: Props) {
             ) : (
               savedQrs.map((q) => (
                 <View key={q.id} style={styles.savedRow}>
-                  <View style={styles.savedIcon}>
-                    <Ionicons name={q.type === 'wifi' ? 'wifi' : 'link'} size={15} color={COLORS.accent} />
+                  <View style={[styles.savedQrThumb, { backgroundColor: q.bgColor ?? '#fff' }]}>
+                    <QRCode
+                      value={q.data}
+                      size={30}
+                      backgroundColor={q.bgColor ?? '#fff'}
+                      color={q.color ?? '#000'}
+                      ecl={q.logo ? 'H' : 'M'}
+                      logo={q.logo ? { uri: q.logo } : undefined}
+                      logoSize={q.logo ? 9 : undefined}
+                      logoBackgroundColor={q.bgColor ?? '#fff'}
+                      logoBorderRadius={2}
+                    />
                   </View>
                   <Text style={styles.savedLabel} numberOfLines={1}>{q.label ?? q.data}</Text>
                   <Pressable onPress={() => handleDelete(q.id)} hitSlop={10}>
@@ -398,6 +420,11 @@ const styles = StyleSheet.create({
   },
   qrWrap: { padding: 10, backgroundColor: '#fff', borderRadius: 10 },
   previewLabel: { fontSize: 12, fontFamily: FONTS.regular, color: COLORS.textSecondary, maxWidth: '100%' },
+  nameInput: {
+    height: 40, width: '100%', borderRadius: 10, paddingHorizontal: 12,
+    backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border,
+    fontSize: 13, fontFamily: FONTS.regular, color: COLORS.text,
+  },
 
   logoRow: { flexDirection: 'row', alignItems: 'center', gap: 10, alignSelf: 'stretch' },
   logoWrap: { width: 36, height: 36, borderRadius: 10, overflow: 'hidden' },
@@ -439,8 +466,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 10,
     paddingVertical: 10, borderBottomWidth: 1, borderColor: COLORS.border,
   },
-  savedIcon: {
-    width: 30, height: 30, borderRadius: 15, backgroundColor: COLORS.accentDim,
+  savedQrThumb: {
+    width: 38, height: 38, borderRadius: 8, padding: 4,
     alignItems: 'center', justifyContent: 'center',
   },
   savedLabel: { flex: 1, fontSize: 14, fontFamily: FONTS.regular, color: COLORS.text },
