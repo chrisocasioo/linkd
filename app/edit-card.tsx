@@ -41,44 +41,86 @@ const FONT_ROWS = [FONT_OPTIONS.slice(0, 4), FONT_OPTIONS.slice(4, 8)];
 
 const INFO_TYPES = new Set(['title', 'company', 'department', 'headline']);
 
-const MOST_POPULAR: Array<{ type: string; label: string; icon: keyof typeof Ionicons.glyphMap }> = [
-  { type: 'instagram',  label: 'Instagram',  icon: 'logo-instagram' },
-  { type: 'linkedin',   label: 'LinkedIn',   icon: 'logo-linkedin' },
-  { type: 'twitter',    label: 'Twitter',    icon: 'logo-twitter' },
-  { type: 'tiktok',     label: 'TikTok',     icon: 'logo-tiktok' },
-  { type: 'youtube',    label: 'YouTube',    icon: 'logo-youtube' },
-  { type: 'facebook',   label: 'Facebook',   icon: 'logo-facebook' },
-  { type: 'whatsapp',   label: 'WhatsApp',   icon: 'logo-whatsapp' },
-  { type: 'spotify',    label: 'Spotify',    icon: 'musical-notes-outline' },
-  { type: 'email',      label: 'Email',      icon: 'mail' },
-  { type: 'phone',      label: 'Phone',      icon: 'call' },
-  { type: 'website',    label: 'Website',    icon: 'globe-outline' },
-  { type: 'app',        label: 'App',        icon: 'logo-apple-appstore' },
-  { type: 'venmo',      label: 'Venmo',      icon: 'logo-venmo' },
-  { type: 'paypal',     label: 'PayPal',     icon: 'logo-paypal' },
-  { type: 'cashapp',    label: 'Cash App',   icon: 'cash-outline' },
-  { type: 'zelle',      label: 'Zelle',      icon: 'card-outline' },
-  { type: 'telegram',   label: 'Telegram',   icon: 'paper-plane-outline' },
-  { type: 'discord',    label: 'Discord',    icon: 'logo-discord' },
-  { type: 'signal',     label: 'Signal',     icon: 'chatbubble-ellipses-outline' },
-  { type: 'zoom',       label: 'Zoom',       icon: 'videocam-outline' },
-  { type: 'soundcloud', label: 'SoundCloud', icon: 'logo-soundcloud' },
-  { type: 'applemusic', label: 'Apple Music', icon: 'logo-apple' },
-  { type: 'vimeo',      label: 'Vimeo',      icon: 'logo-vimeo' },
-  { type: 'twitch',     label: 'Twitch',     icon: 'logo-twitch' },
-  { type: 'behance',    label: 'Behance',    icon: 'logo-behance' },
-  { type: 'dribbble',   label: 'Dribbble',   icon: 'logo-dribbble' },
-  { type: 'github',     label: 'GitHub',     icon: 'logo-github' },
-  { type: 'snapchat',   label: 'Snapchat',   icon: 'logo-snapchat' },
-  { type: 'pinterest',  label: 'Pinterest',  icon: 'logo-pinterest' },
-  { type: 'threads',    label: 'Threads',    icon: 'logo-threads' },
-  { type: 'calendly',   label: 'Calendly',   icon: 'calendar-outline' },
-  { type: 'cal',        label: 'Cal.com',    icon: 'time-outline' },
-  { type: 'acuity',     label: 'Acuity',     icon: 'calendar-clear-outline' },
-  { type: 'booksy',     label: 'Booksy',     icon: 'today-outline' },
-  { type: 'patreon',    label: 'Patreon',    icon: 'heart-outline' },
-  { type: 'address',    label: 'Address',    icon: 'location-outline' },
-  { type: 'custom',     label: 'Custom',     icon: 'ellipsis-horizontal' },
+type FieldChip = { type: string; label: string; icon: keyof typeof Ionicons.glyphMap };
+
+const FIELD_CATEGORIES: Array<{ label: string; items: FieldChip[] }> = [
+  {
+    label: 'Contact',
+    items: [
+      { type: 'email',   label: 'Email',   icon: 'mail' },
+      { type: 'phone',   label: 'Phone',   icon: 'call' },
+      { type: 'website', label: 'Website', icon: 'globe-outline' },
+      { type: 'address', label: 'Address', icon: 'location-outline' },
+    ],
+  },
+  {
+    label: 'Social',
+    items: [
+      { type: 'instagram', label: 'Instagram', icon: 'logo-instagram' },
+      { type: 'linkedin',  label: 'LinkedIn',  icon: 'logo-linkedin' },
+      { type: 'twitter',   label: 'Twitter',   icon: 'logo-twitter' },
+      { type: 'tiktok',    label: 'TikTok',    icon: 'logo-tiktok' },
+      { type: 'youtube',   label: 'YouTube',   icon: 'logo-youtube' },
+      { type: 'facebook',  label: 'Facebook',  icon: 'logo-facebook' },
+      { type: 'snapchat',  label: 'Snapchat',  icon: 'logo-snapchat' },
+      { type: 'pinterest', label: 'Pinterest', icon: 'logo-pinterest' },
+      { type: 'threads',   label: 'Threads',   icon: 'logo-threads' },
+    ],
+  },
+  {
+    label: 'Messaging',
+    items: [
+      { type: 'whatsapp', label: 'WhatsApp', icon: 'logo-whatsapp' },
+      { type: 'telegram', label: 'Telegram', icon: 'paper-plane-outline' },
+      { type: 'discord',  label: 'Discord',  icon: 'logo-discord' },
+      { type: 'signal',   label: 'Signal',   icon: 'chatbubble-ellipses-outline' },
+      { type: 'zoom',     label: 'Zoom',     icon: 'videocam-outline' },
+    ],
+  },
+  {
+    label: 'Payments',
+    items: [
+      { type: 'venmo',   label: 'Venmo',    icon: 'logo-venmo' },
+      { type: 'paypal',  label: 'PayPal',   icon: 'logo-paypal' },
+      { type: 'cashapp', label: 'Cash App', icon: 'cash-outline' },
+      { type: 'zelle',   label: 'Zelle',    icon: 'card-outline' },
+    ],
+  },
+  {
+    label: 'Scheduling',
+    items: [
+      { type: 'calendly', label: 'Calendly', icon: 'calendar-outline' },
+      { type: 'cal',      label: 'Cal.com',  icon: 'time-outline' },
+      { type: 'acuity',   label: 'Acuity',   icon: 'calendar-clear-outline' },
+      { type: 'booksy',   label: 'Booksy',   icon: 'today-outline' },
+    ],
+  },
+  {
+    label: 'Music & Media',
+    items: [
+      { type: 'spotify',    label: 'Spotify',    icon: 'musical-notes-outline' },
+      { type: 'soundcloud', label: 'SoundCloud', icon: 'logo-soundcloud' },
+      { type: 'applemusic', label: 'Apple Music', icon: 'logo-apple' },
+      { type: 'vimeo',      label: 'Vimeo',      icon: 'logo-vimeo' },
+      { type: 'twitch',     label: 'Twitch',     icon: 'logo-twitch' },
+    ],
+  },
+  {
+    label: 'Dev & Design',
+    items: [
+      { type: 'github',   label: 'GitHub',   icon: 'logo-github' },
+      { type: 'behance',  label: 'Behance',  icon: 'logo-behance' },
+      { type: 'dribbble', label: 'Dribbble', icon: 'logo-dribbble' },
+    ],
+  },
+  {
+    label: 'More',
+    items: [
+      { type: 'app',     label: 'App',     icon: 'logo-apple-appstore' },
+      { type: 'patreon', label: 'Patreon', icon: 'heart-outline' },
+      { type: 'custom',  label: 'Custom',  icon: 'ellipsis-horizontal' },
+    ],
+  },
 ];
 
 const FIELD_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
@@ -339,7 +381,9 @@ export default function EditCardScreen() {
 
   const contactFields = card.fields.filter((f) => !INFO_TYPES.has(f.type));
   const existingTypes = new Set(contactFields.map((f) => f.type));
-  const suggestedChips = MOST_POPULAR.filter((p) => !existingTypes.has(p.type) || p.type === 'custom');
+  const suggestedCategories = FIELD_CATEGORIES
+    .map((cat) => ({ ...cat, items: cat.items.filter((p) => !existingTypes.has(p.type) || p.type === 'custom') }))
+    .filter((cat) => cat.items.length > 0);
   const photoSource = photoUri ?? card.photo ?? null;
   const initial = ((user.displayName ?? user.username ?? '?')[0]).toUpperCase();
 
@@ -652,15 +696,19 @@ export default function EditCardScreen() {
                 </>
               )}
 
-              <Text style={styles.sectionHeader}>MOST POPULAR</Text>
-              <View style={styles.chipsWrap}>
-                {suggestedChips.map((p) => (
-                  <Pressable key={p.type + p.label} style={styles.chip} onPress={() => openFieldSheet(null, p.type)}>
-                    <Ionicons name={p.icon} size={13} color={COLORS.textSecondary} />
-                    <Text style={styles.chipLabel}>{p.label}</Text>
-                  </Pressable>
-                ))}
-              </View>
+              {suggestedCategories.map((cat) => (
+                <View key={cat.label}>
+                  <Text style={styles.sectionHeader}>{cat.label.toUpperCase()}</Text>
+                  <View style={styles.chipsWrap}>
+                    {cat.items.map((p) => (
+                      <Pressable key={p.type + p.label} style={styles.chip} onPress={() => openFieldSheet(null, p.type)}>
+                        <Ionicons name={p.icon} size={13} color={COLORS.textSecondary} />
+                        <Text style={styles.chipLabel}>{p.label}</Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                </View>
+              ))}
             </>
           )}
         </ScrollView>
