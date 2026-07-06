@@ -36,6 +36,7 @@ export interface Contact {
   address: string | null;
   notes: string | null;
   source: 'manual' | 'scan' | 'card';
+  photo: string | null;
   createdAt: string;
 }
 
@@ -251,6 +252,14 @@ export function useApi() {
       withToken((t) => request<Contact>(`/api/contacts/${id}`, t, { method: 'PATCH', body: JSON.stringify(body) })),
     deleteContact: (id: string) =>
       withToken((t) => request<{ success: boolean }>(`/api/contacts/${id}`, t, { method: 'DELETE' })),
+    uploadContactPhoto: (contactId: string, uri: string) =>
+      withToken(async (t) => {
+        const base64 = await FileSystem.readAsStringAsync(uri, { encoding: 'base64' as any });
+        return request<{ photoUrl: string }>(`/api/contacts/${contactId}/photo`, t, {
+          method: 'POST',
+          body: JSON.stringify({ photo: base64, mimeType: 'image/jpeg' }),
+        });
+      }),
 
     // Saved QR codes (Scans tab generator)
     getMyQrs: () => withToken((t) => request<SavedQr[]>('/api/qrs', t)),

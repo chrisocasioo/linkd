@@ -119,6 +119,9 @@ export const contacts = pgTable('contacts', {
   // How the contact was added: 'manual' (+ button), 'scan' (business card
   // OCR), or 'card' (someone shared their info via a public card exchange).
   source: text('source').notNull().default('manual'),
+  // Cropped photo of the scanned business card itself (source: 'scan' only)
+  // — lets users double-check the parsed fields against the original card.
+  photo: text('photo'),
   createdAt: timestamp('created_at').defaultNow(),
 });
 

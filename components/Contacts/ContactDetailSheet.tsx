@@ -5,6 +5,7 @@ import {
   Alert,
   Animated,
   Dimensions,
+  Image,
   Linking,
   Modal,
   Pressable,
@@ -145,6 +146,14 @@ export function ContactDetailSheet({ visible, contact, onClose, onDelete, onEdit
           ))}
         </View>
 
+        {/* Scanned card photo — reference for double-checking OCR'd fields */}
+        {contact.photo && (
+          <View style={styles.cardPhotoSection}>
+            <Text style={styles.cardPhotoLabel}>Scanned Card</Text>
+            <Image source={{ uri: contact.photo }} style={styles.cardPhotoImg} resizeMode="contain" />
+          </View>
+        )}
+
         <View style={styles.footer}>
           <Pressable style={styles.saveBtn} onPress={handleSaveToPhone}>
             <Ionicons name="person-add-outline" size={16} color="#0C0C0E" />
@@ -196,6 +205,15 @@ const styles = StyleSheet.create({
   fieldText: { flex: 1 },
   fieldLabel: { fontSize: 10, fontFamily: FONTS.medium, color: COLORS.textSecondary, letterSpacing: 0.5, textTransform: 'uppercase' },
   fieldValue: { fontSize: 14, fontFamily: FONTS.regular, color: COLORS.text, marginTop: 2 },
+  cardPhotoSection: { paddingHorizontal: 20, paddingTop: 20 },
+  cardPhotoLabel: {
+    fontSize: 10, fontFamily: FONTS.medium, color: COLORS.textSecondary,
+    letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 8,
+  },
+  cardPhotoImg: {
+    width: '100%', height: 180, borderRadius: 14,
+    backgroundColor: COLORS.surface2, borderWidth: 1, borderColor: COLORS.border,
+  },
   footer: { paddingHorizontal: 20, paddingTop: 20, gap: 10 },
   saveBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,

@@ -14,6 +14,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Camera, useCameraDevice, useCameraPermission, useCodeScanner } from 'react-native-vision-camera';
 import TextRecognition from '@react-native-ml-kit/text-recognition';
+import DocumentScanner from '../../modules/document-scanner';
 import { ContactReviewSheet } from '../../components/Contacts/ContactReviewSheet';
 import { QrGeneratorSheet } from '../../components/Scan/QrGeneratorSheet';
 import { QrScanResultSheet } from '../../components/Scan/QrScanResultSheet';
@@ -202,6 +203,8 @@ export default function ScansScreen() {
   const [detected, setDetected] = useState(false);
   const [scanResult, setScanResult] = useState<Partial<ScanResult> | null>(null);
   const [showReview, setShowReview] = useState(false);
+  // Best-effort cropped photo of the scanned card, attached to the contact on save
+  const [pendingCardPhotoUri, setPendingCardPhotoUri] = useState<string | null>(null);
 
   const [showQrGenerator, setShowQrGenerator] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
@@ -280,7 +283,18 @@ export default function ScansScreen() {
           if (consecutiveHitsRef.current >= 3) {
             clearInterval(intervalRef.current);
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            setTimeout(() => {
+            setTimeout(async () => {
+              // Sharper snapshot + crop for the reference photo, taken before
+              // the camera deactivates (showReview flips it off below).
+              let cardPhotoUri: string | null = null;
+              try {
+                const photoSnap = await cameraRef.current?.takeSnapshot({ quality: 90 });
+                if (photoSnap) {
+                  const rawUri = photoSnap.path.startsWith('file://') ? photoSnap.path : `file://${photoSnap.path}`;
+                  cardPhotoUri = (await DocumentScanner.detectAndCrop(rawUri).catch(() => null)) ?? rawUri;
+                }
+              } catch {}
+              setPendingCardPhotoUri(cardPhotoUri);
               setScanResult(parsed);
               setShowReview(true);
               setDetected(false);
@@ -311,6 +325,7 @@ export default function ScansScreen() {
       const uri = snapshot.path.startsWith('file://') ? snapshot.path : `file://${snapshot.path}`;
       const result = await TextRecognition.recognize(uri);
       setScanResult(parseBusinessCard(result.text, extractLargeTextLines(result)));
+      setPendingCardPhotoUri((await DocumentScanner.detectAndCrop(uri).catch(() => null)) ?? uri);
       setShowReview(true);
       setDetected(false);
       consecutiveHitsRef.current = 0;
@@ -328,8 +343,10 @@ export default function ScansScreen() {
     });
     if (!result.canceled && result.assets[0]) {
       try {
-        const ocr = await TextRecognition.recognize(result.assets[0].uri);
+        const uri = result.assets[0].uri;
+        const ocr = await TextRecognition.recognize(uri);
         setScanResult(parseBusinessCard(ocr.text, extractLargeTextLines(ocr)));
+        setPendingCardPhotoUri((await DocumentScanner.detectAndCrop(uri).catch(() => null)) ?? uri);
         setShowReview(true);
       } catch {}
     }
@@ -338,16 +355,21 @@ export default function ScansScreen() {
   const handleCloseReview = () => {
     setShowReview(false);
     setScanResult(null);
+    setPendingCardPhotoUri(null);
   };
 
   const handleSaveContact = async (fields: Partial<ScanResult>) => {
     const created = await api.addContact({ ...fields, source: 'scan' });
+    if (pendingCardPhotoUri) {
+      api.uploadContactPhoto(created.id, pendingCardPhotoUri).catch(() => {});
+    }
     saveContactToPhone(created).then((written) => {
       if (written) markSyncedToPhone(created.id);
     });
     const label = [created.firstName, created.lastName].filter(Boolean).join(' ') || 'Unknown';
     api.addScanHistory({ type: 'contact', contactId: created.id, label }).catch(() => {});
     setScanResult(null);
+    setPendingCardPhotoUri(null);
     router.push('/(tabs)/contacts');
   };
 
