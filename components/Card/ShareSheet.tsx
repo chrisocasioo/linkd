@@ -174,16 +174,16 @@ export function ShareSheet({ visible, username, user, card, onClose }: Props) {
 
           {/* QR */}
           <View style={styles.qrOuter}>
-            <View style={styles.qrInner}>
+            <View style={[styles.qrInner, { backgroundColor: card?.qrBgColor ?? '#fff' }]}>
               <QRCode
                 value={qrValue}
                 size={qrMode === 'offline' ? 180 : 148}
-                backgroundColor="#fff"
+                backgroundColor={card?.qrBgColor ?? '#fff'}
                 color={card?.qrColor ?? '#000'}
                 ecl={card?.qrLogo ? 'H' : 'M'}
                 logo={card?.qrLogo ? { uri: card.qrLogo } : undefined}
                 logoSize={qrMode === 'offline' ? 40 : 32}
-                logoBackgroundColor="#fff"
+                logoBackgroundColor={card?.qrBgColor ?? '#fff'}
                 logoBorderRadius={8}
                 logoMargin={2}
               />

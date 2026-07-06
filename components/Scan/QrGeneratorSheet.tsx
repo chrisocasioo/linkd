@@ -26,6 +26,9 @@ const { height: SCREEN_H } = Dimensions.get('window');
 type Mode = 'url' | 'wifi';
 type Security = 'WPA' | 'WEP' | 'nopass';
 
+const QR_COLORS = ['#000000', '#C9973A', '#7C3AED', '#22C55E', '#F43F5E', '#0EA5E9', '#EC4899'];
+const QR_BG_COLORS = ['#FFFFFF', '#000000', '#C9973A', '#7C3AED', '#22C55E', '#F43F5E', '#0EA5E9', '#EC4899'];
+
 interface Props {
   visible: boolean;
   onClose: () => void;
@@ -43,6 +46,10 @@ export function QrGeneratorSheet({ visible, onClose }: Props) {
 
   const [generated, setGenerated] = useState<{ data: string; label: string } | null>(null);
   const [saving, setSaving] = useState(false);
+  const [qrColor, setQrColor] = useState('#000000');
+  const [qrBgColor, setQrBgColor] = useState('#FFFFFF');
+  const [showColorHex, setShowColorHex] = useState<'color' | 'bg' | null>(null);
+  const [hexDraft, setHexDraft] = useState('');
 
   const [savedQrs, setSavedQrs] = useState<SavedQr[]>([]);
   const [loadingSaved, setLoadingSaved] = useState(false);
@@ -56,6 +63,7 @@ export function QrGeneratorSheet({ visible, onClose }: Props) {
       Animated.timing(slideY, { toValue: SCREEN_H, duration: 220, useNativeDriver: true }).start();
       setGenerated(null);
       setUrl(''); setSsid(''); setPassword(''); setSecurity('WPA');
+      setQrColor('#000000'); setQrBgColor('#FFFFFF'); setShowColorHex(null);
     }
   }, [visible]);
 
@@ -78,10 +86,11 @@ export function QrGeneratorSheet({ visible, onClose }: Props) {
     if (!generated) return;
     setSaving(true);
     try {
-      const created = await api.addQr({ type: mode, label: generated.label, data: generated.data });
+      const created = await api.addQr({ type: mode, label: generated.label, data: generated.data, color: qrColor, bgColor: qrBgColor });
       setSavedQrs((qs) => [created, ...qs]);
       setGenerated(null);
       setUrl(''); setSsid(''); setPassword('');
+      setQrColor('#000000'); setQrBgColor('#FFFFFF'); setShowColorHex(null);
     } catch (err: any) {
       Alert.alert('Could not save', err.message ?? 'Try again.');
     }
@@ -189,10 +198,73 @@ export function QrGeneratorSheet({ visible, onClose }: Props) {
 
             {generated && (
               <View style={styles.previewBox}>
-                <View style={styles.qrWrap}>
-                  <QRCode value={generated.data} size={160} backgroundColor="#fff" color="#000" ecl="M" />
+                <View style={[styles.qrWrap, { backgroundColor: qrBgColor }]}>
+                  <QRCode value={generated.data} size={160} backgroundColor={qrBgColor} color={qrColor} ecl="M" />
                 </View>
                 <Text style={styles.previewLabel} numberOfLines={1}>{generated.label}</Text>
+
+                <Text style={styles.swatchLabel}>Color</Text>
+                <View style={styles.swatchRow}>
+                  <Pressable
+                    style={[styles.swatchDot, styles.swatchPickerDot]}
+                    onPress={() => { setHexDraft(qrColor); setShowColorHex((v) => (v === 'color' ? null : 'color')); }}
+                  >
+                    <Ionicons name="color-palette-outline" size={14} color="rgba(255,255,255,0.6)" />
+                  </Pressable>
+                  {QR_COLORS.map((c) => (
+                    <Pressable
+                      key={c}
+                      style={[styles.swatchDot, { backgroundColor: c }, qrColor === c && styles.swatchDotActive]}
+                      onPress={() => { setQrColor(c); setShowColorHex(null); }}
+                    >
+                      {qrColor === c && <Ionicons name="checkmark" size={12} color="#fff" />}
+                    </Pressable>
+                  ))}
+                </View>
+
+                <Text style={styles.swatchLabel}>Background</Text>
+                <View style={styles.swatchRow}>
+                  <Pressable
+                    style={[styles.swatchDot, styles.swatchPickerDot]}
+                    onPress={() => { setHexDraft(qrBgColor); setShowColorHex((v) => (v === 'bg' ? null : 'bg')); }}
+                  >
+                    <Ionicons name="color-palette-outline" size={14} color="rgba(255,255,255,0.6)" />
+                  </Pressable>
+                  {QR_BG_COLORS.map((c) => (
+                    <Pressable
+                      key={c}
+                      style={[
+                        styles.swatchDot, { backgroundColor: c }, qrBgColor === c && styles.swatchDotActive,
+                        c === '#FFFFFF' && { borderWidth: 1, borderColor: COLORS.border },
+                      ]}
+                      onPress={() => { setQrBgColor(c); setShowColorHex(null); }}
+                    >
+                      {qrBgColor === c && <Ionicons name="checkmark" size={12} color={c === '#FFFFFF' ? '#0C0C0E' : '#fff'} />}
+                    </Pressable>
+                  ))}
+                </View>
+
+                {showColorHex && (
+                  <View style={styles.hexRow}>
+                    <View style={[styles.hexPreview, { backgroundColor: /^#[0-9A-Fa-f]{6}$/.test(hexDraft) ? hexDraft : COLORS.border }]} />
+                    <TextInput
+                      style={styles.hexInput}
+                      value={hexDraft}
+                      onChangeText={(v) => {
+                        const clean = v.startsWith('#') ? v : '#' + v;
+                        setHexDraft(clean);
+                        if (/^#[0-9A-Fa-f]{6}$/.test(clean)) {
+                          if (showColorHex === 'color') setQrColor(clean); else setQrBgColor(clean);
+                        }
+                      }}
+                      placeholder="#000000"
+                      placeholderTextColor={COLORS.textTertiary}
+                      autoCapitalize="characters"
+                      maxLength={7}
+                    />
+                  </View>
+                )}
+
                 <Pressable style={[styles.saveBtn, saving && { opacity: 0.5 }]} onPress={handleSave} disabled={saving}>
                   <Text style={styles.saveBtnText}>{saving ? 'Saving…' : 'Save'}</Text>
                 </Pressable>
@@ -264,6 +336,27 @@ const styles = StyleSheet.create({
   },
   qrWrap: { padding: 10, backgroundColor: '#fff', borderRadius: 10 },
   previewLabel: { fontSize: 12, fontFamily: FONTS.regular, color: COLORS.textSecondary, maxWidth: '100%' },
+
+  swatchLabel: {
+    fontSize: 10, fontFamily: FONTS.medium, color: COLORS.textTertiary,
+    letterSpacing: 0.6, textTransform: 'uppercase', alignSelf: 'flex-start', marginTop: 4,
+  },
+  swatchRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, alignSelf: 'flex-start' },
+  swatchDot: {
+    width: 28, height: 28, borderRadius: 14,
+    alignItems: 'center', justifyContent: 'center',
+    borderWidth: 2, borderColor: 'transparent',
+  },
+  swatchPickerDot: { backgroundColor: 'rgba(255,255,255,0.08)' },
+  swatchDotActive: { borderColor: '#fff' },
+  hexRow: { flexDirection: 'row', alignItems: 'center', gap: 10, alignSelf: 'stretch' },
+  hexPreview: { width: 26, height: 26, borderRadius: 13 },
+  hexInput: {
+    flex: 1, height: 40, borderRadius: 10, paddingHorizontal: 12,
+    backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border,
+    fontSize: 13, fontFamily: FONTS.regular, color: COLORS.text,
+  },
+
   saveBtn: { height: 40, paddingHorizontal: 24, borderRadius: 12, backgroundColor: COLORS.accent, alignItems: 'center', justifyContent: 'center' },
   saveBtnText: { fontSize: 13, fontFamily: FONTS.semiBold, color: '#0C0C0E' },
 

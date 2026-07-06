@@ -27,6 +27,9 @@ export const savedQrs = pgTable('saved_qrs', {
   label: text('label'),
   data: text('data').notNull(),
   createdAt: timestamp('created_at').defaultNow(),
+  // Custom styling, independent of any card's own branding
+  color: text('color'),
+  bgColor: text('bg_color'),
 });
 
 export const links = pgTable('links', {
@@ -60,6 +63,7 @@ export const cards = pgTable('cards', {
   // card's colors and its QR code's colors/logo don't have to match.
   qrColor: text('qr_color'),
   qrLogo: text('qr_logo'),
+  qrBgColor: text('qr_bg_color'),
 }, (table) => ({
   // Slugs read as /username/slug, so only need to be unique per user —
   // lets different users both have a "work" card

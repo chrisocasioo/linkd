@@ -46,6 +46,8 @@ export interface SavedQr {
   label: string | null;
   data: string;
   createdAt: string;
+  color: string | null;
+  bgColor: string | null;
 }
 
 export interface ScanHistoryEntry {
@@ -124,6 +126,7 @@ export interface Card {
   // QR branding — independent from the card's own accentColor/photo
   qrColor: string | null;
   qrLogo: string | null;
+  qrBgColor: string | null;
 }
 
 async function request<T>(path: string, token: string | null, options: RequestInit = {}): Promise<T> {
@@ -198,7 +201,7 @@ export function useApi() {
     getMyCards: () => withToken((t) => request<Card[]>('/api/cards', t)),
     addCard: (body: { name: string; accentColor: string }) =>
       withToken((t) => request<Card>('/api/cards', t, { method: 'POST', body: JSON.stringify(body) })),
-    updateCard: (id: string, body: Partial<{ name: string; accentColor: string; font: string; photo: string | null; slug: string; qrColor: string | null; qrLogo: string | null }>) =>
+    updateCard: (id: string, body: Partial<{ name: string; accentColor: string; font: string; photo: string | null; slug: string; qrColor: string | null; qrLogo: string | null; qrBgColor: string | null }>) =>
       withToken((t) => request<Card>(`/api/cards/${id}`, t, { method: 'PATCH', body: JSON.stringify(body) })),
     uploadCardPhoto: (cardId: string, uri: string) =>
       withToken(async (t) => {
@@ -250,7 +253,7 @@ export function useApi() {
 
     // Saved QR codes (Scans tab generator)
     getMyQrs: () => withToken((t) => request<SavedQr[]>('/api/qrs', t)),
-    addQr: (body: { type: 'url' | 'wifi'; label?: string; data: string }) =>
+    addQr: (body: { type: 'url' | 'wifi'; label?: string; data: string; color?: string; bgColor?: string }) =>
       withToken((t) => request<SavedQr>('/api/qrs', t, { method: 'POST', body: JSON.stringify(body) })),
     deleteQr: (id: string) =>
       withToken((t) => request<{ success: boolean }>(`/api/qrs/${id}`, t, { method: 'DELETE' })),

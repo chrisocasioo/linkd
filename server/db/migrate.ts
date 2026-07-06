@@ -202,5 +202,12 @@ export async function runMigrations() {
     ALTER TABLE cards ADD COLUMN IF NOT EXISTS qr_color TEXT;
     ALTER TABLE cards ADD COLUMN IF NOT EXISTS qr_logo TEXT;
   `);
+  await db.execute(sql`
+    ALTER TABLE cards ADD COLUMN IF NOT EXISTS qr_bg_color TEXT;
+  `);
+  await db.execute(sql`
+    ALTER TABLE saved_qrs ADD COLUMN IF NOT EXISTS color TEXT;
+    ALTER TABLE saved_qrs ADD COLUMN IF NOT EXISTS bg_color TEXT;
+  `);
   console.log('✓ Database tables ready');
 }

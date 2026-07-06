@@ -101,7 +101,7 @@ router.patch('/:id', async (req, res) => {
   try {
     const userId = (req as any).userId as string;
     const { id } = req.params;
-    const { name, accentColor, font, photo, slug, qrColor, qrLogo } = req.body as {
+    const { name, accentColor, font, photo, slug, qrColor, qrLogo, qrBgColor } = req.body as {
       name?: string;
       accentColor?: string;
       font?: string;
@@ -109,6 +109,7 @@ router.patch('/:id', async (req, res) => {
       slug?: string;
       qrColor?: string | null;
       qrLogo?: string | null;
+      qrBgColor?: string | null;
     };
     const update: Partial<typeof cards.$inferInsert> = {};
     if (name !== undefined) update.name = name;
@@ -117,6 +118,7 @@ router.patch('/:id', async (req, res) => {
     if (photo !== undefined) update.photo = photo;
     if (qrColor !== undefined) update.qrColor = qrColor;
     if (qrLogo !== undefined) update.qrLogo = qrLogo;
+    if (qrBgColor !== undefined) update.qrBgColor = qrBgColor;
     if (slug !== undefined) {
       const user = await db.query.users.findFirst({ where: eq(users.id, userId) });
       if (!user?.isPro) return res.status(403).json({ error: 'Custom card URLs are a Pro feature' });

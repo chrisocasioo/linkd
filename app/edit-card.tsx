@@ -202,10 +202,13 @@ export default function EditCardScreen() {
 
   // QR branding — deliberately separate from the card's own accentColor/photo
   const [qrColor, setQrColor] = useState('#000000');
+  const [qrBgColor, setQrBgColor] = useState('#FFFFFF');
   const [qrLogoUri, setQrLogoUri] = useState<string | null>(null);
   const [removeQrLogo, setRemoveQrLogo] = useState(false);
   const [showQrHexInput, setShowQrHexInput] = useState(false);
   const [qrHexDraft, setQrHexDraft] = useState('');
+  const [showQrBgHexInput, setShowQrBgHexInput] = useState(false);
+  const [qrBgHexDraft, setQrBgHexDraft] = useState('');
 
   const [showFieldSheet, setShowFieldSheet] = useState(false);
   const [fieldSheetCtx, setFieldSheetCtx] = useState<{ field: CardField | null; initialType?: string } | null>(null);
@@ -222,6 +225,7 @@ export default function EditCardScreen() {
         setAccent(found.accentColor);
         setCardFont(found.font ?? 'dm-sans');
         setQrColor(found.qrColor ?? '#000000');
+        setQrBgColor(found.qrBgColor ?? '#FFFFFF');
         setSlug(found.slug ?? '');
         const nameParts = (u.displayName ?? '').split(' ');
         setFirstName(nameParts[0] ?? '');
@@ -305,6 +309,7 @@ export default function EditCardScreen() {
           accentColor: accent,
           font: cardFont,
           qrColor,
+          qrBgColor,
           ...(slugChanged ? { slug: newSlug } : {}),
           ...(removeQrLogo ? { qrLogo: null } : {}),
         }),
@@ -688,6 +693,77 @@ export default function EditCardScreen() {
                     </View>
                   </>
                 )}
+
+                <Text style={[styles.label, { marginTop: 20 }]}>QR Background</Text>
+                <View style={styles.colorRow}>
+                  <Pressable
+                    style={[
+                      styles.colorDot, styles.colorPickerDot,
+                      !['#FFFFFF', ...ACCENT_COLORS].includes(qrBgColor) && qrBgColor !== '#000000' && styles.colorDotActive,
+                      !['#FFFFFF', ...ACCENT_COLORS].includes(qrBgColor) && qrBgColor !== '#000000' && { borderColor: qrBgColor },
+                    ]}
+                    onPress={() => {
+                      setQrBgHexDraft(qrBgColor);
+                      setShowQrBgHexInput((v) => !v);
+                    }}
+                  >
+                    <Ionicons
+                      name="color-palette-outline"
+                      size={16}
+                      color={!['#FFFFFF', ...ACCENT_COLORS].includes(qrBgColor) && qrBgColor !== '#000000' ? qrBgColor : 'rgba(255,255,255,0.6)'}
+                    />
+                  </Pressable>
+
+                  {['#FFFFFF', '#000000', ...ACCENT_COLORS].map((c) => (
+                    <Pressable
+                      key={c}
+                      style={[
+                        styles.colorDot, { backgroundColor: c },
+                        qrBgColor === c && styles.colorDotActive,
+                        c === '#FFFFFF' && { borderWidth: 1, borderColor: COLORS.border },
+                      ]}
+                      onPress={() => { setQrBgColor(c); setShowQrBgHexInput(false); }}
+                    >
+                      {qrBgColor === c && (
+                        <Ionicons name="checkmark" size={14} color={c === '#FFFFFF' ? '#0C0C0E' : '#fff'} />
+                      )}
+                    </Pressable>
+                  ))}
+                </View>
+
+                {showQrBgHexInput && (
+                  <>
+                    <View style={styles.wheelWrap}>
+                      <ColorPicker
+                        color={qrBgColor}
+                        onColorChangeComplete={(c: string) => {
+                          setQrBgColor(c);
+                          setQrBgHexDraft(c);
+                        }}
+                        thumbSize={26}
+                        sliderSize={26}
+                        gapSize={20}
+                        swatches={false}
+                      />
+                    </View>
+                    <View style={styles.hexRow}>
+                      <View style={[styles.hexPreview, { backgroundColor: /^#[0-9A-Fa-f]{6}$/.test(qrBgHexDraft) ? qrBgHexDraft : COLORS.border }]} />
+                      <TextInput
+                        style={styles.hexInput}
+                        value={qrBgHexDraft}
+                        onChangeText={(v) => {
+                          const clean = v.startsWith('#') ? v : '#' + v;
+                          setQrBgHexDraft(clean);
+                          if (/^#[0-9A-Fa-f]{6}$/.test(clean)) setQrBgColor(clean);
+                        }}
+                        placeholder="#FFFFFF"
+                        placeholderTextColor={COLORS.textTertiary}
+                        autoCapitalize="characters"
+                        maxLength={7}
+                      />
+                    </View>
+                  </>
+                )}
               </View>
             </>
           )}
@@ -965,7 +1041,7 @@ const styles = StyleSheet.create({
   },
   slugLockText: { fontSize: 9, fontFamily: FONTS.medium, color: COLORS.textTertiary },
 
-  colorRow: { flexDirection: 'row', gap: 10 },
+  colorRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   colorDot: {
     width: 36, height: 36, borderRadius: 18,
     alignItems: 'center', justifyContent: 'center',

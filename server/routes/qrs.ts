@@ -21,10 +21,12 @@ router.get('/', async (req, res) => {
 
 router.post('/', async (req, res) => {
   const userId = (req as any).userId as string;
-  const { type, label, data } = req.body as {
+  const { type, label, data, color, bgColor } = req.body as {
     type?: string;
     label?: string;
     data?: string;
+    color?: string;
+    bgColor?: string;
   };
 
   if (!type || !data) {
@@ -34,7 +36,7 @@ router.post('/', async (req, res) => {
   try {
     const [qr] = await db
       .insert(savedQrs)
-      .values({ userId, type, label: label ?? null, data })
+      .values({ userId, type, label: label ?? null, data, color: color ?? null, bgColor: bgColor ?? null })
       .returning();
     res.status(201).json(qr);
   } catch (err: any) {
