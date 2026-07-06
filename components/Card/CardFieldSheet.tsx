@@ -9,7 +9,6 @@ import {
   Modal,
   Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -168,24 +167,6 @@ export function CardFieldSheet({ visible, cardId, field, initialType, onClose, o
             </Pressable>
           </View>
 
-          {/* Type picker */}
-          {!field && (
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.typeRow}>
-              {FIELD_TYPES.map((t) => (
-                <Pressable
-                  key={t.id}
-                  style={[styles.typeChip, selectedType === t.id && styles.typeChipActive]}
-                  onPress={() => setSelectedType(t.id)}
-                >
-                  <Ionicons name={t.icon} size={14} color={selectedType === t.id ? COLORS.accent : COLORS.textSecondary} />
-                  <Text style={[styles.typeChipLabel, selectedType === t.id && styles.typeChipLabelActive]}>
-                    {t.label}
-                  </Text>
-                </Pressable>
-              ))}
-            </ScrollView>
-          )}
-
           <View style={styles.body}>
             {isApp ? (
               <>
@@ -291,16 +272,6 @@ const styles = StyleSheet.create({
   handle: { width: 36, height: 4, backgroundColor: COLORS.border, borderRadius: 2, alignSelf: 'center', marginTop: 10, marginBottom: 4 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 14 },
   title: { fontSize: 16, fontFamily: FONTS.semiBold, color: COLORS.text },
-  typeRow: { gap: 8, paddingHorizontal: 20, paddingBottom: 16 },
-  typeChip: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    paddingHorizontal: 12, paddingVertical: 8,
-    backgroundColor: COLORS.surface2, borderRadius: 20,
-    borderWidth: 1, borderColor: COLORS.border,
-  },
-  typeChipActive: { borderColor: COLORS.accent, backgroundColor: COLORS.accentDim },
-  typeChipLabel: { fontSize: 12, fontFamily: FONTS.medium, color: COLORS.textSecondary },
-  typeChipLabelActive: { color: COLORS.accent },
   body: { paddingHorizontal: 20 },
   fieldLabel: { fontSize: 10, fontFamily: FONTS.medium, color: COLORS.textSecondary, letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 6 },
   appHint: { fontSize: 11, fontFamily: FONTS.regular, color: COLORS.textTertiary, marginTop: 8, lineHeight: 15 },
