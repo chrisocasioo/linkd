@@ -20,7 +20,7 @@ import {
 } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import { SavedQr, useApi } from '../../lib/api';
-import { buildWifiQr, normalizeUrl } from '../../lib/qrFormat';
+import { buildWifiQr, normalizeUrl, parseWifiQr } from '../../lib/qrFormat';
 import { COLORS, FONTS } from '../../constants/colors';
 
 const { height: SCREEN_H } = Dimensions.get('window');
@@ -39,6 +39,7 @@ interface Props {
 export function QrGeneratorSheet({ visible, onClose }: Props) {
   const api = useApi();
   const slideY = useRef(new Animated.Value(SCREEN_H)).current;
+  const scrollRef = useRef<ScrollView>(null);
 
   const [mode, setMode] = useState<Mode>('url');
   const [url, setUrl] = useState('');
@@ -54,9 +55,25 @@ export function QrGeneratorSheet({ visible, onClose }: Props) {
   const [showColorHex, setShowColorHex] = useState<'color' | 'bg' | null>(null);
   const [hexDraft, setHexDraft] = useState('');
   const [logoUri, setLogoUri] = useState<string | null>(null);
+  // Editing an already-saved QR reuses this same form; null means "creating new"
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [existingLogoUrl, setExistingLogoUrl] = useState<string | null>(null);
+  const [removeLogo, setRemoveLogo] = useState(false);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const [savedQrs, setSavedQrs] = useState<SavedQr[]>([]);
   const [loadingSaved, setLoadingSaved] = useState(false);
+
+  const resetForm = () => {
+    setGenerated(null);
+    setEditingId(null);
+    setCustomName('');
+    setUrl(''); setSsid(''); setPassword(''); setSecurity('WPA');
+    setQrColor('#000000'); setQrBgColor('#FFFFFF'); setShowColorHex(null);
+    setLogoUri(null);
+    setExistingLogoUrl(null);
+    setRemoveLogo(false);
+  };
 
   useEffect(() => {
     if (visible) {
@@ -65,11 +82,8 @@ export function QrGeneratorSheet({ visible, onClose }: Props) {
       api.getMyQrs().then(setSavedQrs).catch(() => {}).finally(() => setLoadingSaved(false));
     } else {
       Animated.timing(slideY, { toValue: SCREEN_H, duration: 220, useNativeDriver: true }).start();
-      setGenerated(null);
-      setCustomName('');
-      setUrl(''); setSsid(''); setPassword(''); setSecurity('WPA');
-      setQrColor('#000000'); setQrBgColor('#FFFFFF'); setShowColorHex(null);
-      setLogoUri(null);
+      resetForm();
+      setExpandedId(null);
     }
   }, [visible]);
 
@@ -110,26 +124,63 @@ export function QrGeneratorSheet({ visible, onClose }: Props) {
     setSaving(true);
     try {
       const label = customName.trim() || generated.label;
-      const created = await api.addQr({ type: mode, label, data: generated.data, color: qrColor, bgColor: qrBgColor });
-      let saved = created;
-      if (logoUri) {
-        try {
-          const { logoUrl } = await api.uploadQrLogo(created.id, logoUri);
-          saved = { ...created, logo: logoUrl };
-        } catch {
-          // QR itself is already saved — a failed logo upload shouldn't lose that
+      if (editingId) {
+        let updated = await api.updateQr(editingId, {
+          type: mode, label, data: generated.data, color: qrColor, bgColor: qrBgColor,
+          ...(removeLogo ? { logo: null } : {}),
+        });
+        if (logoUri) {
+          try {
+            const { logoUrl } = await api.uploadQrLogo(editingId, logoUri);
+            updated = { ...updated, logo: logoUrl };
+          } catch {
+            // QR itself is already updated — a failed logo upload shouldn't lose that
+          }
         }
+        setSavedQrs((qs) => qs.map((q) => (q.id === editingId ? updated : q)));
+      } else {
+        const created = await api.addQr({ type: mode, label, data: generated.data, color: qrColor, bgColor: qrBgColor });
+        let saved = created;
+        if (logoUri) {
+          try {
+            const { logoUrl } = await api.uploadQrLogo(created.id, logoUri);
+            saved = { ...created, logo: logoUrl };
+          } catch {
+            // QR itself is already saved — a failed logo upload shouldn't lose that
+          }
+        }
+        setSavedQrs((qs) => [saved, ...qs]);
       }
-      setSavedQrs((qs) => [saved, ...qs]);
-      setGenerated(null);
-      setCustomName('');
-      setUrl(''); setSsid(''); setPassword('');
-      setQrColor('#000000'); setQrBgColor('#FFFFFF'); setShowColorHex(null);
-      setLogoUri(null);
+      resetForm();
     } catch (err: any) {
       Alert.alert('Could not save', err.message ?? 'Try again.');
     }
     setSaving(false);
+  };
+
+  const handleEditStart = (q: SavedQr) => {
+    setExpandedId(null);
+    setEditingId(q.id);
+    scrollRef.current?.scrollTo({ y: 0, animated: true });
+    if (q.type === 'wifi') {
+      const parsed = parseWifiQr(q.data);
+      const sec: Security = parsed && ['WPA', 'WEP', 'nopass'].includes(parsed.security) ? (parsed.security as Security) : 'WPA';
+      setMode('wifi');
+      setSsid(parsed?.ssid ?? '');
+      setPassword(parsed?.password ?? '');
+      setSecurity(sec);
+      setGenerated({ data: q.data, label: q.label ?? `Wi-Fi: ${parsed?.ssid ?? ''}` });
+    } else {
+      setMode('url');
+      setUrl(q.data);
+      setGenerated({ data: q.data, label: q.label ?? q.data });
+    }
+    setCustomName(q.label ?? '');
+    setQrColor(q.color ?? '#000000');
+    setQrBgColor(q.bgColor ?? '#FFFFFF');
+    setLogoUri(null);
+    setExistingLogoUrl(q.logo ?? null);
+    setRemoveLogo(false);
   };
 
   const handleDelete = (id: string) => {
@@ -139,11 +190,15 @@ export function QrGeneratorSheet({ visible, onClose }: Props) {
         text: 'Delete', style: 'destructive',
         onPress: async () => {
           setSavedQrs((qs) => qs.filter((q) => q.id !== id));
+          setExpandedId((cur) => (cur === id ? null : cur));
+          if (editingId === id) resetForm();
           try { await api.deleteQr(id); } catch {}
         },
       },
     ]);
   };
+
+  const previewLogoSource = logoUri ?? (removeLogo ? null : existingLogoUrl);
 
   return (
     <Modal visible={visible} transparent animationType="none" onRequestClose={close}>
@@ -158,13 +213,22 @@ export function QrGeneratorSheet({ visible, onClose }: Props) {
             </Pressable>
           </View>
 
-          <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+          <ScrollView ref={scrollRef} contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
             <View style={styles.modeToggle}>
               {(['url', 'wifi'] as const).map((m) => (
                 <Pressable
                   key={m}
                   style={[styles.modeItem, mode === m && styles.modeItemActive]}
-                  onPress={() => { setMode(m); setGenerated(null); setCustomName(''); }}
+                  onPress={() => {
+                    setMode(m);
+                    setGenerated(null);
+                    setCustomName('');
+                    // Switching type while mid-edit would silently retype the
+                    // edited entry on save — treat it as starting fresh instead.
+                    setEditingId(null);
+                    setExistingLogoUrl(null);
+                    setRemoveLogo(false);
+                  }}
                 >
                   <Text style={[styles.modeText, mode === m && styles.modeTextActive]}>
                     {m === 'url' ? 'URL' : 'Wi-Fi'}
@@ -233,14 +297,15 @@ export function QrGeneratorSheet({ visible, onClose }: Props) {
 
             {generated && (
               <View style={styles.previewBox}>
+                {editingId && <Text style={styles.editingBadge}>Editing</Text>}
                 <View style={[styles.qrWrap, { backgroundColor: qrBgColor }]}>
                   <QRCode
                     value={generated.data}
                     size={160}
                     backgroundColor={qrBgColor}
                     color={qrColor}
-                    ecl={logoUri ? 'H' : 'M'}
-                    logo={logoUri ? { uri: logoUri } : undefined}
+                    ecl={previewLogoSource ? 'H' : 'M'}
+                    logo={previewLogoSource ? { uri: previewLogoSource } : undefined}
                     logoSize={40}
                     logoBackgroundColor={qrBgColor}
                     logoBorderRadius={8}
@@ -259,8 +324,8 @@ export function QrGeneratorSheet({ visible, onClose }: Props) {
 
                 <View style={styles.logoRow}>
                   <Pressable onPress={handlePickLogo} style={styles.logoWrap}>
-                    {logoUri ? (
-                      <Image source={{ uri: logoUri }} style={styles.logoImg} />
+                    {previewLogoSource ? (
+                      <Image source={{ uri: previewLogoSource }} style={styles.logoImg} />
                     ) : (
                       <View style={styles.logoPlaceholder}>
                         <Ionicons name="image-outline" size={16} color={COLORS.textTertiary} />
@@ -268,10 +333,10 @@ export function QrGeneratorSheet({ visible, onClose }: Props) {
                     )}
                   </Pressable>
                   <Pressable onPress={handlePickLogo}>
-                    <Text style={styles.logoActionText}>{logoUri ? 'Change Logo' : 'Add Logo'}</Text>
+                    <Text style={styles.logoActionText}>{previewLogoSource ? 'Change Logo' : 'Add Logo'}</Text>
                   </Pressable>
-                  {logoUri && (
-                    <Pressable onPress={() => setLogoUri(null)}>
+                  {previewLogoSource && (
+                    <Pressable onPress={() => { setLogoUri(null); setRemoveLogo(true); }}>
                       <Text style={styles.logoActionTextRemove}>Remove</Text>
                     </Pressable>
                   )}
@@ -339,9 +404,20 @@ export function QrGeneratorSheet({ visible, onClose }: Props) {
                   </View>
                 )}
 
-                <Pressable style={[styles.saveBtn, saving && { opacity: 0.5 }]} onPress={handleSave} disabled={saving}>
-                  <Text style={styles.saveBtnText}>{saving ? 'Saving…' : 'Save'}</Text>
-                </Pressable>
+                <View style={styles.saveRow}>
+                  {editingId && (
+                    <Pressable style={styles.cancelBtn} onPress={resetForm} disabled={saving}>
+                      <Text style={styles.cancelBtnText}>Cancel</Text>
+                    </Pressable>
+                  )}
+                  <Pressable
+                    style={[styles.saveBtn, editingId && { flex: 1 }, saving && { opacity: 0.5 }]}
+                    onPress={handleSave}
+                    disabled={saving}
+                  >
+                    <Text style={styles.saveBtnText}>{saving ? 'Saving…' : editingId ? 'Update' : 'Save'}</Text>
+                  </Pressable>
+                </View>
               </View>
             )}
 
@@ -354,27 +430,56 @@ export function QrGeneratorSheet({ visible, onClose }: Props) {
             ) : savedQrs.length === 0 ? (
               <Text style={styles.emptyText}>Nothing saved yet</Text>
             ) : (
-              savedQrs.map((q) => (
-                <View key={q.id} style={styles.savedRow}>
-                  <View style={[styles.savedQrThumb, { backgroundColor: q.bgColor ?? '#fff' }]}>
-                    <QRCode
-                      value={q.data}
-                      size={30}
-                      backgroundColor={q.bgColor ?? '#fff'}
-                      color={q.color ?? '#000'}
-                      ecl={q.logo ? 'H' : 'M'}
-                      logo={q.logo ? { uri: q.logo } : undefined}
-                      logoSize={q.logo ? 9 : undefined}
-                      logoBackgroundColor={q.bgColor ?? '#fff'}
-                      logoBorderRadius={2}
-                    />
+              savedQrs.map((q) => {
+                const isExpanded = expandedId === q.id;
+                return (
+                  <View key={q.id} style={styles.savedItem}>
+                    <Pressable
+                      style={styles.savedRow}
+                      onPress={() => setExpandedId((id) => (id === q.id ? null : q.id))}
+                    >
+                      <View style={styles.savedIcon}>
+                        <Ionicons name={q.type === 'wifi' ? 'wifi' : 'link'} size={15} color={COLORS.accent} />
+                      </View>
+                      <Text style={styles.savedLabel} numberOfLines={1}>{q.label ?? q.data}</Text>
+                      <Ionicons
+                        name={isExpanded ? 'chevron-up' : 'chevron-down'}
+                        size={16}
+                        color={COLORS.textTertiary}
+                      />
+                    </Pressable>
+
+                    {isExpanded && (
+                      <View style={styles.savedExpanded}>
+                        <View style={[styles.qrWrap, { backgroundColor: q.bgColor ?? '#fff' }]}>
+                          <QRCode
+                            value={q.data}
+                            size={180}
+                            backgroundColor={q.bgColor ?? '#fff'}
+                            color={q.color ?? '#000'}
+                            ecl={q.logo ? 'H' : 'M'}
+                            logo={q.logo ? { uri: q.logo } : undefined}
+                            logoSize={44}
+                            logoBackgroundColor={q.bgColor ?? '#fff'}
+                            logoBorderRadius={8}
+                            logoMargin={2}
+                          />
+                        </View>
+                        <View style={styles.savedExpandedActions}>
+                          <Pressable style={styles.savedActionBtn} onPress={() => handleEditStart(q)}>
+                            <Ionicons name="pencil" size={14} color={COLORS.accent} />
+                            <Text style={styles.savedActionText}>Edit</Text>
+                          </Pressable>
+                          <Pressable style={styles.savedActionBtn} onPress={() => handleDelete(q.id)}>
+                            <Ionicons name="trash-outline" size={14} color="#EF4444" />
+                            <Text style={[styles.savedActionText, { color: '#EF4444' }]}>Delete</Text>
+                          </Pressable>
+                        </View>
+                      </View>
+                    )}
                   </View>
-                  <Text style={styles.savedLabel} numberOfLines={1}>{q.label ?? q.data}</Text>
-                  <Pressable onPress={() => handleDelete(q.id)} hitSlop={10}>
-                    <Ionicons name="trash-outline" size={18} color={COLORS.textTertiary} />
-                  </Pressable>
-                </View>
-              ))
+                );
+              })
             )}
           </ScrollView>
         </Animated.View>
@@ -419,6 +524,10 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surface2, borderRadius: 16, borderWidth: 1, borderColor: COLORS.border,
   },
   qrWrap: { padding: 10, backgroundColor: '#fff', borderRadius: 10 },
+  editingBadge: {
+    fontSize: 10, fontFamily: FONTS.semiBold, color: COLORS.accent,
+    letterSpacing: 0.6, textTransform: 'uppercase',
+  },
   previewLabel: { fontSize: 12, fontFamily: FONTS.regular, color: COLORS.textSecondary, maxWidth: '100%' },
   nameInput: {
     height: 40, width: '100%', borderRadius: 10, paddingHorizontal: 12,
@@ -456,19 +565,31 @@ const styles = StyleSheet.create({
     fontSize: 13, fontFamily: FONTS.regular, color: COLORS.text,
   },
 
+  saveRow: { flexDirection: 'row', gap: 10, alignSelf: 'stretch', justifyContent: 'center' },
   saveBtn: { height: 40, paddingHorizontal: 24, borderRadius: 12, backgroundColor: COLORS.accent, alignItems: 'center', justifyContent: 'center' },
   saveBtnText: { fontSize: 13, fontFamily: FONTS.semiBold, color: '#0C0C0E' },
+  cancelBtn: {
+    height: 40, paddingHorizontal: 20, borderRadius: 12,
+    borderWidth: 1, borderColor: COLORS.border,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  cancelBtnText: { fontSize: 13, fontFamily: FONTS.semiBold, color: COLORS.textSecondary },
 
   savedHeader: { marginTop: 8 },
   savedTitle: { fontSize: 13, fontFamily: FONTS.semiBold, color: COLORS.textSecondary },
   emptyText: { fontSize: 13, fontFamily: FONTS.regular, color: COLORS.textTertiary, textAlign: 'center', paddingVertical: 16 },
+  savedItem: { borderBottomWidth: 1, borderColor: COLORS.border },
   savedRow: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
-    paddingVertical: 10, borderBottomWidth: 1, borderColor: COLORS.border,
+    paddingVertical: 10,
   },
-  savedQrThumb: {
-    width: 38, height: 38, borderRadius: 8, padding: 4,
+  savedIcon: {
+    width: 30, height: 30, borderRadius: 15, backgroundColor: COLORS.accentDim,
     alignItems: 'center', justifyContent: 'center',
   },
   savedLabel: { flex: 1, fontSize: 14, fontFamily: FONTS.regular, color: COLORS.text },
+  savedExpanded: { alignItems: 'center', gap: 12, paddingBottom: 16 },
+  savedExpandedActions: { flexDirection: 'row', gap: 24 },
+  savedActionBtn: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  savedActionText: { fontSize: 13, fontFamily: FONTS.semiBold, color: COLORS.accent },
 });

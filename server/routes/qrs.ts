@@ -56,6 +56,39 @@ router.post('/', async (req, res) => {
   }
 });
 
+router.patch('/:id', async (req, res) => {
+  try {
+    const userId = (req as any).userId as string;
+    const { id } = req.params;
+    const { type, label, data, color, bgColor, logo } = req.body as {
+      type?: string;
+      label?: string;
+      data?: string;
+      color?: string | null;
+      bgColor?: string | null;
+      logo?: string | null;
+    };
+    const update: Partial<typeof savedQrs.$inferInsert> = {};
+    if (type !== undefined) update.type = type;
+    if (label !== undefined) update.label = label;
+    if (data !== undefined) update.data = data;
+    if (color !== undefined) update.color = color;
+    if (bgColor !== undefined) update.bgColor = bgColor;
+    if (logo !== undefined) update.logo = logo;
+
+    const [updated] = await db
+      .update(savedQrs)
+      .set(update)
+      .where(and(eq(savedQrs.id, id), eq(savedQrs.userId, userId)))
+      .returning();
+    if (!updated) return res.status(404).json({ error: 'QR code not found' });
+    res.json(updated);
+  } catch (err: any) {
+    console.error('QR update failed:', err?.message ?? err);
+    res.status(500).json({ error: 'Failed to update QR code' });
+  }
+});
+
 router.post('/:id/logo', async (req, res) => {
   try {
     const userId = (req as any).userId as string;

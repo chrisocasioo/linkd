@@ -265,6 +265,8 @@ export function useApi() {
     getMyQrs: () => withToken((t) => request<SavedQr[]>('/api/qrs', t)),
     addQr: (body: { type: 'url' | 'wifi'; label?: string; data: string; color?: string; bgColor?: string }) =>
       withToken((t) => request<SavedQr>('/api/qrs', t, { method: 'POST', body: JSON.stringify(body) })),
+    updateQr: (id: string, body: Partial<{ type: 'url' | 'wifi'; label: string; data: string; color: string | null; bgColor: string | null; logo: string | null }>) =>
+      withToken((t) => request<SavedQr>(`/api/qrs/${id}`, t, { method: 'PATCH', body: JSON.stringify(body) })),
     deleteQr: (id: string) =>
       withToken((t) => request<{ success: boolean }>(`/api/qrs/${id}`, t, { method: 'DELETE' })),
     uploadQrLogo: (qrId: string, uri: string) =>
