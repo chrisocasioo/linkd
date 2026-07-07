@@ -83,16 +83,17 @@ function fieldUrl(type: string, value: string): string {
 function buildCardHtml(user: UserRow, card: CardRow, fields: FieldRow[], username: string): string {
   const name = esc(user.displayName ?? username);
   const accent = card.accentColor ?? '#C9973A';
-  const initial = esc((user.displayName ?? username ?? '?')[0].toUpperCase());
 
   const titleVal   = fields.find(f => f.type === 'title')?.value;
   const companyVal = fields.find(f => f.type === 'company')?.value;
   const headlineVal = fields.find(f => f.type === 'headline')?.value;
   const linkFields = fields.filter(f => !['title', 'company', 'department', 'headline'].includes(f.type));
 
-  const bannerHtml = card.photo
-    ? `<img class="banner-img" src="${esc(card.photo)}" alt="${name}" />`
-    : `<div class="banner-placeholder" style="background:${accent}22"><span class="banner-initial" style="color:${accent}">${initial}</span></div>`;
+  // No photo → skip the banner entirely (no fixed-height placeholder); the
+  // card-name label becomes a small standalone chip above the name/title.
+  const bannerBlockHtml = card.photo
+    ? `<div class="banner"><img class="banner-img" src="${esc(card.photo)}" alt="${name}" /><div class="card-label">${esc(card.name)}</div></div>`
+    : `<div class="card-label card-label-standalone">${esc(card.name)}</div>`;
 
   const fieldRowsHtml = linkFields.map(f => {
     const icon = esc(f.icon || ICON_NAME[f.type] || 'ellipsis-horizontal');
@@ -152,18 +153,20 @@ function buildCardHtml(user: UserRow, card: CardRow, fields: FieldRow[], usernam
       width: 100%; height: 100%;
       object-fit: cover; display: block;
     }
-    .banner-placeholder {
-      width: 100%; height: 100%;
-      display: flex; align-items: center; justify-content: center;
-    }
-    .banner-initial {
-      font-size: 64px; font-weight: 600; line-height: 1;
-    }
     .card-label {
       position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
       background: rgba(0,0,0,0.55); color: #fff;
       font-size: 10px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase;
       padding: 5px 12px; border-radius: 20px; white-space: nowrap;
+    }
+    .card-label-standalone {
+      position: static;
+      transform: none;
+      display: block;
+      width: fit-content;
+      margin: 16px auto 0;
+      background: #1E1E21;
+      border: 1px solid rgba(255,255,255,0.07);
     }
     .identity { padding: 16px 18px 8px; }
     .name { font-size: 20px; font-weight: 600; color: #fff; letter-spacing: -0.3px; }
@@ -227,10 +230,7 @@ function buildCardHtml(user: UserRow, card: CardRow, fields: FieldRow[], usernam
 </head>
 <body>
   <div class="card">
-    <div class="banner">
-      ${bannerHtml}
-      <div class="card-label">${esc(card.name)}</div>
-    </div>
+    ${bannerBlockHtml}
     <div class="identity">
       <div class="name">${name}</div>
       ${titleVal   ? `<div class="job-title">${esc(titleVal)}</div>`   : ''}

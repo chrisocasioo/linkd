@@ -139,7 +139,6 @@ interface Props {
 export function CardPreview({ card, user, analytics, maxHeight, onPreview, onPullRefresh, analyticsLocked, onUnlockAnalytics }: Props) {
   const accent = card.accentColor;
   const fonts = CARD_FONTS[card.font ?? 'dm-sans'] ?? CARD_FONTS['dm-sans'];
-  const initial = (user.displayName ?? user.username ?? '?')[0].toUpperCase();
   const capH = maxHeight ?? MAX_CARD_H;
   const [isFlipped, setIsFlipped] = useState(false);
   const flipAnim = useRef(new Animated.Value(0)).current;
@@ -196,19 +195,19 @@ export function CardPreview({ card, user, analytics, maxHeight, onPreview, onPul
           }}
           scrollEventThrottle={16}
         >
-          {/* Banner — tapping opens the public card */}
-          <Pressable style={styles.banner} onPress={onPreview}>
-            {card.photo ? (
+          {/* Banner — only rendered when there's a photo; tapping opens the public card */}
+          {card.photo ? (
+            <Pressable style={styles.banner} onPress={onPreview}>
               <Image source={{ uri: card.photo }} style={styles.bannerImg} />
-            ) : (
-              <View style={[styles.bannerPlaceholder, { backgroundColor: accent + '22' }]}>
-                <Text style={[styles.bannerInitial, { color: accent }]}>{initial}</Text>
+              <View style={styles.labelPill}>
+                <Text style={styles.labelText}>{card.name.toUpperCase()}</Text>
               </View>
-            )}
-            <View style={styles.labelPill}>
+            </Pressable>
+          ) : (
+            <Pressable style={styles.labelPillStandalone} onPress={onPreview}>
               <Text style={styles.labelText}>{card.name.toUpperCase()}</Text>
-            </View>
-          </Pressable>
+            </Pressable>
+          )}
 
           {/* Identity — tapping opens the public card */}
           <Pressable style={styles.identity} onPress={onPreview}>
@@ -373,21 +372,21 @@ const styles = StyleSheet.create({
     height: '100%',
     resizeMode: 'cover',
   },
-  bannerPlaceholder: {
-    width: '100%',
-    height: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  bannerInitial: {
-    fontSize: 64,
-    fontFamily: FONTS.semiBold,
-  },
   labelPill: {
     position: 'absolute',
     top: 12,
     alignSelf: 'center',
     backgroundColor: 'rgba(0,0,0,0.55)',
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 20,
+  },
+  labelPillStandalone: {
+    alignSelf: 'center',
+    marginTop: 16,
+    backgroundColor: COLORS.surface2,
+    borderWidth: 1,
+    borderColor: COLORS.border,
     paddingHorizontal: 12,
     paddingVertical: 5,
     borderRadius: 20,
