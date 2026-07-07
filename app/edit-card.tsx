@@ -285,6 +285,15 @@ export default function EditCardScreen() {
   };
 
   const handleSave = async () => {
+    if (!firstName.trim()) {
+      Alert.alert('Add your name', 'Enter at least a first name before saving.');
+      return;
+    }
+    const contactFieldCount = card!.fields.filter((f) => !INFO_TYPES.has(f.type)).length;
+    if (contactFieldCount === 0) {
+      Alert.alert('Add a field', 'Add at least one field (phone, email, etc.) on the Fields tab before saving.');
+      return;
+    }
     // Empty slug means "keep the current URL"
     const newSlug = slug.trim();
     const slugChanged = isPro && newSlug !== '' && newSlug !== (card?.slug ?? '');
