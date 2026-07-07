@@ -26,6 +26,9 @@ import { syncWidgetData } from '../lib/widgetSync';
 import { COLORS, FONTS } from '../constants/colors';
 
 const ACCENT_COLORS = ['#C9973A', '#7C3AED', '#22C55E', '#F43F5E', '#0EA5E9', '#EC4899'];
+// Second row shown under every swatch picker (accent, QR color, QR background)
+const SECOND_ROW_COLORS = ['#FFFFFF', '#000000', '#808080', '#A52A2A', '#800020', '#FFA500', '#4169E1'];
+const ALL_SWATCH_COLORS = [...ACCENT_COLORS, ...SECOND_ROW_COLORS];
 
 const FONT_OPTIONS = [
   { id: 'dm-sans',        label: 'Modern',   preview: 'Aa', family: 'DMSans-SemiBold' },
@@ -533,15 +536,15 @@ export default function EditCardScreen() {
                   <Pressable
                     style={[
                       styles.colorDot, styles.colorPickerDot,
-                      !ACCENT_COLORS.includes(accent) && styles.colorDotActive,
-                      !ACCENT_COLORS.includes(accent) && { borderColor: accent },
+                      !ALL_SWATCH_COLORS.includes(accent) && styles.colorDotActive,
+                      !ALL_SWATCH_COLORS.includes(accent) && { borderColor: accent },
                     ]}
                     onPress={() => {
                       setHexDraft(accent);
                       setShowHexInput((v) => !v);
                     }}
                   >
-                    <Ionicons name="color-palette-outline" size={16} color={!ACCENT_COLORS.includes(accent) ? accent : 'rgba(255,255,255,0.6)'} />
+                    <Ionicons name="color-palette-outline" size={16} color={!ALL_SWATCH_COLORS.includes(accent) ? accent : 'rgba(255,255,255,0.6)'} />
                   </Pressable>
 
                   {ACCENT_COLORS.map((c) => (
@@ -551,6 +554,22 @@ export default function EditCardScreen() {
                       onPress={() => { setAccent(c); setShowHexInput(false); }}
                     >
                       {accent === c && <Ionicons name="checkmark" size={14} color="#fff" />}
+                    </Pressable>
+                  ))}
+                </View>
+                <View style={styles.colorRowSecond}>
+                  {SECOND_ROW_COLORS.map((c) => (
+                    <Pressable
+                      key={c}
+                      style={[
+                        styles.colorDot, { backgroundColor: c }, accent === c && styles.colorDotActive,
+                        c === '#FFFFFF' && { borderWidth: 1, borderColor: COLORS.border },
+                      ]}
+                      onPress={() => { setAccent(c); setShowHexInput(false); }}
+                    >
+                      {accent === c && (
+                        <Ionicons name="checkmark" size={14} color={c === '#FFFFFF' ? '#0C0C0E' : '#fff'} />
+                      )}
                     </Pressable>
                   ))}
                 </View>
@@ -643,8 +662,8 @@ export default function EditCardScreen() {
                   <Pressable
                     style={[
                       styles.colorDot, styles.colorPickerDot,
-                      !ACCENT_COLORS.includes(qrColor) && qrColor !== '#000000' && styles.colorDotActive,
-                      !ACCENT_COLORS.includes(qrColor) && qrColor !== '#000000' && { borderColor: qrColor },
+                      !ALL_SWATCH_COLORS.includes(qrColor) && styles.colorDotActive,
+                      !ALL_SWATCH_COLORS.includes(qrColor) && { borderColor: qrColor },
                     ]}
                     onPress={() => {
                       setQrHexDraft(qrColor);
@@ -654,7 +673,7 @@ export default function EditCardScreen() {
                     <Ionicons
                       name="color-palette-outline"
                       size={16}
-                      color={!ACCENT_COLORS.includes(qrColor) && qrColor !== '#000000' ? qrColor : 'rgba(255,255,255,0.6)'}
+                      color={!ALL_SWATCH_COLORS.includes(qrColor) ? qrColor : 'rgba(255,255,255,0.6)'}
                     />
                   </Pressable>
 
@@ -665,6 +684,22 @@ export default function EditCardScreen() {
                       onPress={() => { setQrColor(c); setShowQrHexInput(false); }}
                     >
                       {qrColor === c && <Ionicons name="checkmark" size={14} color="#fff" />}
+                    </Pressable>
+                  ))}
+                </View>
+                <View style={styles.colorRowSecond}>
+                  {SECOND_ROW_COLORS.map((c) => (
+                    <Pressable
+                      key={c}
+                      style={[
+                        styles.colorDot, { backgroundColor: c }, qrColor === c && styles.colorDotActive,
+                        c === '#FFFFFF' && { borderWidth: 1, borderColor: COLORS.border },
+                      ]}
+                      onPress={() => { setQrColor(c); setShowQrHexInput(false); }}
+                    >
+                      {qrColor === c && (
+                        <Ionicons name="checkmark" size={14} color={c === '#FFFFFF' ? '#0C0C0E' : '#fff'} />
+                      )}
                     </Pressable>
                   ))}
                 </View>
@@ -708,8 +743,8 @@ export default function EditCardScreen() {
                   <Pressable
                     style={[
                       styles.colorDot, styles.colorPickerDot,
-                      !['#FFFFFF', ...ACCENT_COLORS].includes(qrBgColor) && qrBgColor !== '#000000' && styles.colorDotActive,
-                      !['#FFFFFF', ...ACCENT_COLORS].includes(qrBgColor) && qrBgColor !== '#000000' && { borderColor: qrBgColor },
+                      !ALL_SWATCH_COLORS.includes(qrBgColor) && styles.colorDotActive,
+                      !ALL_SWATCH_COLORS.includes(qrBgColor) && { borderColor: qrBgColor },
                     ]}
                     onPress={() => {
                       setQrBgHexDraft(qrBgColor);
@@ -719,11 +754,24 @@ export default function EditCardScreen() {
                     <Ionicons
                       name="color-palette-outline"
                       size={16}
-                      color={!['#FFFFFF', ...ACCENT_COLORS].includes(qrBgColor) && qrBgColor !== '#000000' ? qrBgColor : 'rgba(255,255,255,0.6)'}
+                      color={!ALL_SWATCH_COLORS.includes(qrBgColor) ? qrBgColor : 'rgba(255,255,255,0.6)'}
                     />
                   </Pressable>
 
-                  {['#FFFFFF', '#000000', ...ACCENT_COLORS].map((c) => (
+                  {ACCENT_COLORS.map((c) => (
+                    <Pressable
+                      key={c}
+                      style={[styles.colorDot, { backgroundColor: c }, qrBgColor === c && styles.colorDotActive]}
+                      onPress={() => { setQrBgColor(c); setShowQrBgHexInput(false); }}
+                    >
+                      {qrBgColor === c && <Ionicons name="checkmark" size={14} color="#fff" />}
+                    </Pressable>
+                  ))}
+                </View>
+                <View style={styles.colorRowSecond}>
+                  {/* Black + white lead this row, matching how they used to
+                      lead the row above before it was trimmed to just accents */}
+                  {SECOND_ROW_COLORS.map((c) => (
                     <Pressable
                       key={c}
                       style={[
@@ -1052,6 +1100,7 @@ const styles = StyleSheet.create({
   slugHint: { fontSize: 11, fontFamily: FONTS.regular, color: COLORS.textTertiary, marginTop: 6 },
 
   colorRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  colorRowSecond: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 8 },
   colorDot: {
     width: 36, height: 36, borderRadius: 18,
     alignItems: 'center', justifyContent: 'center',

@@ -28,8 +28,10 @@ const { height: SCREEN_H } = Dimensions.get('window');
 type Mode = 'url' | 'wifi';
 type Security = 'WPA' | 'WEP' | 'nopass';
 
-const QR_COLORS = ['#000000', '#C9973A', '#7C3AED', '#22C55E', '#F43F5E', '#0EA5E9', '#EC4899'];
-const QR_BG_COLORS = ['#FFFFFF', '#000000', '#C9973A', '#7C3AED', '#22C55E', '#F43F5E', '#0EA5E9', '#EC4899'];
+const QR_COLORS = ['#C9973A', '#7C3AED', '#22C55E', '#F43F5E', '#0EA5E9', '#EC4899'];
+const QR_BG_COLORS = ['#C9973A', '#7C3AED', '#22C55E', '#F43F5E', '#0EA5E9', '#EC4899'];
+// Second row shown under both swatch pickers
+const SWATCH_SECOND_ROW = ['#FFFFFF', '#000000', '#808080', '#A52A2A', '#800020', '#FFA500', '#4169E1'];
 
 interface Props {
   visible: boolean;
@@ -360,6 +362,20 @@ export function QrGeneratorSheet({ visible, onClose }: Props) {
                     </Pressable>
                   ))}
                 </View>
+                <View style={styles.swatchRowSecond}>
+                  {SWATCH_SECOND_ROW.map((c) => (
+                    <Pressable
+                      key={c}
+                      style={[
+                        styles.swatchDot, { backgroundColor: c }, qrColor === c && styles.swatchDotActive,
+                        c === '#FFFFFF' && { borderWidth: 1, borderColor: COLORS.border },
+                      ]}
+                      onPress={() => { setQrColor(c); setShowColorHex(null); }}
+                    >
+                      {qrColor === c && <Ionicons name="checkmark" size={12} color={c === '#FFFFFF' ? '#0C0C0E' : '#fff'} />}
+                    </Pressable>
+                  ))}
+                </View>
 
                 <Text style={styles.swatchLabel}>Background</Text>
                 <View style={styles.swatchRow}>
@@ -370,6 +386,20 @@ export function QrGeneratorSheet({ visible, onClose }: Props) {
                     <Ionicons name="color-palette-outline" size={14} color="rgba(255,255,255,0.6)" />
                   </Pressable>
                   {QR_BG_COLORS.map((c) => (
+                    <Pressable
+                      key={c}
+                      style={[
+                        styles.swatchDot, { backgroundColor: c }, qrBgColor === c && styles.swatchDotActive,
+                        c === '#FFFFFF' && { borderWidth: 1, borderColor: COLORS.border },
+                      ]}
+                      onPress={() => { setQrBgColor(c); setShowColorHex(null); }}
+                    >
+                      {qrBgColor === c && <Ionicons name="checkmark" size={12} color={c === '#FFFFFF' ? '#0C0C0E' : '#fff'} />}
+                    </Pressable>
+                  ))}
+                </View>
+                <View style={styles.swatchRowSecond}>
+                  {SWATCH_SECOND_ROW.map((c) => (
                     <Pressable
                       key={c}
                       style={[
@@ -550,6 +580,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.6, textTransform: 'uppercase', alignSelf: 'flex-start', marginTop: 4,
   },
   swatchRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, alignSelf: 'flex-start' },
+  swatchRowSecond: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, alignSelf: 'flex-start', marginTop: 6 },
   swatchDot: {
     width: 28, height: 28, borderRadius: 14,
     alignItems: 'center', justifyContent: 'center',
