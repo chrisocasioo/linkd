@@ -36,17 +36,19 @@ struct CardLiveActivity: Widget {
                     }
                 }
             } compactLeading: {
-                Image(systemName: "qrcode")
+                qrView(for: context.state, size: 20)
             } compactTrailing: {
                 Text(context.state.name)
                     .font(.caption2)
                     .lineLimit(1)
             } minimal: {
-                Image(systemName: "qrcode")
+                qrView(for: context.state, size: 20)
             }
         }
     }
 
+    // Falls back to the generic SF Symbol if the QR image failed to render,
+    // so the Dynamic Island never shows a blank space.
     @ViewBuilder
     private func qrView(for state: CardActivityAttributes.ContentState, size: CGFloat) -> some View {
         if let qr = currentQrImage(for: state) {
@@ -54,6 +56,8 @@ struct CardLiveActivity: Widget {
                 .interpolation(.none)
                 .resizable()
                 .frame(width: size, height: size)
+        } else {
+            Image(systemName: "qrcode")
         }
     }
 }
