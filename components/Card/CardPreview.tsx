@@ -162,7 +162,6 @@ export function CardPreview({ card, user, analytics, maxHeight, onPreview, onPul
 
   return (
     <View
-      style={styles.card}
       onTouchStart={(e) => {
         touchStartYRef.current = e.nativeEvent.pageY;
         // "At top" of whichever face is showing — refresh works from both
@@ -181,6 +180,28 @@ export function CardPreview({ card, user, analytics, maxHeight, onPreview, onPul
         }
       }}
     >
+      {/* No photo — the name label and analytics button float above the
+          card's own rounded box instead of living inside it, so the card's
+          height is just the identity/fields content, not padded to fit them. */}
+      {!card.photo && (
+        <View style={styles.floatingHeader} pointerEvents="box-none">
+          <View style={styles.floatingHeaderSide} />
+          <Pressable style={styles.labelPillStandalone} onPress={onPreview}>
+            <Text style={styles.labelText}>{card.name.toUpperCase()}</Text>
+          </Pressable>
+          <View style={[styles.floatingHeaderSide, styles.floatingHeaderSideRight]}>
+            <Pressable style={styles.flipBtnInline} onPress={flip} hitSlop={8}>
+              <Ionicons
+                name={isFlipped ? 'card-outline' : 'stats-chart-outline'}
+                size={14}
+                color="rgba(255,255,255,0.75)"
+              />
+            </Pressable>
+          </View>
+        </View>
+      )}
+
+    <View style={styles.card}>
       {/* ── Front face ── */}
       <Animated.View
         pointerEvents={isFlipped ? 'none' : 'auto'}
@@ -195,17 +216,15 @@ export function CardPreview({ card, user, analytics, maxHeight, onPreview, onPul
           }}
           scrollEventThrottle={16}
         >
-          {/* Banner — only rendered when there's a photo; tapping opens the public card */}
-          {card.photo ? (
+          {/* Banner — only rendered when there's a photo (no-photo case's label
+              is the floating header above, not part of this scroll content);
+              tapping opens the public card */}
+          {card.photo && (
             <Pressable style={styles.banner} onPress={onPreview}>
               <Image source={{ uri: card.photo }} style={styles.bannerImg} />
               <View style={styles.labelPill}>
                 <Text style={styles.labelText}>{card.name.toUpperCase()}</Text>
               </View>
-            </Pressable>
-          ) : (
-            <Pressable style={styles.labelPillStandalone} onPress={onPreview}>
-              <Text style={styles.labelText}>{card.name.toUpperCase()}</Text>
             </Pressable>
           )}
 
@@ -323,15 +342,18 @@ export function CardPreview({ card, user, analytics, maxHeight, onPreview, onPul
         </ScrollView>
       </Animated.View>
 
-      {/* Flip button — top-right */}
-      <Pressable style={styles.flipBtn} onPress={flip} hitSlop={8}>
-        <Ionicons
-          name={isFlipped ? 'card-outline' : 'stats-chart-outline'}
-          size={14}
-          color="rgba(255,255,255,0.75)"
-        />
-      </Pressable>
-
+      {/* Flip button — top-right; no-photo case has its own copy in the
+          floating header above instead, so this only renders over a photo */}
+      {card.photo && (
+        <Pressable style={styles.flipBtn} onPress={flip} hitSlop={8}>
+          <Ionicons
+            name={isFlipped ? 'card-outline' : 'stats-chart-outline'}
+            size={14}
+            color="rgba(255,255,255,0.75)"
+          />
+        </Pressable>
+      )}
+    </View>
     </View>
   );
 }
@@ -382,14 +404,31 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   labelPillStandalone: {
-    alignSelf: 'center',
-    marginTop: 16,
     backgroundColor: COLORS.surface2,
     borderWidth: 1,
     borderColor: COLORS.border,
     paddingHorizontal: 12,
     paddingVertical: 5,
     borderRadius: 20,
+  },
+  floatingHeader: {
+    position: 'absolute',
+    top: -14,
+    left: 12,
+    right: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  floatingHeaderSide: { flex: 1 },
+  floatingHeaderSideRight: { alignItems: 'flex-end' },
+  flipBtnInline: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   labelText: {
     color: '#fff',
