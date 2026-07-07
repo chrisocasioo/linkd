@@ -11,7 +11,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Camera, useCameraDevice, useCameraPermission, useCodeScanner } from 'react-native-vision-camera';
 import TextRecognition from '@react-native-ml-kit/text-recognition';
 import DocumentScanner from '../../modules/document-scanner';
@@ -192,6 +192,7 @@ export default function ScansScreen() {
   const api = useApi();
   const router = useRouter();
   const { hasPermission, requestPermission } = useCameraPermission();
+  const insets = useSafeAreaInsets();
   const device = useCameraDevice('back');
   const cameraRef = useRef<Camera>(null);
   const detectingRef = useRef(false);
@@ -449,8 +450,11 @@ export default function ScansScreen() {
           <Text style={styles.scanningText}>Scanning…</Text>
         </View>
 
-        {/* Controls — float over the camera preview */}
-        <View style={styles.controls}>
+        {/* Controls — float over the camera preview. bottom:0 here sits at
+            the true screen edge (this SafeAreaView only insets edges=['top']),
+            so the home indicator's height has to be added explicitly to
+            actually match the top controls' gap below the notch. */}
+        <View style={[styles.controls, { paddingBottom: 20 + insets.bottom }]}>
           <Pressable style={styles.secondaryBtn} onPress={pickFromLibrary}>
             <Ionicons name="images-outline" size={22} color="#fff" />
           </Pressable>
@@ -542,8 +546,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingHorizontal: 48,
-    paddingTop: 32,
-    paddingBottom: 20,
+    paddingVertical: 20,
   },
   secondaryBtn: {
     width: 48, height: 48, borderRadius: 24,
