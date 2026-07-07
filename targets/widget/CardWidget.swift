@@ -64,7 +64,10 @@ func qrImage(from string: String) -> UIImage? {
     let context = CIContext(options: [.useSoftwareRenderer: true])
     let filter = CIFilter.qrCodeGenerator()
     filter.message = Data(string.utf8)
-    filter.correctionLevel = "M"
+    // "L" (not "M") — the offline value is a full vCard, which needs more
+    // capacity headroom than a short URL; low correction is still plenty
+    // reliable for a clean device-to-device scan.
+    filter.correctionLevel = "L"
     guard let output = filter.outputImage else { return nil }
     // CIQRCodeGenerator outputs one point per module — scale up for crispness
     let scaled = output.transformed(by: CGAffineTransform(scaleX: 10, y: 10))
@@ -88,6 +91,30 @@ extension Color {
             green: Double((value & 0x00FF00) >> 8) / 255,
             blue: Double(value & 0x0000FF) / 255
         )
+    }
+}
+
+// Hand-drawn switch — plain shape composition (Capsule + Circle) inside a
+// Button(intent:), not SwiftUI's own Toggle. Widget/Live-Activity Toggle
+// controls need the intent to conform to SetValueIntent with a `value: Bool`
+// parameter to render reliably; our intents just flip existing state with no
+// parameters, so a real Toggle silently failed to appear. This has no such
+// requirement — it's the same proven Button(intent:) pattern as every other
+// widget/Live Activity control here.
+struct FakeSwitch: View {
+    let isOn: Bool
+    let tint: Color
+
+    var body: some View {
+        Capsule()
+            .fill(isOn ? tint : Color.white.opacity(0.22))
+            .frame(width: 34, height: 20)
+            .overlay(
+                Circle()
+                    .fill(Color.white)
+                    .frame(width: 16, height: 16)
+                    .offset(x: isOn ? 7 : -7)
+            )
     }
 }
 
@@ -149,7 +176,9 @@ struct CardWidgetEntryView: View {
 
         case .systemMedium:
             let mode = CardStore.mediumQrMode()
-            let mediumQr = qrImage(from: mode == "offline" ? card.offlineValue : card.publicUrl)
+            // Falls back to the online QR if the offline vCard fails to
+            // encode, so a bad/oversized vCard never leaves the widget blank.
+            let mediumQr = (mode == "offline" ? qrImage(from: card.offlineValue) : nil) ?? qrImage(from: card.publicUrl)
             HStack(spacing: 12) {
                 if let mediumQr {
                     Image(uiImage: mediumQr)
@@ -179,13 +208,10 @@ struct CardWidgetEntryView: View {
                 Spacer(minLength: 4)
                 VStack(spacing: 8) {
                     Spacer()
-                    Toggle(isOn: mode == "offline", intent: ToggleWidgetQrModeIntent()) {
-                        EmptyView()
+                    Button(intent: ToggleWidgetQrModeIntent()) {
+                        FakeSwitch(isOn: mode == "offline", tint: accent)
                     }
-                    .toggleStyle(.switch)
-                    .labelsHidden()
-                    .scaleEffect(0.65)
-                    .frame(width: 34, height: 20)
+                    .buttonStyle(.plain)
                     HStack(spacing: 14) {
                         Button(intent: ShowAdjacentCardIntent(currentCardId: card.id, forward: false)) {
                             Image(systemName: "chevron.left")
@@ -205,7 +231,9 @@ struct CardWidgetEntryView: View {
             .containerBackground(for: .widget) { Color.black }
 
         default: // .systemSmall, .systemLarge — pure QR code, no text
-            let plainQr = qrImage(from: qrMode == .offline ? card.offlineValue : card.publicUrl)
+            // Falls back to the online QR if the offline vCard fails to
+            // encode, so a bad/oversized vCard never leaves the widget blank.
+            let plainQr = (qrMode == .offline ? qrImage(from: card.offlineValue) : nil) ?? qrImage(from: card.publicUrl)
             VStack {
                 if let plainQr {
                     Image(uiImage: plainQr)

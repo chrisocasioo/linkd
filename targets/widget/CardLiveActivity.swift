@@ -6,6 +6,12 @@ private func currentQrValue(for state: CardActivityAttributes.ContentState) -> S
     state.mode == "offline" ? state.offlineValue : state.onlineUrl
 }
 
+// Falls back to the online QR if the offline vCard fails to encode, so a
+// bad/oversized vCard never leaves the Live Activity blank.
+private func currentQrImage(for state: CardActivityAttributes.ContentState) -> UIImage? {
+    qrImage(from: currentQrValue(for: state)) ?? (state.mode == "offline" ? qrImage(from: state.onlineUrl) : nil)
+}
+
 struct CardLiveActivity: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: CardActivityAttributes.self) { context in
@@ -43,7 +49,7 @@ struct CardLiveActivity: Widget {
 
     @ViewBuilder
     private func qrView(for state: CardActivityAttributes.ContentState, size: CGFloat) -> some View {
-        if let qr = qrImage(from: currentQrValue(for: state)) {
+        if let qr = currentQrImage(for: state) {
             Image(uiImage: qr)
                 .interpolation(.none)
                 .resizable()
@@ -60,7 +66,7 @@ private struct LockScreenView: View {
     // one of our own would just duplicate/compete with the real one.
     var body: some View {
         HStack(spacing: 14) {
-            if let qr = qrImage(from: currentQrValue(for: state)) {
+            if let qr = currentQrImage(for: state) {
                 Image(uiImage: qr)
                     .interpolation(.none)
                     .resizable()
@@ -87,17 +93,14 @@ private struct LockScreenView: View {
             }
             Spacer()
             VStack(spacing: 3) {
-                Toggle(isOn: state.mode == "offline", intent: ToggleQrModeIntent()) {
-                    EmptyView()
+                Button(intent: ToggleQrModeIntent()) {
+                    FakeSwitch(isOn: state.mode == "offline", tint: Color(hex: state.accentColor))
                 }
-                .toggleStyle(.switch)
-                .labelsHidden()
-                .scaleEffect(0.72)
-                .frame(width: 38, height: 24)
+                .buttonStyle(.plain)
                 Text(state.mode == "offline" ? "Offline" : "Online")
                     .font(.system(size: 9, weight: .medium))
+                    .foregroundStyle(.secondary)
             }
-            .foregroundStyle(.secondary)
         }
         .padding()
         .activityBackgroundTint(Color.black)
