@@ -156,7 +156,10 @@ const styles = StyleSheet.create({
 
   fieldSep: { height: 1, backgroundColor: COLORS.border, marginVertical: 4 },
   fieldSectionLabel: { fontSize: 9, fontFamily: FONTS.medium, color: COLORS.textTertiary, letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 2 },
-  fieldRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 5 },
+  fieldRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 5,
+    borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.06)',
+  },
   fieldIconWrap: {
     width: 26, height: 26, borderRadius: 8,
     backgroundColor: COLORS.surface2, borderWidth: 1, borderColor: COLORS.border,
