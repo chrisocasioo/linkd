@@ -31,7 +31,7 @@ type Security = 'WPA' | 'WEP' | 'nopass';
 const QR_COLORS = ['#C9973A', '#7C3AED', '#22C55E', '#F43F5E', '#0EA5E9', '#EC4899'];
 const QR_BG_COLORS = ['#C9973A', '#7C3AED', '#22C55E', '#F43F5E', '#0EA5E9', '#EC4899'];
 // Second row shown under both swatch pickers
-const SWATCH_SECOND_ROW = ['#FFFFFF', '#000000', '#808080', '#A52A2A', '#800020', '#FFA500', '#4169E1'];
+const SWATCH_SECOND_ROW = ['#FFFFFF', '#000000', '#808080', '#8B4513', '#800020', '#FFA500', '#4169E1'];
 
 interface Props {
   visible: boolean;

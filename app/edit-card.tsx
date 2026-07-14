@@ -27,7 +27,7 @@ import { COLORS, FONTS } from '../constants/colors';
 
 const ACCENT_COLORS = ['#C9973A', '#7C3AED', '#22C55E', '#F43F5E', '#0EA5E9', '#EC4899'];
 // Second row shown under every swatch picker (accent, QR color, QR background)
-const SECOND_ROW_COLORS = ['#FFFFFF', '#000000', '#808080', '#A52A2A', '#800020', '#FFA500', '#4169E1'];
+const SECOND_ROW_COLORS = ['#FFFFFF', '#000000', '#808080', '#8B4513', '#800020', '#FFA500', '#4169E1'];
 const ALL_SWATCH_COLORS = [...ACCENT_COLORS, ...SECOND_ROW_COLORS];
 
 const FONT_OPTIONS = [
