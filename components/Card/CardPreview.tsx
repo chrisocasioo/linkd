@@ -180,9 +180,11 @@ export function CardPreview({ card, user, analytics, maxHeight, onPreview, onPul
         }
       }}
     >
-      {/* No photo — the name label and analytics button float above the
-          card's own rounded box instead of living inside it, so the card's
-          height is just the identity/fields content, not padded to fit them. */}
+      {/* No photo — the name label and analytics button sit in a row above
+          the card's own rounded box instead of living inside it, so the
+          card's height is just the identity/fields content. Kept in normal
+          flow (not absolutely overlaid) so it isn't clipped by the parent
+          ScrollView/FlatList bounds. */}
       {!card.photo && (
         <View style={styles.floatingHeader} pointerEvents="box-none">
           <View style={styles.floatingHeaderSide} />
@@ -412,13 +414,10 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   floatingHeader: {
-    position: 'absolute',
-    top: -14,
-    left: 12,
-    right: 12,
     flexDirection: 'row',
     alignItems: 'center',
-    zIndex: 10,
+    paddingHorizontal: 12,
+    marginBottom: 10,
   },
   floatingHeaderSide: { flex: 1 },
   floatingHeaderSideRight: { alignItems: 'flex-end' },
