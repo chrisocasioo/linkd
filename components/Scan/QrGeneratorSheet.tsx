@@ -30,8 +30,6 @@ type Security = 'WPA' | 'WEP' | 'nopass';
 
 const QR_COLORS = ['#C9973A', '#7C3AED', '#22C55E', '#F43F5E', '#0EA5E9', '#EC4899'];
 const QR_BG_COLORS = ['#C9973A', '#7C3AED', '#22C55E', '#F43F5E', '#0EA5E9', '#EC4899'];
-// Second row shown under both swatch pickers
-const SWATCH_SECOND_ROW = ['#FFFFFF', '#000000', '#808080', '#8B4513', '#800020', '#FFA500', '#4169E1'];
 
 interface Props {
   visible: boolean;
@@ -362,20 +360,6 @@ export function QrGeneratorSheet({ visible, onClose }: Props) {
                     </Pressable>
                   ))}
                 </View>
-                <View style={styles.swatchRowSecond}>
-                  {SWATCH_SECOND_ROW.map((c) => (
-                    <Pressable
-                      key={c}
-                      style={[
-                        styles.swatchDot, { backgroundColor: c }, qrColor === c && styles.swatchDotActive,
-                        c === '#FFFFFF' && { borderWidth: 1, borderColor: COLORS.border },
-                      ]}
-                      onPress={() => { setQrColor(c); setShowColorHex(null); }}
-                    >
-                      {qrColor === c && <Ionicons name="checkmark" size={12} color={c === '#FFFFFF' ? '#0C0C0E' : '#fff'} />}
-                    </Pressable>
-                  ))}
-                </View>
 
                 <Text style={styles.swatchLabel}>Background</Text>
                 <View style={styles.swatchRow}>
@@ -398,40 +382,54 @@ export function QrGeneratorSheet({ visible, onClose }: Props) {
                     </Pressable>
                   ))}
                 </View>
-                <View style={styles.swatchRowSecond}>
-                  {SWATCH_SECOND_ROW.map((c) => (
-                    <Pressable
-                      key={c}
-                      style={[
-                        styles.swatchDot, { backgroundColor: c }, qrBgColor === c && styles.swatchDotActive,
-                        c === '#FFFFFF' && { borderWidth: 1, borderColor: COLORS.border },
-                      ]}
-                      onPress={() => { setQrBgColor(c); setShowColorHex(null); }}
-                    >
-                      {qrBgColor === c && <Ionicons name="checkmark" size={12} color={c === '#FFFFFF' ? '#0C0C0E' : '#fff'} />}
-                    </Pressable>
-                  ))}
-                </View>
 
                 {showColorHex && (
-                  <View style={styles.hexRow}>
-                    <View style={[styles.hexPreview, { backgroundColor: /^#[0-9A-Fa-f]{6}$/.test(hexDraft) ? hexDraft : COLORS.border }]} />
-                    <TextInput
-                      style={styles.hexInput}
-                      value={hexDraft}
-                      onChangeText={(v) => {
-                        const clean = v.startsWith('#') ? v : '#' + v;
-                        setHexDraft(clean);
-                        if (/^#[0-9A-Fa-f]{6}$/.test(clean)) {
-                          if (showColorHex === 'color') setQrColor(clean); else setQrBgColor(clean);
-                        }
-                      }}
-                      placeholder="#000000"
-                      placeholderTextColor={COLORS.textTertiary}
-                      autoCapitalize="characters"
-                      maxLength={7}
-                    />
-                  </View>
+                  <>
+                    <View style={styles.quickBwRow}>
+                      <Pressable
+                        style={styles.quickBwBtn}
+                        onPress={() => {
+                          const setColor = showColorHex === 'color' ? setQrColor : setQrBgColor;
+                          setColor('#000000');
+                          setHexDraft('#000000');
+                          setShowColorHex(null);
+                        }}
+                      >
+                        <View style={[styles.quickBwSwatch, { backgroundColor: '#000000' }]} />
+                        <Text style={styles.quickBwText}>Black</Text>
+                      </Pressable>
+                      <Pressable
+                        style={styles.quickBwBtn}
+                        onPress={() => {
+                          const setColor = showColorHex === 'color' ? setQrColor : setQrBgColor;
+                          setColor('#FFFFFF');
+                          setHexDraft('#FFFFFF');
+                          setShowColorHex(null);
+                        }}
+                      >
+                        <View style={[styles.quickBwSwatch, { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: COLORS.border }]} />
+                        <Text style={styles.quickBwText}>White</Text>
+                      </Pressable>
+                    </View>
+                    <View style={styles.hexRow}>
+                      <View style={[styles.hexPreview, { backgroundColor: /^#[0-9A-Fa-f]{6}$/.test(hexDraft) ? hexDraft : COLORS.border }]} />
+                      <TextInput
+                        style={styles.hexInput}
+                        value={hexDraft}
+                        onChangeText={(v) => {
+                          const clean = v.startsWith('#') ? v : '#' + v;
+                          setHexDraft(clean);
+                          if (/^#[0-9A-Fa-f]{6}$/.test(clean)) {
+                            if (showColorHex === 'color') setQrColor(clean); else setQrBgColor(clean);
+                          }
+                        }}
+                        placeholder="#000000"
+                        placeholderTextColor={COLORS.textTertiary}
+                        autoCapitalize="characters"
+                        maxLength={7}
+                      />
+                    </View>
+                  </>
                 )}
 
                 <View style={styles.saveRow}>
@@ -580,7 +578,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.6, textTransform: 'uppercase', alignSelf: 'flex-start', marginTop: 4,
   },
   swatchRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, alignSelf: 'flex-start' },
-  swatchRowSecond: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, alignSelf: 'flex-start', marginTop: 6 },
   swatchDot: {
     width: 28, height: 28, borderRadius: 14,
     alignItems: 'center', justifyContent: 'center',
@@ -588,6 +585,14 @@ const styles = StyleSheet.create({
   },
   swatchPickerDot: { backgroundColor: 'rgba(255,255,255,0.08)' },
   swatchDotActive: { borderColor: '#fff' },
+  quickBwRow: { flexDirection: 'row', gap: 8, alignSelf: 'stretch', marginBottom: 4 },
+  quickBwBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10,
+    backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border,
+  },
+  quickBwSwatch: { width: 14, height: 14, borderRadius: 7 },
+  quickBwText: { fontSize: 12, fontFamily: FONTS.medium, color: COLORS.text },
   hexRow: { flexDirection: 'row', alignItems: 'center', gap: 10, alignSelf: 'stretch' },
   hexPreview: { width: 26, height: 26, borderRadius: 13 },
   hexInput: {
