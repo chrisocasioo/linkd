@@ -546,7 +546,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingHorizontal: 48,
-    paddingVertical: 20,
+    paddingTop: 34,
   },
   secondaryBtn: {
     width: 48, height: 48, borderRadius: 24,
