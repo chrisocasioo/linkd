@@ -570,10 +570,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   backFieldsSection: {
-    paddingHorizontal: 18,
     paddingTop: 10,
     paddingBottom: 8,
-    gap: 4,
   },
   backSectionLabel: {
     fontSize: 10,
@@ -581,12 +579,16 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.35)',
     letterSpacing: 1,
     marginBottom: 10,
+    paddingHorizontal: 18,
   },
   backFieldRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
+    paddingHorizontal: 18,
     paddingVertical: 7,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.06)',
   },
   backFieldIcon: {
     width: 28,
