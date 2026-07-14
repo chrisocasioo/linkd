@@ -557,22 +557,6 @@ export default function EditCardScreen() {
                     </Pressable>
                   ))}
                 </View>
-                <View style={styles.colorRowSecond}>
-                  {SECOND_ROW_COLORS.map((c) => (
-                    <Pressable
-                      key={c}
-                      style={[
-                        styles.colorDot, { backgroundColor: c }, accent === c && styles.colorDotActive,
-                        c === '#FFFFFF' && { borderWidth: 1, borderColor: COLORS.border },
-                      ]}
-                      onPress={() => { setAccent(c); setShowHexInput(false); }}
-                    >
-                      {accent === c && (
-                        <Ionicons name="checkmark" size={14} color={c === '#FFFFFF' ? '#0C0C0E' : '#fff'} />
-                      )}
-                    </Pressable>
-                  ))}
-                </View>
 
                 {showHexInput && (
                   <>
