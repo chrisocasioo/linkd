@@ -1,27 +1,40 @@
 import ActivityKit
 import CoreImage.CIFilterBuiltins
 import ExpoModulesCore
+import Foundation
 import UIKit
+
+private let qrAppGroup = "group.com.santrico.linkd"
+
+private func qrFileURL(mode: String) -> URL? {
+    FileManager.default
+        .containerURL(forSecurityApplicationGroupIdentifier: qrAppGroup)?
+        .appendingPathComponent("live-activity-qr-\(mode).png")
+}
 
 // Renders here in the main app process — always has full GPU rendering
 // access, unlike the widget extension, which has been observed to fail to
-// rasterize a fresh CIImage while the device is genuinely locked. The
-// resulting PNG bytes travel through ContentState so the extension only
-// ever has to decode an already-rendered image (UIImage(data:)), never
-// generate one itself.
-private func generateQrPNG(from string: String) -> Data {
+// rasterize a fresh CIImage while the device is genuinely locked. Written to
+// a file in the shared App Group container rather than carried through
+// ContentState — embedding image Data directly in ContentState turned out to
+// make the Live Activity fail to start at all (a documented pattern: the
+// working approach for images in Live Activities is App Group file sharing,
+// not inline Data). The extension only ever has to decode an already-
+// rendered file, never generate or receive image bytes inline.
+private func writeQrPNG(from string: String, mode: String) {
+    guard let url = qrFileURL(mode: mode) else { return }
     let filter = CIFilter.qrCodeGenerator()
     filter.message = Data(string.utf8)
     // "L" (not "M") — the offline value is a full vCard, which needs more
     // capacity headroom than a short URL; low correction is still plenty
     // reliable for a clean device-to-device scan.
     filter.correctionLevel = "L"
-    guard let output = filter.outputImage else { return Data() }
+    guard let output = filter.outputImage else { return }
     let scaled = output.transformed(by: CGAffineTransform(scaleX: 10, y: 10))
     let whiteBackground = CIImage(color: .white).cropped(to: scaled.extent)
     let composited = scaled.composited(over: whiteBackground)
-    guard let cgImage = CIContext().createCGImage(composited, from: composited.extent) else { return Data() }
-    return UIImage(cgImage: cgImage).pngData() ?? Data()
+    guard let cgImage = CIContext().createCGImage(composited, from: composited.extent) else { return }
+    try? UIImage(cgImage: cgImage).pngData()?.write(to: url)
 }
 
 struct CardActivityPayload: Record {
@@ -59,6 +72,11 @@ public class LiveActivityModule: Module {
                 await activity.end(nil, dismissalPolicy: .immediate)
             }
 
+            // Written before the activity is requested so both files are
+            // already on disk by the time the extension's first render happens.
+            writeQrPNG(from: payload.onlineUrl, mode: "online")
+            writeQrPNG(from: payload.offlineValue, mode: "offline")
+
             let attributes = CardActivityAttributes(cardId: payload.cardId)
             let state = CardActivityAttributes.ContentState(
                 name: payload.name,
@@ -67,8 +85,6 @@ public class LiveActivityModule: Module {
                 accentColor: payload.accentColor,
                 onlineUrl: payload.onlineUrl,
                 offlineValue: payload.offlineValue,
-                onlineQrPNG: generateQrPNG(from: payload.onlineUrl),
-                offlineQrPNG: generateQrPNG(from: payload.offlineValue),
                 mode: "online"
             )
 

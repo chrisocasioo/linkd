@@ -1,5 +1,4 @@
 import ActivityKit
-import Foundation
 
 /// Mirrored (not shared-by-file) in targets/widget — the main app and the
 /// widget extension are separate compiled targets, so both keep their own
@@ -13,15 +12,12 @@ struct CardActivityAttributes: ActivityAttributes {
         var accentColor: String
         var onlineUrl: String
         var offlineValue: String
-        // Pre-rendered PNG bytes for both QR variants, generated here in the
-        // main app (which always has full rendering access) at Activity
-        // start time — not regenerated inside the widget extension, which
-        // has been observed to fail to rasterize a fresh CIImage while the
-        // device is genuinely locked, even with a software CIContext.
-        var onlineQrPNG: Data
-        var offlineQrPNG: Data
         // "online" | "offline" — which QR value is currently displayed;
-        // flipped by the toggle button on the card itself.
+        // flipped by the toggle button on the card itself. The QR images
+        // themselves are not carried here — they're pre-rendered PNG files
+        // in the shared App Group container (see LiveActivityModule.swift /
+        // CardLiveActivity.swift), since embedding image Data directly in
+        // ContentState made the Live Activity fail to start at all.
         var mode: String
     }
 

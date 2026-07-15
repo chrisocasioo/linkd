@@ -1,16 +1,31 @@
 import ActivityKit
+import Foundation
 import SwiftUI
 import WidgetKit
 
-// Decodes the PNG the main app already rendered at Activity start time,
-// rather than generating a fresh CIImage here — the widget extension has
-// been observed to fail to rasterize a QR while the device is genuinely
-// locked, even with a software CIContext. Falls back to the online QR if
-// the offline vCard's PNG is somehow missing, so a bad/oversized vCard
-// never leaves the Live Activity blank.
+private let qrAppGroup = "group.com.santrico.linkd"
+
+private func qrFileURL(mode: String) -> URL? {
+    FileManager.default
+        .containerURL(forSecurityApplicationGroupIdentifier: qrAppGroup)?
+        .appendingPathComponent("live-activity-qr-\(mode).png")
+}
+
+private func loadQrImage(mode: String) -> UIImage? {
+    guard let url = qrFileURL(mode: mode), let data = try? Data(contentsOf: url) else { return nil }
+    return UIImage(data: data)
+}
+
+// Reads the PNG the main app already rendered and wrote to the shared App
+// Group container at Activity start time, rather than generating a fresh
+// CIImage here — the widget extension has been observed to fail to
+// rasterize a QR while the device is genuinely locked, even with a software
+// CIContext, and embedding image Data directly in ContentState made the
+// Live Activity fail to start at all. Falls back to the online QR if the
+// offline vCard's file is somehow missing, so a bad/oversized vCard never
+// leaves the Live Activity blank.
 private func currentQrImage(for state: CardActivityAttributes.ContentState) -> UIImage? {
-    let primaryData = state.mode == "offline" ? state.offlineQrPNG : state.onlineQrPNG
-    return UIImage(data: primaryData) ?? (state.mode == "offline" ? UIImage(data: state.onlineQrPNG) : nil)
+    loadQrImage(mode: state.mode) ?? (state.mode == "offline" ? loadQrImage(mode: "online") : nil)
 }
 
 struct CardLiveActivity: Widget {
