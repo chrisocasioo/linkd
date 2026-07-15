@@ -18,8 +18,10 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ColorPicker from 'react-native-wheel-color-picker';
 import { CardFieldSheet } from '../components/Card/CardFieldSheet';
+import { PaywallSheet } from '../components/Card/PaywallSheet';
 import { useApi, Card, CardField, User } from '../lib/api';
 import { APP_FIELD_DISPLAY } from '../lib/appField';
+import { useRevenueCat } from '../lib/RevenueCatContext';
 import { syncWidgetData } from '../lib/widgetSync';
 import { COLORS, FONTS } from '../constants/colors';
 
@@ -184,6 +186,8 @@ export default function EditCardScreen() {
   const [cardName, setCardName] = useState('');
   const [accent, setAccent] = useState('');
   const [cardFont, setCardFont] = useState('dm-sans');
+  const [showPaywall, setShowPaywall] = useState(false);
+  const { isPro } = useRevenueCat();
 
   const [firstName, setFirstName] = useState('');
   const [middleName, setMiddleName] = useState('');
@@ -490,7 +494,7 @@ export default function EditCardScreen() {
 
                 <Text style={[styles.label, { marginTop: 20 }]}>Accent Color</Text>
                 <View style={styles.colorRow}>
-                  {/* Color picker swatch */}
+                  {/* Color picker swatch — custom accent color is a Pro feature */}
                   <Pressable
                     style={[
                       styles.colorDot, styles.colorPickerDot,
@@ -498,11 +502,16 @@ export default function EditCardScreen() {
                       !ACCENT_COLORS.includes(accent) && { borderColor: accent },
                     ]}
                     onPress={() => {
+                      if (!isPro) { setShowPaywall(true); return; }
                       setHexDraft(accent);
                       setShowHexInput((v) => !v);
                     }}
                   >
-                    <Ionicons name="color-palette-outline" size={16} color={!ACCENT_COLORS.includes(accent) ? accent : 'rgba(255,255,255,0.6)'} />
+                    <Ionicons
+                      name={isPro ? 'color-palette-outline' : 'lock-closed'}
+                      size={16}
+                      color={!ACCENT_COLORS.includes(accent) ? accent : 'rgba(255,255,255,0.6)'}
+                    />
                   </Pressable>
 
                   {ACCENT_COLORS.map((c) => (
@@ -553,22 +562,39 @@ export default function EditCardScreen() {
                 <Text style={[styles.label, { marginTop: 20 }]}>Font</Text>
                 {FONT_ROWS.map((row, rowIdx) => (
                   <View key={rowIdx} style={[styles.fontRow, rowIdx > 0 && { marginTop: 8 }]}>
-                    {row.map((f) => (
-                      <Pressable
-                        key={f.id}
-                        style={[styles.fontOption, cardFont === f.id && { borderColor: accent, backgroundColor: accent + '18' }]}
-                        onPress={() => setCardFont(f.id)}
-                      >
-                        <Text style={[styles.fontPreview, { fontFamily: f.family }]}>{f.preview}</Text>
-                        <Text style={[styles.fontLabel, cardFont === f.id && { color: accent }]}>{f.label}</Text>
-                      </Pressable>
-                    ))}
+                    {row.map((f) => {
+                      const locked = !isPro && f.id !== 'dm-sans';
+                      return (
+                        <Pressable
+                          key={f.id}
+                          style={[styles.fontOption, cardFont === f.id && { borderColor: accent, backgroundColor: accent + '18' }]}
+                          onPress={() => {
+                            if (locked) { setShowPaywall(true); return; }
+                            setCardFont(f.id);
+                          }}
+                        >
+                          <Text style={[styles.fontPreview, { fontFamily: f.family }]}>{f.preview}</Text>
+                          <View style={styles.fontLabelRow}>
+                            {locked && <Ionicons name="lock-closed" size={8} color={COLORS.textTertiary} />}
+                            <Text style={[styles.fontLabel, cardFont === f.id && { color: accent }]}>{f.label}</Text>
+                          </View>
+                        </Pressable>
+                      );
+                    })}
                   </View>
                 ))}
               </View>
 
               <Text style={styles.sectionHeader}>QR CODE</Text>
               <View style={styles.card}>
+                {!isPro && (
+                  <Pressable style={styles.proLockOverlay} onPress={() => setShowPaywall(true)}>
+                    <View style={styles.proLockBadge}>
+                      <Ionicons name="lock-closed" size={13} color={COLORS.text} />
+                      <Text style={styles.proLockText}>Unlock with Pro</Text>
+                    </View>
+                  </Pressable>
+                )}
                 <Text style={styles.label}>Logo</Text>
                 <View style={styles.qrLogoRow}>
                   <Pressable onPress={handlePickQrLogo} style={styles.qrLogoWrap}>
@@ -938,6 +964,7 @@ export default function EditCardScreen() {
         onSave={handleFieldSave}
         onDelete={handleFieldDelete}
       />
+      <PaywallSheet visible={showPaywall} onClose={() => setShowPaywall(false)} />
     </SafeAreaView>
   );
 }
@@ -1011,6 +1038,20 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: COLORS.border,
     padding: 16,
   },
+  proLockOverlay: {
+    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: 'rgba(12,12,14,0.82)',
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 10,
+  },
+  proLockBadge: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    backgroundColor: COLORS.surface2, borderWidth: 1, borderColor: COLORS.border,
+    paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12,
+  },
+  proLockText: { fontSize: 13, fontFamily: FONTS.semiBold, color: COLORS.text },
   label: {
     fontSize: 10, fontFamily: FONTS.medium, color: COLORS.textSecondary,
     letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 8,
@@ -1058,6 +1099,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   fontPreview: { fontSize: 20, color: COLORS.text },
+  fontLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 3 },
   fontLabel: { fontSize: 10, fontFamily: FONTS.medium, color: COLORS.textSecondary, letterSpacing: 0.4 },
 
   sectionHeader: {
