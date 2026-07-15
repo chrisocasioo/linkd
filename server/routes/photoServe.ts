@@ -14,6 +14,11 @@ const s3 = new S3Client({
 
 const router = Router();
 
+// Every photoUrl/logoUrl the app hands out embeds a `?v=<upload timestamp>`
+// cache-buster (see cards.ts, qrs.ts, photo.ts, contacts.ts) that changes on
+// every re-upload, so the bytes behind any given URL never change — safe to
+// cache for as long as clients/CDNs want.
+
 // Must precede /card/:cardId and /:userId, or its segments get swallowed
 router.get('/card/:cardId/qr-logo', async (req, res) => {
   try {
@@ -28,7 +33,7 @@ router.get('/card/:cardId/qr-logo', async (req, res) => {
     );
 
     res.setHeader('Content-Type', result.ContentType ?? 'image/jpeg');
-    res.setHeader('Cache-Control', 'public, max-age=60');
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
 
     if (result.Body instanceof Readable) {
       result.Body.pipe(res);
@@ -54,7 +59,7 @@ router.get('/qr/:qrId/logo', async (req, res) => {
     );
 
     res.setHeader('Content-Type', result.ContentType ?? 'image/jpeg');
-    res.setHeader('Cache-Control', 'public, max-age=60');
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
 
     if (result.Body instanceof Readable) {
       result.Body.pipe(res);
@@ -80,7 +85,7 @@ router.get('/contact/:contactId', async (req, res) => {
     );
 
     res.setHeader('Content-Type', result.ContentType ?? 'image/jpeg');
-    res.setHeader('Cache-Control', 'public, max-age=60');
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
 
     if (result.Body instanceof Readable) {
       result.Body.pipe(res);
@@ -107,7 +112,7 @@ router.get('/card/:cardId', async (req, res) => {
     );
 
     res.setHeader('Content-Type', result.ContentType ?? 'image/jpeg');
-    res.setHeader('Cache-Control', 'public, max-age=60');
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
 
     if (result.Body instanceof Readable) {
       result.Body.pipe(res);
@@ -133,7 +138,7 @@ router.get('/:userId', async (req, res) => {
     );
 
     res.setHeader('Content-Type', result.ContentType ?? 'image/jpeg');
-    res.setHeader('Cache-Control', 'public, max-age=60');
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
 
     if (result.Body instanceof Readable) {
       result.Body.pipe(res);
