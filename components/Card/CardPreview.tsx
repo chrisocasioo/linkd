@@ -288,13 +288,19 @@ export function CardPreview({ card, user, analytics, maxHeight, onPreview, onPul
           }}
           scrollEventThrottle={16}
         >
-          {/* Views summary */}
+          {/* Views summary — the 30-day count itself is a Pro feature */}
           <View style={styles.backViewsSection}>
             <Text style={styles.backPeriod}>LAST 30 DAYS</Text>
-            <Text style={styles.backViews}>
-              {analytics ? analytics.views.toLocaleString() : '—'}
-            </Text>
-            <Text style={styles.backViewsLabel}>card views</Text>
+            {analyticsLocked ? (
+              <Pressable style={styles.backViewsLockBadge} onPress={onUnlockAnalytics}>
+                <Ionicons name="lock-closed" size={22} color="#0C0C0E" />
+              </Pressable>
+            ) : (
+              <Text style={styles.backViews}>
+                {analytics ? analytics.views.toLocaleString() : '—'}
+              </Text>
+            )}
+            <Text style={styles.backViewsLabel}>{analyticsLocked ? 'Unlock with Pro' : 'card views'}</Text>
             {!analyticsLocked && analytics && analytics.prevViews > 0 && (
               <View style={[styles.backDeltaPill, { backgroundColor: accent + '22' }]}>
                 <Text style={[styles.backDelta, { color: accent }]}>
@@ -534,6 +540,15 @@ const styles = StyleSheet.create({
     color: '#fff',
     letterSpacing: -2,
     lineHeight: 68,
+  },
+  backViewsLockBadge: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: COLORS.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 6,
   },
   backViewsLabel: {
     fontSize: 14,
