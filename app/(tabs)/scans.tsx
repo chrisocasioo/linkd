@@ -446,6 +446,20 @@ export default function ScansScreen() {
           </Pressable>
         </View>
 
+        {/* Free-tier card scan countdown — QR scanning has no limit, so this
+            only ever concerns business-card scans. Tapping it opens the
+            paywall, same as hitting the actual limit does elsewhere. */}
+        {!isPro && (
+          <Pressable style={styles.scanCountPill} onPress={() => setShowPaywall(true)}>
+            <Ionicons name="scan-outline" size={12} color="rgba(255,255,255,0.75)" />
+            <Text style={styles.scanCountText}>
+              {atCardScanLimit
+                ? 'Card scan limit reached — upgrade for more'
+                : `${FREE_CARD_SCAN_LIMIT - cardScanCount} card scans left`}
+            </Text>
+          </Pressable>
+        )}
+
         {/* Viewfinder — snaps onto a detected QR code's actual bounds; falls
             back to a fixed centered guide for framing a business card */}
         <View style={styles.viewfinderWrap} pointerEvents="none">
@@ -581,6 +595,13 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.35)',
     alignItems: 'center', justifyContent: 'center',
   },
+  scanCountPill: {
+    position: 'absolute', top: 92, alignSelf: 'center',
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20,
+  },
+  scanCountText: { fontSize: 11, fontFamily: FONTS.medium, color: 'rgba(255,255,255,0.75)' },
   scanningPill: {
     position: 'absolute', bottom: 122, alignSelf: 'center',
     flexDirection: 'row', alignItems: 'center', gap: 8,
