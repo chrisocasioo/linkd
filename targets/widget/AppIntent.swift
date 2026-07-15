@@ -28,6 +28,9 @@ enum CardStore {
             return CardEntity(
                 id: id,
                 name: name,
+                // Falls back to the card's own label for snapshots synced
+                // before this field existed, rather than showing blank.
+                personName: dict["personName"] as? String ?? name,
                 accentColor: accentColor,
                 username: username,
                 slug: dict["slug"] as? String ?? "",
@@ -77,7 +80,12 @@ enum CardStore {
 
 struct CardEntity: AppEntity {
     var id: String
+    // The card's own label (e.g. "Work") — shown in the "Edit Widget"
+    // picker via displayRepresentation below, where it's what lets someone
+    // tell their cards apart. Not the same as personName, which is who the
+    // card belongs to and what actually renders on the widget face.
     var name: String
+    var personName: String
     var accentColor: String
     var username: String
     var slug: String

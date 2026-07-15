@@ -223,7 +223,7 @@ struct CardWidgetEntryView: View {
                         .frame(width: 40, height: 40)
                 }
                 VStack(alignment: .leading, spacing: 1) {
-                    Text(card.name)
+                    Text(card.personName)
                         .font(.caption)
                         .fontWeight(.semibold)
                         .lineLimit(1)
@@ -249,7 +249,7 @@ struct CardWidgetEntryView: View {
                         .frame(width: 90, height: 90)
                 }
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(card.name)
+                    Text(card.personName)
                         .font(.headline)
                         .foregroundStyle(.white)
                         .lineLimit(1)

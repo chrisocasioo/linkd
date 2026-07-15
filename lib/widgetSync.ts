@@ -39,7 +39,12 @@ export async function syncWidgetData(cards: Card[], user: User | null, username:
       const publicUrl = publicCardUrl(username, c.slug);
       return {
         id: c.id,
+        // The card's own label (e.g. "Work") — kept separate from
+        // personName below since this is what lets someone tell their cards
+        // apart in the "Edit Widget" picker; it was never meant to be shown
+        // as a person's name on the widget face itself.
         name: c.name,
+        personName: user?.displayName ?? user?.username ?? c.name,
         accentColor: c.accentColor,
         username,
         slug: c.slug ?? '',
