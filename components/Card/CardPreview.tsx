@@ -331,7 +331,7 @@ export function CardPreview({ card, user, analytics, maxHeight, onPreview, onPul
                       <Ionicons name={(fc.fieldIcon as keyof typeof Ionicons.glyphMap) || FIELD_ICONS[fc.fieldType] || FIELD_ICONS.custom} size={13} color={accent} />
                     </View>
                     <Text style={styles.backFieldName} numberOfLines={1}>
-                      {fc.label ?? (fc.fieldType === 'app' ? APP_FIELD_DISPLAY : fc.fieldValue)}
+                      {fc.label ?? (fc.fieldType === 'app' ? APP_FIELD_DISPLAY : fc.fieldType === 'phone' ? formatPhone(fc.fieldValue) : fc.fieldValue)}
                     </Text>
                     {analyticsLocked ? (
                       <View style={styles.backFieldLock}>
