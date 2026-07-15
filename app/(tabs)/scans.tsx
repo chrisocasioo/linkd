@@ -24,6 +24,10 @@ import { markSyncedToPhone, saveContactToPhone } from '../../lib/nativeContacts'
 import { inferQrFormat, parseWifiQr } from '../../lib/qrFormat';
 import { COLORS, FONTS } from '../../constants/colors';
 
+// Temporarily hidden from the top controls — flip back to true to restore
+// the button. Left in place (not deleted) so it's a one-line re-enable.
+const SHOW_QR_GENERATOR_BUTTON = false;
+
 function extractLargeTextLines(result: any): Set<string> {
   const lineSizes: Array<{ text: string; height: number }> = [];
   for (const block of result.blocks ?? []) {
@@ -406,11 +410,17 @@ export default function ScansScreen() {
           codeScanner={codeScanner}
         />
 
-        {/* Top controls — QR generator/browser (left), scan history (right) */}
+        {/* Top controls — QR generator/browser (left, currently hidden),
+            scan history (right). A same-size invisible spacer stands in for
+            the hidden button so scan history stays anchored to the right. */}
         <View style={styles.topControls}>
-          <Pressable style={styles.secondaryBtn} onPress={() => setShowQrGenerator(true)}>
-            <Ionicons name="qr-code-outline" size={20} color="#fff" />
-          </Pressable>
+          {SHOW_QR_GENERATOR_BUTTON ? (
+            <Pressable style={styles.secondaryBtn} onPress={() => setShowQrGenerator(true)}>
+              <Ionicons name="qr-code-outline" size={20} color="#fff" />
+            </Pressable>
+          ) : (
+            <View style={[styles.secondaryBtn, { opacity: 0 }]} />
+          )}
           <Pressable style={styles.secondaryBtn} onPress={() => setShowHistory(true)}>
             <Ionicons name="time-outline" size={20} color="#fff" />
           </Pressable>
