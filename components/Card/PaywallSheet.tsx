@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useRef, useState } from 'react';
-import { Alert, Animated, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Animated, PanResponder, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRevenueCat } from '../../lib/RevenueCatContext';
 import { getProPricing, ProPricing } from '../../lib/revenuecat';
 import { COLORS, FONTS } from '../../constants/colors';
@@ -63,13 +63,36 @@ export function PaywallSheet({ visible, onClose }: Props) {
     }
   };
 
+  // Swipe-down-to-dismiss on the handle zone (the body ScrollView keeps its
+  // own vertical gesture). onCloseRef avoids a stale onClose in the responder.
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, g) => g.dy > 6 && Math.abs(g.dy) > Math.abs(g.dx),
+      onPanResponderMove: (_, g) => { if (g.dy > 0) slideAnim.setValue(g.dy); },
+      onPanResponderRelease: (_, g) => {
+        if (g.dy > 120 || g.vy > 0.8) {
+          onCloseRef.current();
+        } else {
+          Animated.spring(slideAnim, { toValue: 0, useNativeDriver: true, damping: 20, stiffness: 200 }).start();
+        }
+      },
+      onPanResponderTerminate: () => {
+        Animated.spring(slideAnim, { toValue: 0, useNativeDriver: true, damping: 20, stiffness: 200 }).start();
+      },
+    })
+  ).current;
+
   if (!visible) return null;
 
   return (
     <View style={StyleSheet.absoluteFill}>
       <Pressable style={styles.backdrop} onPress={onClose} />
       <Animated.View style={[styles.sheet, { transform: [{ translateY: slideAnim }] }]}>
-        <View style={styles.handle} />
+        <View {...panResponder.panHandlers}>
+          <View style={styles.handle} />
+        </View>
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} bounces={false}>
           <View style={styles.statCard}>
             <View>
