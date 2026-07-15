@@ -10,6 +10,7 @@ const PRO_FEATURES = [
   { emoji: '🔤', title: 'Custom Fonts', sub: 'Unlock every font beyond the default' },
   { emoji: '🔳', title: 'Customize QR Codes', sub: 'Add a logo and choose your QR color & background' },
   { emoji: '📊', title: 'Analytics', sub: 'Views, trends, and which links get clicked' },
+  { emoji: '📇', title: 'Unlimited Scans', sub: 'Free includes 100 card scans — Pro removes the cap' },
 ];
 
 interface Props {
