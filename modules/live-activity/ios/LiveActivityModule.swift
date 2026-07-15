@@ -53,7 +53,7 @@ private func writeQrPNG(from string: String, mode: String, color: String, bgColo
     // online one (700px+ vs ~300px), which the Live Activity extension's
     // tighter memory ceiling couldn't render — it showed a blank
     // placeholder instead of failing over to the online fallback.
-    let scale = 300 / output.extent.width
+    let scale = 360 / output.extent.width
     let scaled = output.transformed(by: CGAffineTransform(scaleX: scale, y: scale))
     // CIQRCodeGenerator's "on" modules are opaque black, "off" are
     // transparent — composite over white first to get a definite
