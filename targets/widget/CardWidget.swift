@@ -112,9 +112,14 @@ func qrImage(from string: String, color: String = "#000000", bgColor: String = "
         final = centeredLogo.composited(over: backing.composited(over: final))
     }
 
-    guard let cgImage = CIContext().createCGImage(final, from: final.extent) else { return nil }
+    guard let cgImage = sharedCIContext.createCGImage(final, from: final.extent) else { return nil }
     return UIImage(cgImage: cgImage)
 }
+
+// CIContext setup is the expensive part of a Core Image render, not the
+// filter chain itself — reused across every qrImage() call in the process
+// instead of spinning up a fresh one per render.
+private let sharedCIContext = CIContext()
 
 private func ciColor(hex: String) -> CIColor {
     let cleaned = hex.trimmingCharacters(in: CharacterSet(charactersIn: "#"))
@@ -194,10 +199,15 @@ struct CardWidgetEntryView: View {
     @ViewBuilder
     private func content(for card: CardEntity, qrMode: QrModeOption) -> some View {
         let accent = Color(hex: card.accentColor)
-        let qr = qrImage(from: card.publicUrl, color: card.qrColor, bgColor: card.qrBgColor, logoBase64: card.qrLogoBase64)
 
         switch family {
         case .accessoryRectangular:
+            // Computed here, not hoisted above the switch — every other
+            // branch renders its own online/offline QR and never touched
+            // this one, so hoisting it meant every widget render paid for
+            // an extra, unused QR render (double the Core Image work on the
+            // already-heavier offline vCard case).
+            let qr = qrImage(from: card.publicUrl, color: card.qrColor, bgColor: card.qrBgColor, logoBase64: card.qrLogoBase64)
             // Lock Screen — the system applies its own monochrome/vibrancy
             // rendering here, so no explicit background or accent tint.
             HStack(spacing: 8) {
