@@ -508,7 +508,7 @@ export default function EditCardScreen() {
                     }}
                   >
                     <Ionicons
-                      name={isPro ? 'color-palette-outline' : 'lock-closed'}
+                      name="color-palette-outline"
                       size={16}
                       color={!ACCENT_COLORS.includes(accent) ? accent : 'rgba(255,255,255,0.6)'}
                     />
