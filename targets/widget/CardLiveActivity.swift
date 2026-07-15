@@ -90,7 +90,7 @@ private struct LockScreenView: View {
                 Image(uiImage: qr)
                     .interpolation(.none)
                     .resizable()
-                    .frame(width: 64, height: 64)
+                    .frame(width: 100, height: 100)
             }
             VStack(alignment: .leading, spacing: 2) {
                 Text(state.name)
