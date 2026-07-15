@@ -118,6 +118,10 @@ export interface Card {
   id: string;
   userId: string;
   name: string;
+  // Who the card belongs to — independent of `name` above, which is just
+  // the card's own organizational label (e.g. "Work"). Null falls back to
+  // the account's own displayName wherever this card's name is shown.
+  displayName: string | null;
   accentColor: string;
   font: string | null;
   photo: string | null;
@@ -203,7 +207,7 @@ export function useApi() {
     getMyCards: () => withToken((t) => request<Card[]>('/api/cards', t)),
     addCard: (body: { name: string; accentColor: string }) =>
       withToken((t) => request<Card>('/api/cards', t, { method: 'POST', body: JSON.stringify(body) })),
-    updateCard: (id: string, body: Partial<{ name: string; accentColor: string; font: string; photo: string | null; slug: string; qrColor: string | null; qrLogo: string | null; qrBgColor: string | null }>) =>
+    updateCard: (id: string, body: Partial<{ name: string; displayName: string | null; accentColor: string; font: string; photo: string | null; slug: string; qrColor: string | null; qrLogo: string | null; qrBgColor: string | null }>) =>
       withToken((t) => request<Card>(`/api/cards/${id}`, t, { method: 'PATCH', body: JSON.stringify(body) })),
     uploadCardPhoto: (cardId: string, uri: string) =>
       withToken(async (t) => {

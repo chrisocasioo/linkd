@@ -228,7 +228,7 @@ export default function EditCardScreen() {
         setCardFont(found.font ?? 'dm-sans');
         setQrColor(found.qrColor ?? '#000000');
         setQrBgColor(found.qrBgColor ?? '#FFFFFF');
-        const nameParts = (u.displayName ?? '').split(' ');
+        const nameParts = (found.displayName ?? u.displayName ?? '').split(' ');
         setFirstName(nameParts[0] ?? '');
         if (nameParts.length === 2) { setLastName(nameParts[1]); }
         else if (nameParts.length >= 3) { setMiddleName(nameParts[1]); setLastName(nameParts.slice(2).join(' ')); }
@@ -316,6 +316,7 @@ export default function EditCardScreen() {
       const ops: Promise<unknown>[] = [
         api.updateCard(cardId, {
           name: cardName.trim() || 'Card',
+          displayName,
           accentColor: accent,
           font: cardFont,
           qrColor,
@@ -331,7 +332,6 @@ export default function EditCardScreen() {
       ];
       if (photoUri) ops.push(api.uploadCardPhoto(cardId, photoUri));
       if (qrLogoUri) ops.push(api.uploadCardQrLogo(cardId, qrLogoUri));
-      if (displayName) ops.push(api.updateMe({ displayName }));
       await Promise.all(ops);
 
       if (user?.username) {
@@ -433,7 +433,9 @@ export default function EditCardScreen() {
   const suggestedCategories = FIELD_CATEGORIES;
   const photoSource = photoUri ?? card.photo ?? null;
   const qrLogoSource = qrLogoUri ?? (removeQrLogo ? null : card.qrLogo ?? null);
-  const initial = ((user.displayName ?? user.username ?? '?')[0]).toUpperCase();
+  // Live per-card name being edited, not the account default — this page
+  // edits one card's own name now, not the shared account name.
+  const initial = ((firstName || user.displayName || user.username || '?')[0]).toUpperCase();
 
   return (
     <SafeAreaView style={styles.safe}>

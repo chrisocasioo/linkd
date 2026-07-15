@@ -232,7 +232,7 @@ export function CardPreview({ card, user, analytics, maxHeight, onPreview, onPul
 
           {/* Identity — tapping opens the public card */}
           <Pressable style={styles.identity} onPress={onPreview}>
-            <Text style={[styles.name, { fontFamily: fonts.semiBold }]}>{user.displayName ?? user.username ?? ''}</Text>
+            <Text style={[styles.name, { fontFamily: fonts.semiBold }]}>{card.displayName ?? user.displayName ?? user.username ?? ''}</Text>
             {(() => {
               const title      = card.fields.find(f => f.type === 'title')?.value;
               const department = card.fields.find(f => f.type === 'department')?.value;

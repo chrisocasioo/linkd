@@ -81,7 +81,7 @@ function fieldUrl(type: string, value: string): string {
 }
 
 function buildCardHtml(user: UserRow, card: CardRow, fields: FieldRow[], username: string): string {
-  const name = esc(user.displayName ?? username);
+  const name = esc(card.displayName ?? user.displayName ?? username);
   const accent = card.accentColor ?? '#C9973A';
 
   const titleVal   = fields.find(f => f.type === 'title')?.value;
@@ -297,8 +297,8 @@ function submitExchange(e) {
 </html>`;
 }
 
-async function buildVcard(user: UserRow, fields: FieldRow[], username: string): Promise<string> {
-  const displayName = user.displayName ?? username;
+async function buildVcard(user: UserRow, fields: FieldRow[], username: string, card?: CardRow): Promise<string> {
+  const displayName = card?.displayName ?? user.displayName ?? username;
   const nameParts = displayName.split(' ');
   const firstName = nameParts[0];
   const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
@@ -375,7 +375,7 @@ router.get('/:username/vcard', async (req, res) => {
     const fields = firstCard
       ? await db.select().from(cardFields).where(eq(cardFields.cardId, firstCard.id)).orderBy(asc(cardFields.displayOrder))
       : [];
-    const vcf = await buildVcard(user, fields, username);
+    const vcf = await buildVcard(user, fields, username, firstCard);
     res.setHeader('Content-Type', 'text/vcard; charset=utf-8');
     res.setHeader('Content-Disposition', `attachment; filename="${username}.vcf"`);
     res.send(vcf);
@@ -397,7 +397,7 @@ router.get('/:username/:slug/vcard', async (req, res) => {
       .from(cardFields)
       .where(eq(cardFields.cardId, card.id))
       .orderBy(asc(cardFields.displayOrder));
-    const vcf = await buildVcard(user, fields, username);
+    const vcf = await buildVcard(user, fields, username, card);
     res.setHeader('Content-Type', 'text/vcard; charset=utf-8');
     res.setHeader('Content-Disposition', `attachment; filename="${username}.vcf"`);
     res.send(vcf);

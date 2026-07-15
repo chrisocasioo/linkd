@@ -44,7 +44,7 @@ export async function syncWidgetData(cards: Card[], user: User | null, username:
         // apart in the "Edit Widget" picker; it was never meant to be shown
         // as a person's name on the widget face itself.
         name: c.name,
-        personName: user?.displayName ?? user?.username ?? c.name,
+        personName: c.displayName ?? user?.displayName ?? user?.username ?? c.name,
         accentColor: c.accentColor,
         username,
         slug: c.slug ?? '',
