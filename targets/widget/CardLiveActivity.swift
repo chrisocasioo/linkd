@@ -9,7 +9,8 @@ private func currentQrValue(for state: CardActivityAttributes.ContentState) -> S
 // Falls back to the online QR if the offline vCard fails to encode, so a
 // bad/oversized vCard never leaves the Live Activity blank.
 private func currentQrImage(for state: CardActivityAttributes.ContentState) -> UIImage? {
-    qrImage(from: currentQrValue(for: state)) ?? (state.mode == "offline" ? qrImage(from: state.onlineUrl) : nil)
+    qrImage(from: currentQrValue(for: state), forLiveActivity: true)
+        ?? (state.mode == "offline" ? qrImage(from: state.onlineUrl, forLiveActivity: true) : nil)
 }
 
 struct CardLiveActivity: Widget {
