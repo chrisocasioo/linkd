@@ -5,11 +5,11 @@ import { getProPricing, ProPricing } from '../../lib/revenuecat';
 import { COLORS, FONTS } from '../../constants/colors';
 
 const PRO_FEATURES = [
-  { emoji: '📊', title: 'Analytics', sub: 'Views, trends, and which links get clicked' },
-  { emoji: '🎨', title: 'Custom Colors, Fonts & QR', sub: 'Pick your own accent color, font, and QR code style' },
-  { emoji: '🚫', title: 'No Linkd Branding', sub: 'Remove the footer from your public card' },
   { emoji: '♾️', title: 'Unlimited Cards', sub: 'Free includes 5 — Pro removes the cap' },
-  { emoji: '📇', title: 'Export Contacts', sub: 'Download your contact list as a CSV' },
+  { emoji: '🎨', title: 'Custom Accent Colors', sub: 'Pick any color for your card, not just the presets' },
+  { emoji: '🔤', title: 'Custom Fonts', sub: 'Unlock every font beyond the default' },
+  { emoji: '🔳', title: 'Customize QR Codes', sub: 'Add a logo and choose your QR color & background' },
+  { emoji: '📊', title: 'Analytics', sub: 'Views, trends, and which links get clicked' },
 ];
 
 interface Props {
