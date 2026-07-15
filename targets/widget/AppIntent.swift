@@ -190,6 +190,11 @@ struct ToggleWidgetQrModeIntent: AppIntent {
 // LiveActivityIntent (not plain AppIntent) — buttons inside a Live Activity
 // need this so the intent runs in place against the live Activity instead of
 // risking a launch of the containing app.
+//
+// Mirrored in modules/live-activity/ios/ToggleQrModeIntent.swift — that
+// copy exists purely for main-app-target membership, which
+// Activity<CardActivityAttributes>.activities needs to not come back empty
+// at perform() time. See that file for the full explanation.
 struct ToggleQrModeIntent: LiveActivityIntent {
     static var title: LocalizedStringResource = "Toggle QR Mode"
 
