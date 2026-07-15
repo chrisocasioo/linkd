@@ -11,12 +11,12 @@ const SERIF_SEMIBOLD = 'PlayfairDisplay-SemiBold';
 const GENERIC_VIEWS = 247;
 
 const PRO_FEATURES = [
-  { title: 'Unlimited Cards', sub: 'No 5-card cap' },
+  { title: 'Unlimited Cards', sub: 'No 5-card limit' },
   { title: 'Custom Colors', sub: 'Any accent, not presets' },
   { title: 'Custom Fonts', sub: 'Every font, unlocked' },
   { title: 'Branded QR', sub: 'Logo + custom colors' },
   { title: 'Analytics', sub: 'Views, trends, clicks' },
-  { title: 'Unlimited Scans', sub: 'No 100-scan cap' },
+  { title: 'Unlimited Scans', sub: 'No 100-scan limit' },
 ];
 
 interface Props {
