@@ -28,7 +28,10 @@ export async function triggerLiveActivityOnShare(card: Card, user: User | null, 
     const offlineValue = buildVcard(card, user, onlineUrl, { compact: true });
     await LiveActivity.start({
       cardId: card.id,
-      name: card.name,
+      // The person's name, not the card's own label (e.g. "Work") — same
+      // resolution vcard.ts uses for FN, so the Live Activity and the vCard
+      // it shares agree on who this actually is.
+      name: user?.displayName ?? user?.username ?? card.name,
       title: card.fields.find((f) => f.type === 'title')?.value ?? '',
       company: card.fields.find((f) => f.type === 'company')?.value ?? '',
       accentColor: card.accentColor,
