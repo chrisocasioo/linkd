@@ -1,9 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
 import React, { useCallback, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { PaywallSheet } from '../components/Card/PaywallSheet';
 import { useApi, AnalyticsData, CardAnalytics, FieldClickStat } from '../lib/api';
+import { useRevenueCat } from '../lib/RevenueCatContext';
 import { COLORS, FONTS } from '../constants/colors';
 
 const FIELD_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
@@ -42,22 +44,33 @@ function FieldClickRow({ stat }: { stat: FieldClickStat }) {
   );
 }
 
-function CardStat({ card }: { card: CardAnalytics }) {
+function CardStat({ card, isPro, onUnlock }: { card: CardAnalytics; isPro: boolean; onUnlock: () => void }) {
   const hasFields = card.fieldClicks.length > 0;
   return (
     <View style={[styles.statCard, { borderLeftColor: card.accentColor, borderLeftWidth: 3 }]}>
       <Text style={[styles.cardName, { color: card.accentColor }]}>{card.cardName.toUpperCase()}</Text>
 
-      {/* Card views */}
-      <View style={styles.viewRow}>
+      {/* Card views — last 30 days is a Pro feature */}
+      <Pressable style={styles.viewRow} disabled={isPro} onPress={onUnlock}>
         <View>
           <Text style={styles.statLabel}>Card Views (30 days)</Text>
-          <Text style={styles.statNumber}>{card.views.toLocaleString()}</Text>
+          {isPro ? (
+            <Text style={styles.statNumber}>{card.views.toLocaleString()}</Text>
+          ) : (
+            <View style={styles.lockRow}>
+              <View style={styles.lockBadge}>
+                <Ionicons name="lock-closed" size={11} color="#0C0C0E" />
+              </View>
+              <Text style={styles.lockText}>Pro</Text>
+            </View>
+          )}
         </View>
-        <Text style={[styles.statDelta, card.views === 0 && { color: COLORS.textTertiary }]}>
-          {delta(card.views, card.prevViews)}
-        </Text>
-      </View>
+        {isPro && (
+          <Text style={[styles.statDelta, card.views === 0 && { color: COLORS.textTertiary }]}>
+            {delta(card.views, card.prevViews)}
+          </Text>
+        )}
+      </Pressable>
 
       {/* Field clicks */}
       {hasFields && (
@@ -75,8 +88,10 @@ function CardStat({ card }: { card: CardAnalytics }) {
 
 export default function AnalyticsScreen() {
   const api = useApi();
+  const { isPro } = useRevenueCat();
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showPaywall, setShowPaywall] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -98,21 +113,30 @@ export default function AnalyticsScreen() {
         </View>
       ) : data ? (
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-          {/* Total card views */}
-          <View style={styles.statCard}>
+          {/* Total card views — last 30 days is a Pro feature */}
+          <Pressable style={styles.statCard} disabled={isPro} onPress={() => setShowPaywall(true)}>
             <Text style={styles.statLabel}>Total Card Views</Text>
-            <View style={styles.viewRow}>
-              <Text style={styles.statNumberLarge}>{data.totalCardViews.toLocaleString()}</Text>
-              <Text style={styles.statDelta}>{delta(data.totalCardViews, data.prevTotalCardViews)}</Text>
-            </View>
-          </View>
+            {isPro ? (
+              <View style={styles.viewRow}>
+                <Text style={styles.statNumberLarge}>{data.totalCardViews.toLocaleString()}</Text>
+                <Text style={styles.statDelta}>{delta(data.totalCardViews, data.prevTotalCardViews)}</Text>
+              </View>
+            ) : (
+              <View style={styles.lockRow}>
+                <View style={styles.lockBadge}>
+                  <Ionicons name="lock-closed" size={13} color="#0C0C0E" />
+                </View>
+                <Text style={styles.lockText}>Unlock with Pro</Text>
+              </View>
+            )}
+          </Pressable>
 
           {/* Per-card breakdown */}
           {data.cardBreakdown.length > 0 && (
             <>
               <Text style={styles.sectionHeader}>BY CARD</Text>
               {data.cardBreakdown.map((card) => (
-                <CardStat key={card.cardId} card={card} />
+                <CardStat key={card.cardId} card={card} isPro={isPro} onUnlock={() => setShowPaywall(true)} />
               ))}
             </>
           )}
@@ -124,6 +148,7 @@ export default function AnalyticsScreen() {
           )}
         </ScrollView>
       ) : null}
+      <PaywallSheet visible={showPaywall} onClose={() => setShowPaywall(false)} />
     </SafeAreaView>
   );
 }
@@ -143,6 +168,12 @@ const styles = StyleSheet.create({
     borderRadius: 14, padding: 18, gap: 8,
   },
   viewRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
+  lockRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 2 },
+  lockBadge: {
+    width: 22, height: 22, borderRadius: 11,
+    backgroundColor: COLORS.accent, alignItems: 'center', justifyContent: 'center',
+  },
+  lockText: { fontSize: 13, fontFamily: FONTS.semiBold, color: COLORS.text },
   cardName: { fontSize: 10, fontFamily: FONTS.semiBold, letterSpacing: 1 },
   statLabel: { fontSize: 10, fontFamily: FONTS.medium, color: COLORS.textSecondary, letterSpacing: 0.6, textTransform: 'uppercase', marginBottom: 4 },
   statNumberLarge: { fontSize: 40, fontFamily: FONTS.semiBold, color: COLORS.text, letterSpacing: -1.2, lineHeight: 44 },
