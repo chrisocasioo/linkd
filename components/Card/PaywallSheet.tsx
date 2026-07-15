@@ -1,12 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useRef, useState } from 'react';
 import { Alert, Animated, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useApi } from '../../lib/api';
 import { useRevenueCat } from '../../lib/RevenueCatContext';
 import { getProPricing, ProPricing } from '../../lib/revenuecat';
 import { COLORS, FONTS } from '../../constants/colors';
 
 const SERIF_SEMIBOLD = 'PlayfairDisplay-SemiBold';
+// Illustrative, not the viewer's own data — keeps the stat card compelling
+// regardless of how new/active this particular account is.
+const GENERIC_VIEWS = 247;
 
 const PRO_FEATURES = [
   { title: 'Unlimited Cards', sub: 'No 5-card cap' },
@@ -23,20 +25,16 @@ interface Props {
 }
 
 export function PaywallSheet({ visible, onClose }: Props) {
-  const api = useApi();
   const { purchasePro } = useRevenueCat();
   const slideAnim = useRef(new Animated.Value(600)).current;
   const [loading, setLoading] = useState(false);
   const [pricing, setPricing] = useState<ProPricing | null>(null);
-  const [totalViews, setTotalViews] = useState<number | null>(null);
   const [plan, setPlan] = useState<'monthly' | 'annual'>('monthly');
 
   useEffect(() => {
     if (visible) {
       // Live App Store prices so price changes never need an app update
       getProPricing().then(setPricing).catch(() => {});
-      // Real (locked) view count as the hook — never a fabricated number
-      api.getAnalytics().then((d) => setTotalViews(d.totalCardViews)).catch(() => {});
       setPlan('monthly');
       Animated.spring(slideAnim, { toValue: 0, useNativeDriver: true, damping: 20, stiffness: 200 }).start();
     } else {
@@ -73,15 +71,13 @@ export function PaywallSheet({ visible, onClose }: Props) {
       <Animated.View style={[styles.sheet, { transform: [{ translateY: slideAnim }] }]}>
         <View style={styles.handle} />
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} bounces={false}>
-          {totalViews !== null && totalViews > 0 && (
-            <View style={styles.statCard}>
-              <View>
-                <Text style={styles.statNumber}>{totalViews.toLocaleString()}</Text>
-                <Text style={styles.statLabel}>card views this month</Text>
-              </View>
-              <Ionicons name="bar-chart" size={34} color={COLORS.accent} />
+          <View style={styles.statCard}>
+            <View>
+              <Text style={styles.statNumber}>{GENERIC_VIEWS.toLocaleString()}</Text>
+              <Text style={styles.statLabel}>card views this month</Text>
             </View>
-          )}
+            <Ionicons name="bar-chart" size={34} color={COLORS.accent} />
+          </View>
 
           <Text style={styles.headline}>Know who's looking{'\n'}at your card</Text>
           <Text style={styles.sub}>Pro unlocks the numbers behind every share.</Text>
