@@ -193,7 +193,7 @@ export default function CardScreen() {
                       user={user!}
                       analytics={cardAnalytics.find((a) => a.cardId === item.id)}
                       maxHeight={cardMaxH}
-                      onPreview={() => WebBrowser.openBrowserAsync(publicUrl)}
+                      onPreview={() => WebBrowser.openBrowserAsync(`${publicUrl}?preview=1`)}
                       onPullRefresh={onRefresh}
                       analyticsLocked={!isPro}
                       onUnlockAnalytics={() => setShowPaywall(true)}

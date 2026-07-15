@@ -418,7 +418,11 @@ router.get('/:username/:slug', async (req, res) => {
       .from(cardFields)
       .where(eq(cardFields.cardId, card.id))
       .orderBy(asc(cardFields.displayOrder));
-    db.insert(cardViews).values({ userId: user.id, linkId: null, cardId: card.id }).catch(() => {});
+    // The owner previewing their own card from the app tags the URL so it
+    // doesn't inflate their own view count — only real visitors should count.
+    if (req.query.preview !== '1') {
+      db.insert(cardViews).values({ userId: user.id, linkId: null, cardId: card.id }).catch(() => {});
+    }
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.send(buildCardHtml(user, card, fields, username));
   } catch {
@@ -443,7 +447,9 @@ router.get('/:username', async (req, res) => {
       .from(cardFields)
       .where(eq(cardFields.cardId, firstCard.id))
       .orderBy(asc(cardFields.displayOrder));
-    db.insert(cardViews).values({ userId: user.id, linkId: null, cardId: firstCard.id }).catch(() => {});
+    if (req.query.preview !== '1') {
+      db.insert(cardViews).values({ userId: user.id, linkId: null, cardId: firstCard.id }).catch(() => {});
+    }
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.send(buildCardHtml(user, firstCard, fields, username));
   } catch (err: any) {
