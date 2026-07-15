@@ -509,7 +509,6 @@ export default function EditCardScreen() {
                       !ACCENT_COLORS.includes(accent) && { borderColor: accent },
                     ]}
                     onPress={() => {
-                      if (!isPro) { setShowPaywall(true); return; }
                       setHexDraft(accent);
                       setShowHexInput((v) => !v);
                     }}
@@ -538,6 +537,7 @@ export default function EditCardScreen() {
                       <ColorPicker
                         color={accent}
                         onColorChangeComplete={(c: string) => {
+                          if (!isPro) { setShowPaywall(true); return; }
                           setAccent(c);
                           setHexDraft(c);
                         }}
@@ -555,7 +555,10 @@ export default function EditCardScreen() {
                         onChangeText={(v) => {
                           const clean = v.startsWith('#') ? v : '#' + v;
                           setHexDraft(clean);
-                          if (/^#[0-9A-Fa-f]{6}$/.test(clean)) setAccent(clean);
+                          if (/^#[0-9A-Fa-f]{6}$/.test(clean)) {
+                            if (!isPro) { setShowPaywall(true); return; }
+                            setAccent(clean);
+                          }
                         }}
                         placeholder="#C9973A"
                         placeholderTextColor={COLORS.textTertiary}
@@ -632,10 +635,10 @@ export default function EditCardScreen() {
                       !QR_SWATCH_COLORS.includes(qrColor) && styles.colorDotActive,
                       !QR_SWATCH_COLORS.includes(qrColor) && { borderColor: qrColor },
                     ]}
-                    onPress={() => requireProForQr(() => {
+                    onPress={() => {
                       setQrHexDraft(qrColor);
                       setShowQrHexInput((v) => !v);
-                    })}
+                    }}
                   >
                     <Ionicons
                       name="color-palette-outline"
@@ -660,14 +663,14 @@ export default function EditCardScreen() {
                     <View style={styles.quickBwRow}>
                       <Pressable
                         style={styles.quickBwBtn}
-                        onPress={() => { setQrColor('#000000'); setQrHexDraft('#000000'); setShowQrHexInput(false); }}
+                        onPress={() => requireProForQr(() => { setQrColor('#000000'); setQrHexDraft('#000000'); setShowQrHexInput(false); })}
                       >
                         <View style={[styles.quickBwSwatch, { backgroundColor: '#000000' }]} />
                         <Text style={styles.quickBwText}>Black</Text>
                       </Pressable>
                       <Pressable
                         style={styles.quickBwBtn}
-                        onPress={() => { setQrColor('#FFFFFF'); setQrHexDraft('#FFFFFF'); setShowQrHexInput(false); }}
+                        onPress={() => requireProForQr(() => { setQrColor('#FFFFFF'); setQrHexDraft('#FFFFFF'); setShowQrHexInput(false); })}
                       >
                         <View style={[styles.quickBwSwatch, { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: COLORS.border }]} />
                         <Text style={styles.quickBwText}>White</Text>
@@ -676,10 +679,10 @@ export default function EditCardScreen() {
                     <View style={styles.wheelWrap}>
                       <ColorPicker
                         color={qrColor}
-                        onColorChangeComplete={(c: string) => {
+                        onColorChangeComplete={(c: string) => requireProForQr(() => {
                           setQrColor(c);
                           setQrHexDraft(c);
-                        }}
+                        })}
                         thumbSize={26}
                         sliderSize={26}
                         gapSize={20}
@@ -694,7 +697,7 @@ export default function EditCardScreen() {
                         onChangeText={(v) => {
                           const clean = v.startsWith('#') ? v : '#' + v;
                           setQrHexDraft(clean);
-                          if (/^#[0-9A-Fa-f]{6}$/.test(clean)) setQrColor(clean);
+                          if (/^#[0-9A-Fa-f]{6}$/.test(clean)) requireProForQr(() => setQrColor(clean));
                         }}
                         placeholder="#000000"
                         placeholderTextColor={COLORS.textTertiary}
@@ -713,10 +716,10 @@ export default function EditCardScreen() {
                       !QR_SWATCH_COLORS.includes(qrBgColor) && styles.colorDotActive,
                       !QR_SWATCH_COLORS.includes(qrBgColor) && { borderColor: qrBgColor },
                     ]}
-                    onPress={() => requireProForQr(() => {
+                    onPress={() => {
                       setQrBgHexDraft(qrBgColor);
                       setShowQrBgHexInput((v) => !v);
-                    })}
+                    }}
                   >
                     <Ionicons
                       name="color-palette-outline"
@@ -741,14 +744,14 @@ export default function EditCardScreen() {
                     <View style={styles.quickBwRow}>
                       <Pressable
                         style={styles.quickBwBtn}
-                        onPress={() => { setQrBgColor('#000000'); setQrBgHexDraft('#000000'); setShowQrBgHexInput(false); }}
+                        onPress={() => requireProForQr(() => { setQrBgColor('#000000'); setQrBgHexDraft('#000000'); setShowQrBgHexInput(false); })}
                       >
                         <View style={[styles.quickBwSwatch, { backgroundColor: '#000000' }]} />
                         <Text style={styles.quickBwText}>Black</Text>
                       </Pressable>
                       <Pressable
                         style={styles.quickBwBtn}
-                        onPress={() => { setQrBgColor('#FFFFFF'); setQrBgHexDraft('#FFFFFF'); setShowQrBgHexInput(false); }}
+                        onPress={() => requireProForQr(() => { setQrBgColor('#FFFFFF'); setQrBgHexDraft('#FFFFFF'); setShowQrBgHexInput(false); })}
                       >
                         <View style={[styles.quickBwSwatch, { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: COLORS.border }]} />
                         <Text style={styles.quickBwText}>White</Text>
@@ -757,10 +760,10 @@ export default function EditCardScreen() {
                     <View style={styles.wheelWrap}>
                       <ColorPicker
                         color={qrBgColor}
-                        onColorChangeComplete={(c: string) => {
+                        onColorChangeComplete={(c: string) => requireProForQr(() => {
                           setQrBgColor(c);
                           setQrBgHexDraft(c);
-                        }}
+                        })}
                         thumbSize={26}
                         sliderSize={26}
                         gapSize={20}
@@ -775,7 +778,7 @@ export default function EditCardScreen() {
                         onChangeText={(v) => {
                           const clean = v.startsWith('#') ? v : '#' + v;
                           setQrBgHexDraft(clean);
-                          if (/^#[0-9A-Fa-f]{6}$/.test(clean)) setQrBgColor(clean);
+                          if (/^#[0-9A-Fa-f]{6}$/.test(clean)) requireProForQr(() => setQrBgColor(clean));
                         }}
                         placeholder="#FFFFFF"
                         placeholderTextColor={COLORS.textTertiary}

@@ -95,6 +95,14 @@ export function QrGeneratorSheet({ visible, onClose }: Props) {
 
   const close = () => { Keyboard.dismiss(); onClose(); };
 
+  // Logo/color/background are all Pro-only — the custom-color button always
+  // opens its panel (so it looks and feels functional for everyone), but
+  // actually applying a color, and the logo/preset swatches, are gated here.
+  const requireProForQr = (fn: () => void) => {
+    if (!isPro) { setShowPaywall(true); return; }
+    fn();
+  };
+
   const handlePickLogo = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
@@ -333,16 +341,8 @@ export function QrGeneratorSheet({ visible, onClose }: Props) {
                 />
 
                 <View style={styles.customizeSection}>
-                  {!isPro && (
-                    <Pressable style={styles.proLockOverlay} onPress={() => setShowPaywall(true)}>
-                      <View style={styles.proLockBadge}>
-                        <Ionicons name="lock-closed" size={12} color="#0C0C0E" />
-                        <Text style={styles.proLockText}>Unlock with Pro</Text>
-                      </View>
-                    </Pressable>
-                  )}
                   <View style={styles.logoRow}>
-                    <Pressable onPress={handlePickLogo} style={styles.logoWrap}>
+                    <Pressable onPress={() => requireProForQr(handlePickLogo)} style={styles.logoWrap}>
                       {previewLogoSource ? (
                         <Image source={{ uri: previewLogoSource }} style={styles.logoImg} />
                       ) : (
@@ -351,7 +351,7 @@ export function QrGeneratorSheet({ visible, onClose }: Props) {
                         </View>
                       )}
                     </Pressable>
-                    <Pressable onPress={handlePickLogo}>
+                    <Pressable onPress={() => requireProForQr(handlePickLogo)}>
                       <Text style={styles.logoActionText}>{previewLogoSource ? 'Change Logo' : 'Add Logo'}</Text>
                     </Pressable>
                     {previewLogoSource && (
@@ -373,7 +373,7 @@ export function QrGeneratorSheet({ visible, onClose }: Props) {
                       <Pressable
                         key={c}
                         style={[styles.swatchDot, { backgroundColor: c }, qrColor === c && styles.swatchDotActive]}
-                        onPress={() => { setQrColor(c); setShowColorHex(null); }}
+                        onPress={() => requireProForQr(() => { setQrColor(c); setShowColorHex(null); })}
                       >
                         {qrColor === c && <Ionicons name="checkmark" size={12} color="#fff" />}
                       </Pressable>
@@ -395,7 +395,7 @@ export function QrGeneratorSheet({ visible, onClose }: Props) {
                           styles.swatchDot, { backgroundColor: c }, qrBgColor === c && styles.swatchDotActive,
                           c === '#FFFFFF' && { borderWidth: 1, borderColor: COLORS.border },
                         ]}
-                        onPress={() => { setQrBgColor(c); setShowColorHex(null); }}
+                        onPress={() => requireProForQr(() => { setQrBgColor(c); setShowColorHex(null); })}
                       >
                         {qrBgColor === c && <Ionicons name="checkmark" size={12} color={c === '#FFFFFF' ? '#0C0C0E' : '#fff'} />}
                       </Pressable>
@@ -407,24 +407,24 @@ export function QrGeneratorSheet({ visible, onClose }: Props) {
                       <View style={styles.quickBwRow}>
                         <Pressable
                           style={styles.quickBwBtn}
-                          onPress={() => {
+                          onPress={() => requireProForQr(() => {
                             const setColor = showColorHex === 'color' ? setQrColor : setQrBgColor;
                             setColor('#000000');
                             setHexDraft('#000000');
                             setShowColorHex(null);
-                          }}
+                          })}
                         >
                           <View style={[styles.quickBwSwatch, { backgroundColor: '#000000' }]} />
                           <Text style={styles.quickBwText}>Black</Text>
                         </Pressable>
                         <Pressable
                           style={styles.quickBwBtn}
-                          onPress={() => {
+                          onPress={() => requireProForQr(() => {
                             const setColor = showColorHex === 'color' ? setQrColor : setQrBgColor;
                             setColor('#FFFFFF');
                             setHexDraft('#FFFFFF');
                             setShowColorHex(null);
-                          }}
+                          })}
                         >
                           <View style={[styles.quickBwSwatch, { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: COLORS.border }]} />
                           <Text style={styles.quickBwText}>White</Text>
@@ -439,7 +439,9 @@ export function QrGeneratorSheet({ visible, onClose }: Props) {
                             const clean = v.startsWith('#') ? v : '#' + v;
                             setHexDraft(clean);
                             if (/^#[0-9A-Fa-f]{6}$/.test(clean)) {
-                              if (showColorHex === 'color') setQrColor(clean); else setQrBgColor(clean);
+                              requireProForQr(() => {
+                                if (showColorHex === 'color') setQrColor(clean); else setQrBgColor(clean);
+                              });
                             }
                           }}
                           placeholder="#000000"
@@ -592,17 +594,7 @@ const styles = StyleSheet.create({
     fontSize: 13, fontFamily: FONTS.regular, color: COLORS.text,
   },
 
-  customizeSection: { alignSelf: 'stretch', gap: 10, position: 'relative' },
-  proLockOverlay: {
-    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-    backgroundColor: 'rgba(12,12,14,0.82)', borderRadius: 12,
-    alignItems: 'center', justifyContent: 'center', zIndex: 10,
-  },
-  proLockBadge: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    backgroundColor: COLORS.accent, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10,
-  },
-  proLockText: { fontSize: 12, fontFamily: FONTS.semiBold, color: '#0C0C0E' },
+  customizeSection: { alignSelf: 'stretch', gap: 10 },
   freeLimitText: { fontSize: 11, fontFamily: FONTS.regular, color: COLORS.textTertiary, textAlign: 'center' },
   logoRow: { flexDirection: 'row', alignItems: 'center', gap: 10, alignSelf: 'stretch' },
   logoWrap: { width: 36, height: 36, borderRadius: 10, overflow: 'hidden' },
