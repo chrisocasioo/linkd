@@ -46,7 +46,15 @@ private func writeQrPNG(from string: String, mode: String, color: String, bgColo
     // reliable for a clean device-to-device scan.
     filter.correctionLevel = "L"
     guard let output = filter.outputImage else { return }
-    let scaled = output.transformed(by: CGAffineTransform(scaleX: 10, y: 10))
+    // Fixed final pixel size, not a fixed multiplier — CIQRCodeGenerator
+    // emits one point per module, and the offline vCard encodes far more
+    // data than the online URL, so it needs many more modules. A flat 10x
+    // scale made the offline QR's bitmap dramatically larger than the
+    // online one (700px+ vs ~300px), which the Live Activity extension's
+    // tighter memory ceiling couldn't render — it showed a blank
+    // placeholder instead of failing over to the online fallback.
+    let scale = 300 / output.extent.width
+    let scaled = output.transformed(by: CGAffineTransform(scaleX: scale, y: scale))
     // CIQRCodeGenerator's "on" modules are opaque black, "off" are
     // transparent — composite over white first to get a definite
     // black-on-white bitmap, THEN false-color it, so CIFalseColor's
