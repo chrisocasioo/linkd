@@ -1,4 +1,5 @@
 import ActivityKit
+import Foundation
 
 /// Mirrored (not shared-by-file) in targets/widget — the main app and the
 /// widget extension are separate compiled targets, so both keep their own

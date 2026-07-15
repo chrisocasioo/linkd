@@ -1,4 +1,5 @@
 import ActivityKit
+import Foundation
 
 /// Mirrored (not shared-by-file) in modules/live-activity/ios — the widget
 /// extension and the main app are separate compiled targets, so both keep
