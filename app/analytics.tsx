@@ -5,6 +5,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { PaywallSheet } from '../components/Card/PaywallSheet';
 import { useApi, AnalyticsData, CardAnalytics, FieldClickStat } from '../lib/api';
+import { formatPhone } from '../lib/format';
 import { useRevenueCat } from '../lib/RevenueCatContext';
 import { COLORS, FONTS } from '../constants/colors';
 
@@ -29,7 +30,7 @@ function formatTrackingSince(iso: string | null): string {
 
 function FieldClickRow({ stat }: { stat: FieldClickStat }) {
   const icon = (stat.fieldIcon as keyof typeof Ionicons.glyphMap) || FIELD_ICONS[stat.fieldType] || 'ellipsis-horizontal';
-  const label = stat.label ?? stat.fieldValue;
+  const label = stat.label ?? (stat.fieldType === 'phone' ? formatPhone(stat.fieldValue) : stat.fieldValue);
   const d = delta(stat.clicks, stat.prevClicks);
   const hasChange = stat.prevClicks > 0;
   return (
