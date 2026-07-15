@@ -62,7 +62,10 @@ private func writeQrPNG(from string: String, mode: String, color: String, bgColo
     guard var final = recolor.outputImage else { return }
 
     if !logoUrl.isEmpty, let url = URL(string: logoUrl),
-       let (logoData, _) = try? await URLSession.shared.data(from: url),
+       // Short timeout (not the 60s default) — this runs before
+       // Activity.request(), so a slow/unreachable logo host must never turn
+       // into a long hang on the Share tap. Worst case: plain QR, no logo.
+       let (logoData, _) = try? await URLSession.shared.data(for: URLRequest(url: url, timeoutInterval: 3)),
        let logoImage = CIImage(data: logoData) {
         let qrExtent = final.extent
         let targetSize = min(qrExtent.width, qrExtent.height) * 0.22
