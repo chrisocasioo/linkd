@@ -57,11 +57,6 @@ struct CardProvider: AppIntentTimelineProvider {
 // MARK: - QR + color helpers
 
 func qrImage(from string: String) -> UIImage? {
-    // Software renderer — a GPU-backed CIContext can fail to produce output
-    // when this runs on the Lock Screen while the device is actually locked
-    // (the Live Activity's rendering context), unlike Home Screen widgets
-    // which never render in that state.
-    let context = CIContext(options: [.useSoftwareRenderer: true])
     let filter = CIFilter.qrCodeGenerator()
     filter.message = Data(string.utf8)
     // "L" (not "M") — the offline value is a full vCard, which needs more
@@ -77,8 +72,18 @@ func qrImage(from string: String) -> UIImage? {
     // turn the whole code into a solid black square.
     let whiteBackground = CIImage(color: .white).cropped(to: scaled.extent)
     let composited = scaled.composited(over: whiteBackground)
-    guard let cgImage = context.createCGImage(composited, from: composited.extent) else { return nil }
-    return UIImage(cgImage: cgImage)
+
+    // Try rasterizing via a software CIContext first — this is the path that
+    // already works for the Home Screen widget. Lock Screen Live Activities
+    // render in a more restrictive context that has been observed to reject
+    // even the software renderer and return nil here; UIImage(ciImage:)
+    // defers actual rasterization to UIKit's own renderer at draw time
+    // instead of forcing it up front, which tolerates that stricter context.
+    let context = CIContext(options: [.useSoftwareRenderer: true])
+    if let cgImage = context.createCGImage(composited, from: composited.extent) {
+        return UIImage(cgImage: cgImage)
+    }
+    return UIImage(ciImage: composited)
 }
 
 extension Color {
