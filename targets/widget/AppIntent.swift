@@ -34,7 +34,10 @@ enum CardStore {
                 title: dict["title"] as? String ?? "",
                 company: dict["company"] as? String ?? "",
                 publicUrl: publicUrl,
-                offlineValue: dict["offlineValue"] as? String ?? publicUrl
+                offlineValue: dict["offlineValue"] as? String ?? publicUrl,
+                qrColor: dict["qrColor"] as? String ?? "#000000",
+                qrBgColor: dict["qrBgColor"] as? String ?? "#FFFFFF",
+                qrLogoBase64: dict["qrLogoBase64"] as? String
             )
         }
     }
@@ -82,6 +85,9 @@ struct CardEntity: AppEntity {
     var company: String
     var publicUrl: String
     var offlineValue: String
+    var qrColor: String
+    var qrBgColor: String
+    var qrLogoBase64: String?
 
     static var typeDisplayRepresentation: TypeDisplayRepresentation = "Linkd Card"
     static var defaultQuery = CardEntityQuery()

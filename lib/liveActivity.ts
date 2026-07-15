@@ -34,6 +34,9 @@ export async function triggerLiveActivityOnShare(card: Card, user: User | null, 
       accentColor: card.accentColor,
       onlineUrl,
       offlineValue,
+      qrColor: card.qrColor ?? '#000000',
+      qrBgColor: card.qrBgColor ?? '#FFFFFF',
+      qrLogoUrl: card.qrLogo ?? '',
     });
   } catch {
     // Best-effort — a Live Activity failing must never affect sharing itself

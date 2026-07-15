@@ -61,7 +61,14 @@ struct CardProvider: AppIntentTimelineProvider {
 // modules/live-activity/ios/LiveActivityModule.swift), since the widget
 // extension has been observed to fail to rasterize a fresh CIImage while the
 // device is genuinely locked, even with a software CIContext.
-func qrImage(from string: String) -> UIImage? {
+//
+// Applies the card's actual QR branding (color/background/logo) instead of
+// a hardcoded black-on-white QR — no reason the widget should look
+// different from what the user configured in the app. The logo travels in
+// as base64 (fetched by the main app in lib/widgetSync.ts) rather than a
+// URL, since the widget extension avoids making its own network calls
+// during timeline generation.
+func qrImage(from string: String, color: String = "#000000", bgColor: String = "#FFFFFF", logoBase64: String? = nil) -> UIImage? {
     let filter = CIFilter.qrCodeGenerator()
     filter.message = Data(string.utf8)
     // "L" (not "M") — the offline value is a full vCard, which needs more
@@ -71,14 +78,53 @@ func qrImage(from string: String) -> UIImage? {
     guard let output = filter.outputImage else { return nil }
     // CIQRCodeGenerator outputs one point per module — scale up for crispness
     let scaled = output.transformed(by: CGAffineTransform(scaleX: 10, y: 10))
-    // CIQRCodeGenerator's "off" modules are transparent, not opaque white —
-    // composite over a solid white backing so a dark background (this app's
-    // widgets/Live Activity are always on black) can't bleed through and
-    // turn the whole code into a solid black square.
+    // CIQRCodeGenerator's "on" modules are opaque black, "off" are
+    // transparent — composite over white first to get a definite
+    // black-on-white bitmap, THEN false-color it, so CIFalseColor's
+    // luminance mapping has real black/white to work with.
     let whiteBackground = CIImage(color: .white).cropped(to: scaled.extent)
-    let composited = scaled.composited(over: whiteBackground)
-    guard let cgImage = CIContext().createCGImage(composited, from: composited.extent) else { return nil }
+    let blackOnWhite = scaled.composited(over: whiteBackground)
+
+    let recolor = CIFilter.falseColor()
+    recolor.inputImage = blackOnWhite
+    recolor.color0 = ciColor(hex: color)   // maps black (the QR's "on" modules) -> custom color
+    recolor.color1 = ciColor(hex: bgColor) // maps white (the QR's "off" modules) -> custom background
+    guard var final = recolor.outputImage else { return nil }
+
+    if let logoBase64, let logoData = Data(base64Encoded: logoBase64), let logoImage = CIImage(data: logoData) {
+        let qrExtent = final.extent
+        let targetSize = min(qrExtent.width, qrExtent.height) * 0.22
+        let logoScale = targetSize / max(logoImage.extent.width, logoImage.extent.height)
+        let scaledLogo = logoImage.transformed(by: CGAffineTransform(scaleX: logoScale, y: logoScale))
+        let centeredLogo = scaledLogo.transformed(by: CGAffineTransform(
+            translationX: qrExtent.midX - scaledLogo.extent.width / 2 - scaledLogo.extent.minX,
+            y: qrExtent.midY - scaledLogo.extent.height / 2 - scaledLogo.extent.minY
+        ))
+        // Small backing square (in the QR's own background color) behind the
+        // logo so it stays visually separated from the modules around it,
+        // same as the in-app QR preview.
+        let backingSize = targetSize + 8
+        let backingRect = CGRect(
+            x: qrExtent.midX - backingSize / 2, y: qrExtent.midY - backingSize / 2,
+            width: backingSize, height: backingSize
+        )
+        let backing = CIImage(color: ciColor(hex: bgColor)).cropped(to: backingRect)
+        final = centeredLogo.composited(over: backing.composited(over: final))
+    }
+
+    guard let cgImage = CIContext().createCGImage(final, from: final.extent) else { return nil }
     return UIImage(cgImage: cgImage)
+}
+
+private func ciColor(hex: String) -> CIColor {
+    let cleaned = hex.trimmingCharacters(in: CharacterSet(charactersIn: "#"))
+    var value: UInt64 = 0
+    Scanner(string: cleaned).scanHexInt64(&value)
+    return CIColor(
+        red: CGFloat((value & 0xFF0000) >> 16) / 255,
+        green: CGFloat((value & 0x00FF00) >> 8) / 255,
+        blue: CGFloat(value & 0x0000FF) / 255
+    )
 }
 
 extension Color {
@@ -148,7 +194,7 @@ struct CardWidgetEntryView: View {
     @ViewBuilder
     private func content(for card: CardEntity, qrMode: QrModeOption) -> some View {
         let accent = Color(hex: card.accentColor)
-        let qr = qrImage(from: card.publicUrl)
+        let qr = qrImage(from: card.publicUrl, color: card.qrColor, bgColor: card.qrBgColor, logoBase64: card.qrLogoBase64)
 
         switch family {
         case .accessoryRectangular:
@@ -178,7 +224,8 @@ struct CardWidgetEntryView: View {
             let mode = CardStore.mediumQrMode()
             // Falls back to the online QR if the offline vCard fails to
             // encode, so a bad/oversized vCard never leaves the widget blank.
-            let mediumQr = (mode == "offline" ? qrImage(from: card.offlineValue) : nil) ?? qrImage(from: card.publicUrl)
+            let mediumQr = (mode == "offline" ? qrImage(from: card.offlineValue, color: card.qrColor, bgColor: card.qrBgColor, logoBase64: card.qrLogoBase64) : nil)
+                ?? qrImage(from: card.publicUrl, color: card.qrColor, bgColor: card.qrBgColor, logoBase64: card.qrLogoBase64)
             HStack(spacing: 12) {
                 if let mediumQr {
                     Image(uiImage: mediumQr)
@@ -233,7 +280,8 @@ struct CardWidgetEntryView: View {
         default: // .systemSmall, .systemLarge — pure QR code, no text
             // Falls back to the online QR if the offline vCard fails to
             // encode, so a bad/oversized vCard never leaves the widget blank.
-            let plainQr = (qrMode == .offline ? qrImage(from: card.offlineValue) : nil) ?? qrImage(from: card.publicUrl)
+            let plainQr = (qrMode == .offline ? qrImage(from: card.offlineValue, color: card.qrColor, bgColor: card.qrBgColor, logoBase64: card.qrLogoBase64) : nil)
+                ?? qrImage(from: card.publicUrl, color: card.qrColor, bgColor: card.qrBgColor, logoBase64: card.qrLogoBase64)
             VStack {
                 if let plainQr {
                     Image(uiImage: plainQr)

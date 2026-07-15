@@ -6,6 +6,9 @@ export interface CardActivityPayload {
   accentColor: string;
   onlineUrl: string;
   offlineValue: string;
+  qrColor: string;
+  qrBgColor: string;
+  qrLogoUrl: string;
 }
 
 export interface LiveActivityModuleInterface {
