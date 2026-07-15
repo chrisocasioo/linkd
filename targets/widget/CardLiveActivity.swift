@@ -2,15 +2,15 @@ import ActivityKit
 import SwiftUI
 import WidgetKit
 
-private func currentQrValue(for state: CardActivityAttributes.ContentState) -> String {
-    state.mode == "offline" ? state.offlineValue : state.onlineUrl
-}
-
-// Falls back to the online QR if the offline vCard fails to encode, so a
-// bad/oversized vCard never leaves the Live Activity blank.
+// Decodes the PNG the main app already rendered at Activity start time,
+// rather than generating a fresh CIImage here — the widget extension has
+// been observed to fail to rasterize a QR while the device is genuinely
+// locked, even with a software CIContext. Falls back to the online QR if
+// the offline vCard's PNG is somehow missing, so a bad/oversized vCard
+// never leaves the Live Activity blank.
 private func currentQrImage(for state: CardActivityAttributes.ContentState) -> UIImage? {
-    qrImage(from: currentQrValue(for: state), forLiveActivity: true)
-        ?? (state.mode == "offline" ? qrImage(from: state.onlineUrl, forLiveActivity: true) : nil)
+    let primaryData = state.mode == "offline" ? state.offlineQrPNG : state.onlineQrPNG
+    return UIImage(data: primaryData) ?? (state.mode == "offline" ? UIImage(data: state.onlineQrPNG) : nil)
 }
 
 struct CardLiveActivity: Widget {

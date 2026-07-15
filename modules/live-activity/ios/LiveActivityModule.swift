@@ -1,5 +1,28 @@
 import ActivityKit
+import CoreImage.CIFilterBuiltins
 import ExpoModulesCore
+import UIKit
+
+// Renders here in the main app process — always has full GPU rendering
+// access, unlike the widget extension, which has been observed to fail to
+// rasterize a fresh CIImage while the device is genuinely locked. The
+// resulting PNG bytes travel through ContentState so the extension only
+// ever has to decode an already-rendered image (UIImage(data:)), never
+// generate one itself.
+private func generateQrPNG(from string: String) -> Data {
+    let filter = CIFilter.qrCodeGenerator()
+    filter.message = Data(string.utf8)
+    // "L" (not "M") — the offline value is a full vCard, which needs more
+    // capacity headroom than a short URL; low correction is still plenty
+    // reliable for a clean device-to-device scan.
+    filter.correctionLevel = "L"
+    guard let output = filter.outputImage else { return Data() }
+    let scaled = output.transformed(by: CGAffineTransform(scaleX: 10, y: 10))
+    let whiteBackground = CIImage(color: .white).cropped(to: scaled.extent)
+    let composited = scaled.composited(over: whiteBackground)
+    guard let cgImage = CIContext().createCGImage(composited, from: composited.extent) else { return Data() }
+    return UIImage(cgImage: cgImage).pngData() ?? Data()
+}
 
 struct CardActivityPayload: Record {
     @Field var cardId: String = ""
@@ -44,6 +67,8 @@ public class LiveActivityModule: Module {
                 accentColor: payload.accentColor,
                 onlineUrl: payload.onlineUrl,
                 offlineValue: payload.offlineValue,
+                onlineQrPNG: generateQrPNG(from: payload.onlineUrl),
+                offlineQrPNG: generateQrPNG(from: payload.offlineValue),
                 mode: "online"
             )
 

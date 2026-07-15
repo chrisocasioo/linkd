@@ -56,13 +56,12 @@ struct CardProvider: AppIntentTimelineProvider {
 
 // MARK: - QR + color helpers
 
-// Home Screen widgets never render while the device is actually locked, so
-// they get the fast GPU-backed CIContext. Only the Lock Screen Live Activity
-// needs the (much slower) software renderer, since a GPU context can fail to
-// produce output there specifically — pass forLiveActivity: true for that
-// call site only, so widgets don't pay that cost for a restriction that
-// doesn't apply to them.
-func qrImage(from string: String, forLiveActivity: Bool = false) -> UIImage? {
+// Used by Home Screen widgets only now — the Lock Screen Live Activity gets
+// its QR images pre-rendered by the main app instead (see
+// modules/live-activity/ios/LiveActivityModule.swift), since the widget
+// extension has been observed to fail to rasterize a fresh CIImage while the
+// device is genuinely locked, even with a software CIContext.
+func qrImage(from string: String) -> UIImage? {
     let filter = CIFilter.qrCodeGenerator()
     filter.message = Data(string.utf8)
     // "L" (not "M") — the offline value is a full vCard, which needs more
@@ -78,15 +77,8 @@ func qrImage(from string: String, forLiveActivity: Bool = false) -> UIImage? {
     // turn the whole code into a solid black square.
     let whiteBackground = CIImage(color: .white).cropped(to: scaled.extent)
     let composited = scaled.composited(over: whiteBackground)
-
-    let context = forLiveActivity ? CIContext(options: [.useSoftwareRenderer: true]) : CIContext()
-    if let cgImage = context.createCGImage(composited, from: composited.extent) {
-        return UIImage(cgImage: cgImage)
-    }
-    // Defers rasterization to UIKit's own renderer at draw time instead of
-    // forcing it up front — tolerates the Live Activity's stricter context
-    // when even the software renderer above returns nil.
-    return UIImage(ciImage: composited)
+    guard let cgImage = CIContext().createCGImage(composited, from: composited.extent) else { return nil }
+    return UIImage(cgImage: cgImage)
 }
 
 extension Color {
