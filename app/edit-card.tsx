@@ -262,6 +262,13 @@ export default function EditCardScreen() {
     }
   };
 
+  // QR logo/color/background are all Pro-only — free users see the fully
+  // interactive controls (no dimming) but every tap opens the paywall.
+  const requireProForQr = (fn: () => void) => {
+    if (!isPro) { setShowPaywall(true); return; }
+    fn();
+  };
+
   const handlePickQrLogo = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
@@ -587,17 +594,9 @@ export default function EditCardScreen() {
 
               <Text style={styles.sectionHeader}>QR CODE</Text>
               <View style={styles.card}>
-                {!isPro && (
-                  <Pressable style={styles.proLockOverlay} onPress={() => setShowPaywall(true)}>
-                    <View style={styles.proLockBadge}>
-                      <Ionicons name="lock-closed" size={13} color={COLORS.text} />
-                      <Text style={styles.proLockText}>Unlock with Pro</Text>
-                    </View>
-                  </Pressable>
-                )}
                 <Text style={styles.label}>Logo</Text>
                 <View style={styles.qrLogoRow}>
-                  <Pressable onPress={handlePickQrLogo} style={styles.qrLogoWrap}>
+                  <Pressable onPress={() => requireProForQr(handlePickQrLogo)} style={styles.qrLogoWrap}>
                     {qrLogoSource ? (
                       <Image source={{ uri: qrLogoSource }} style={styles.qrLogoImg} />
                     ) : (
@@ -611,7 +610,7 @@ export default function EditCardScreen() {
                       Shown in the center of this card's QR code — independent from the card's own photo.
                     </Text>
                     <View style={styles.qrLogoActions}>
-                      <Pressable onPress={handlePickQrLogo}>
+                      <Pressable onPress={() => requireProForQr(handlePickQrLogo)}>
                         <Text style={[styles.qrLogoActionText, { color: accent }]}>
                           {qrLogoSource ? 'Change' : 'Add Logo'}
                         </Text>
@@ -633,10 +632,10 @@ export default function EditCardScreen() {
                       !QR_SWATCH_COLORS.includes(qrColor) && styles.colorDotActive,
                       !QR_SWATCH_COLORS.includes(qrColor) && { borderColor: qrColor },
                     ]}
-                    onPress={() => {
+                    onPress={() => requireProForQr(() => {
                       setQrHexDraft(qrColor);
                       setShowQrHexInput((v) => !v);
-                    }}
+                    })}
                   >
                     <Ionicons
                       name="color-palette-outline"
@@ -649,7 +648,7 @@ export default function EditCardScreen() {
                     <Pressable
                       key={c}
                       style={[styles.colorDot, { backgroundColor: c }, qrColor === c && styles.colorDotActive]}
-                      onPress={() => { setQrColor(c); setShowQrHexInput(false); }}
+                      onPress={() => requireProForQr(() => { setQrColor(c); setShowQrHexInput(false); })}
                     >
                       {qrColor === c && <Ionicons name="checkmark" size={14} color="#fff" />}
                     </Pressable>
@@ -714,10 +713,10 @@ export default function EditCardScreen() {
                       !QR_SWATCH_COLORS.includes(qrBgColor) && styles.colorDotActive,
                       !QR_SWATCH_COLORS.includes(qrBgColor) && { borderColor: qrBgColor },
                     ]}
-                    onPress={() => {
+                    onPress={() => requireProForQr(() => {
                       setQrBgHexDraft(qrBgColor);
                       setShowQrBgHexInput((v) => !v);
-                    }}
+                    })}
                   >
                     <Ionicons
                       name="color-palette-outline"
@@ -730,7 +729,7 @@ export default function EditCardScreen() {
                     <Pressable
                       key={c}
                       style={[styles.colorDot, { backgroundColor: c }, qrBgColor === c && styles.colorDotActive]}
-                      onPress={() => { setQrBgColor(c); setShowQrBgHexInput(false); }}
+                      onPress={() => requireProForQr(() => { setQrBgColor(c); setShowQrBgHexInput(false); })}
                     >
                       {qrBgColor === c && <Ionicons name="checkmark" size={14} color="#fff" />}
                     </Pressable>
@@ -1038,20 +1037,6 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: COLORS.border,
     padding: 16,
   },
-  proLockOverlay: {
-    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-    backgroundColor: 'rgba(12,12,14,0.82)',
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 10,
-  },
-  proLockBadge: {
-    flexDirection: 'row', alignItems: 'center', gap: 8,
-    backgroundColor: COLORS.surface2, borderWidth: 1, borderColor: COLORS.border,
-    paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12,
-  },
-  proLockText: { fontSize: 13, fontFamily: FONTS.semiBold, color: COLORS.text },
   label: {
     fontSize: 10, fontFamily: FONTS.medium, color: COLORS.textSecondary,
     letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 8,
