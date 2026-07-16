@@ -204,10 +204,18 @@ export function CardPreview({ card, user, analytics, maxHeight, onPreview, onPul
       )}
 
     <View style={styles.card}>
-      {/* ── Front face ── */}
+      {/* ── Front face ──
+          Whichever face is showing is the one left in normal flow, so it's
+          the one that sizes styles.card (up to capH); the other is pulled
+          out with absoluteFill so it doesn't also compete for that size.
+          Previously the back face was *always* absoluteFill, so flipping to
+          analytics never grew the card past whatever height the front's
+          (often much shorter) content happened to need — analytics content
+          just got clipped by the card's own overflow:hidden instead of
+          growing/scrolling like the front does. */}
       <Animated.View
         pointerEvents={isFlipped ? 'none' : 'auto'}
-        style={[styles.face, { transform: [{ rotateY: frontRotate }] }]}
+        style={[styles.face, isFlipped && StyleSheet.absoluteFill, { transform: [{ rotateY: frontRotate }] }]}
       >
         <ScrollView
           style={{ maxHeight: capH, borderRadius: 22 }}
@@ -274,13 +282,14 @@ export function CardPreview({ card, user, analytics, maxHeight, onPreview, onPul
       {/* ── Back face ── */}
       <Animated.View
         pointerEvents={isFlipped ? 'auto' : 'none'}
-        style={[styles.face, styles.backFace, StyleSheet.absoluteFill, { transform: [{ rotateY: backRotate }] }]}
+        style={[styles.face, styles.backFace, !isFlipped && StyleSheet.absoluteFill, { transform: [{ rotateY: backRotate }] }]}
       >
         <View style={[styles.backHeader, { backgroundColor: accent + '22', borderBottomColor: accent + '33' }]}>
           <Text style={[styles.backCardName, { color: accent }]}>{card.name.toUpperCase()}</Text>
         </View>
 
         <ScrollView
+          style={{ maxHeight: capH }}
           showsVerticalScrollIndicator={false}
           bounces={false}
           onScroll={(e) => {
