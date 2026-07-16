@@ -2,7 +2,7 @@
   "expo": {
     "name": "Linkd",
     "slug": "linkd",
-    "owner": "santrico.support",
+    "owner": "chrisocasio.pr",
     "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -102,7 +102,7 @@
             }
           }
         },
-        "projectId": "ae569325-a0ce-4e06-84cf-73ae1caa4c0b"
+        "projectId": "87c8d6f5-b81d-462c-9127-fb801b45f501"
       }
     }
   }
