@@ -87,20 +87,23 @@ private struct LockScreenView: View {
     var body: some View {
         HStack(spacing: 14) {
             if let qr = currentQrImage(for: state) {
-                // White backing "frame" behind the QR, independent of
-                // whatever qrBgColor the card itself uses — without it, a
-                // card with a dark QR background (like this one) blends
-                // straight into the Live Activity's own black background
-                // with zero visual separation. Sized to roughly match the
-                // outer footprint competitors' framed QR treatments use.
+                // Subtle grey bezel around the QR, not a solid fill — a
+                // white backing looked fine for competitors' plain
+                // black-on-white QRs, but clashed hard against ours once a
+                // custom qrColor/qrBgColor is in play (e.g. this card's
+                // black background butting straight against solid white).
+                // A thin translucent stroke reads as a soft frame against
+                // the black Live Activity regardless of the QR's own
+                // colors, same "rgba(255,255,255,0.07)"-style subtle border
+                // convention the rest of the app already uses for cards.
                 Image(uiImage: qr)
                     .interpolation(.none)
                     .resizable()
                     .frame(width: 110, height: 110)
                     .padding(8)
-                    .background(
+                    .overlay(
                         RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .fill(Color.white)
+                            .stroke(Color.white.opacity(0.18), lineWidth: 1)
                     )
             }
             VStack(alignment: .leading, spacing: 2) {
