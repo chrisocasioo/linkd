@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import * as WebBrowser from 'expo-web-browser';
 import React, { useEffect, useRef, useState } from 'react';
 import { Alert, Animated, PanResponder, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRevenueCat } from '../../lib/RevenueCatContext';
@@ -146,6 +147,25 @@ export function PaywallSheet({ visible, onClose }: Props) {
           <Pressable onPress={onClose} disabled={loading}>
             <Text style={styles.later}>Maybe later</Text>
           </Pressable>
+
+          {/* Required by App Store Review Guideline 3.1.2 — auto-renewal
+              terms plus Privacy Policy / Terms of Use, both reachable from
+              the purchase screen itself. No custom Terms of Use exists, so
+              this links Apple's standard EULA, which Apple explicitly
+              accepts in place of one. */}
+          <Text style={styles.disclosure}>
+            {trialDays ? `${trialDays}-day free trial, then ` : ''}
+            {plan === 'annual' ? `${annualPrice}/year` : `${monthlyPrice}/month`}. Auto-renews unless canceled at least 24 hours before the current period ends. Manage or cancel anytime in Settings &gt; Apple ID &gt; Subscriptions.
+          </Text>
+          <View style={styles.legalRow}>
+            <Pressable onPress={() => WebBrowser.openBrowserAsync('https://chrisocasioo.github.io/Linkd-Legal/privacy.html')}>
+              <Text style={styles.legalLink}>Privacy Policy</Text>
+            </Pressable>
+            <Text style={styles.legalDot}>·</Text>
+            <Pressable onPress={() => WebBrowser.openBrowserAsync('https://www.apple.com/legal/internet-services/itunes/dev/stdeula/')}>
+              <Text style={styles.legalLink}>Terms of Use</Text>
+            </Pressable>
+          </View>
         </ScrollView>
       </Animated.View>
     </View>
@@ -205,4 +225,9 @@ const styles = StyleSheet.create({
   startBtnText: { fontSize: 15, fontFamily: FONTS.semiBold, color: '#0C0C0E' },
 
   later: { fontSize: 13, fontFamily: FONTS.regular, color: COLORS.textSecondary, textAlign: 'center', textDecorationLine: 'underline' },
+
+  disclosure: { fontSize: 10, fontFamily: FONTS.regular, color: COLORS.textTertiary, textAlign: 'center', lineHeight: 14, marginTop: 4 },
+  legalRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6 },
+  legalLink: { fontSize: 11, fontFamily: FONTS.regular, color: COLORS.textTertiary, textDecorationLine: 'underline' },
+  legalDot: { fontSize: 11, color: COLORS.textTertiary },
 });

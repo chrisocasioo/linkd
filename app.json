@@ -29,6 +29,7 @@
         ]
       },
       "infoPlist": {
+        "NSCameraUsageDescription": "Linkd uses your camera to scan business cards and QR codes.",
         "NSPhotoLibraryUsageDescription": "Linkd needs access to your photos to set your profile picture.",
         "NSPhotoLibraryAddUsageDescription": "Linkd saves content to your photo library.",
         "NSContactsUsageDescription": "Linkd adds card details to your address book.",
