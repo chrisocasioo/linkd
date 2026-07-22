@@ -16,6 +16,17 @@ export async function getEntitlements(): Promise<{ isPro: boolean }> {
   }
 }
 
+/**
+ * Re-links an existing purchase to this install — a reinstall, a new
+ * device, or the same Apple ID signed in elsewhere. Not a purchase itself
+ * (no charge either way); Apple requires every app selling subscriptions
+ * to offer this (App Store Review Guideline 3.1.1).
+ */
+export async function restorePurchases(): Promise<boolean> {
+  const customerInfo = await Purchases.restorePurchases();
+  return !!customerInfo.entitlements.active['Linkd Pro'];
+}
+
 export interface ProPackagePricing {
   priceString: string;
   price: number;
