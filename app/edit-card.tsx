@@ -254,7 +254,12 @@ export default function EditCardScreen() {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'] as any,
       allowsEditing: true,
-      aspect: [1, 1],
+      // Matches the card banner's actual rendered shape (full card width x
+      // 190pt tall, ~9:5) — a square crop here didn't match what the banner
+      // actually shows, since resizeMode: 'cover' would silently crop the
+      // top/bottom of the square again to fit the wide banner, with no way
+      // for the user to see or control that second crop.
+      aspect: [9, 5],
       quality: 0.85,
     });
     if (!result.canceled && result.assets[0]) {
