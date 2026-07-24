@@ -28,13 +28,19 @@ enum CardStore {
             return CardEntity(
                 id: id,
                 name: name,
+                // Falls back to the card's own label for snapshots synced
+                // before this field existed, rather than showing blank.
+                personName: dict["personName"] as? String ?? name,
                 accentColor: accentColor,
                 username: username,
                 slug: dict["slug"] as? String ?? "",
                 title: dict["title"] as? String ?? "",
                 company: dict["company"] as? String ?? "",
                 publicUrl: publicUrl,
-                offlineValue: dict["offlineValue"] as? String ?? publicUrl
+                offlineValue: dict["offlineValue"] as? String ?? publicUrl,
+                qrColor: dict["qrColor"] as? String ?? "#000000",
+                qrBgColor: dict["qrBgColor"] as? String ?? "#FFFFFF",
+                qrLogoBase64: dict["qrLogoBase64"] as? String
             )
         }
     }
@@ -74,7 +80,12 @@ enum CardStore {
 
 struct CardEntity: AppEntity {
     var id: String
+    // The card's own label (e.g. "Work") — shown in the "Edit Widget"
+    // picker via displayRepresentation below, where it's what lets someone
+    // tell their cards apart. Not the same as personName, which is who the
+    // card belongs to and what actually renders on the widget face.
     var name: String
+    var personName: String
     var accentColor: String
     var username: String
     var slug: String
@@ -82,6 +93,9 @@ struct CardEntity: AppEntity {
     var company: String
     var publicUrl: String
     var offlineValue: String
+    var qrColor: String
+    var qrBgColor: String
+    var qrLogoBase64: String?
 
     static var typeDisplayRepresentation: TypeDisplayRepresentation = "Linkd Card"
     static var defaultQuery = CardEntityQuery()
@@ -184,6 +198,11 @@ struct ToggleWidgetQrModeIntent: AppIntent {
 // LiveActivityIntent (not plain AppIntent) — buttons inside a Live Activity
 // need this so the intent runs in place against the live Activity instead of
 // risking a launch of the containing app.
+//
+// Mirrored in modules/live-activity/ios/ToggleQrModeIntent.swift — that
+// copy exists purely for main-app-target membership, which
+// Activity<CardActivityAttributes>.activities needs to not come back empty
+// at perform() time. See that file for the full explanation.
 struct ToggleQrModeIntent: LiveActivityIntent {
     static var title: LocalizedStringResource = "Toggle QR Mode"
 

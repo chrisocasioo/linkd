@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1077.0",
+    "@aws-sdk/s3-request-presigner": "^3.1088.0",
     "@clerk/backend": "^1.16.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.0",

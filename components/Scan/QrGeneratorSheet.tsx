@@ -19,19 +19,21 @@ import {
   View,
 } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
+import { PaywallSheet } from '../Card/PaywallSheet';
 import { SavedQr, useApi } from '../../lib/api';
 import { buildWifiQr, normalizeUrl, parseWifiQr } from '../../lib/qrFormat';
+import { useRevenueCat } from '../../lib/RevenueCatContext';
 import { COLORS, FONTS } from '../../constants/colors';
 
 const { height: SCREEN_H } = Dimensions.get('window');
+
+const FREE_QR_LIMIT = 5;
 
 type Mode = 'url' | 'wifi';
 type Security = 'WPA' | 'WEP' | 'nopass';
 
 const QR_COLORS = ['#C9973A', '#7C3AED', '#22C55E', '#F43F5E', '#0EA5E9', '#EC4899'];
 const QR_BG_COLORS = ['#C9973A', '#7C3AED', '#22C55E', '#F43F5E', '#0EA5E9', '#EC4899'];
-// Second row shown under both swatch pickers
-const SWATCH_SECOND_ROW = ['#FFFFFF', '#000000', '#808080', '#A52A2A', '#800020', '#FFA500', '#4169E1'];
 
 interface Props {
   visible: boolean;
@@ -40,6 +42,8 @@ interface Props {
 
 export function QrGeneratorSheet({ visible, onClose }: Props) {
   const api = useApi();
+  const { isPro } = useRevenueCat();
+  const [showPaywall, setShowPaywall] = useState(false);
   const slideY = useRef(new Animated.Value(SCREEN_H)).current;
   const scrollRef = useRef<ScrollView>(null);
 
@@ -91,6 +95,14 @@ export function QrGeneratorSheet({ visible, onClose }: Props) {
 
   const close = () => { Keyboard.dismiss(); onClose(); };
 
+  // Logo/color/background are all Pro-only — the custom-color button always
+  // opens its panel (so it looks and feels functional for everyone), but
+  // actually applying a color, and the logo/preset swatches, are gated here.
+  const requireProForQr = (fn: () => void) => {
+    if (!isPro) { setShowPaywall(true); return; }
+    fn();
+  };
+
   const handlePickLogo = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
@@ -123,6 +135,10 @@ export function QrGeneratorSheet({ visible, onClose }: Props) {
 
   const handleSave = async () => {
     if (!generated) return;
+    if (!editingId && !isPro && savedQrs.length >= FREE_QR_LIMIT) {
+      setShowPaywall(true);
+      return;
+    }
     setSaving(true);
     try {
       const label = customName.trim() || generated.label;
@@ -324,114 +340,126 @@ export function QrGeneratorSheet({ visible, onClose }: Props) {
                   placeholderTextColor={COLORS.textTertiary}
                 />
 
-                <View style={styles.logoRow}>
-                  <Pressable onPress={handlePickLogo} style={styles.logoWrap}>
-                    {previewLogoSource ? (
-                      <Image source={{ uri: previewLogoSource }} style={styles.logoImg} />
-                    ) : (
-                      <View style={styles.logoPlaceholder}>
-                        <Ionicons name="image-outline" size={16} color={COLORS.textTertiary} />
-                      </View>
-                    )}
-                  </Pressable>
-                  <Pressable onPress={handlePickLogo}>
-                    <Text style={styles.logoActionText}>{previewLogoSource ? 'Change Logo' : 'Add Logo'}</Text>
-                  </Pressable>
-                  {previewLogoSource && (
-                    <Pressable onPress={() => { setLogoUri(null); setRemoveLogo(true); }}>
-                      <Text style={styles.logoActionTextRemove}>Remove</Text>
+                <View style={styles.customizeSection}>
+                  <View style={styles.logoRow}>
+                    <Pressable onPress={() => requireProForQr(handlePickLogo)} style={styles.logoWrap}>
+                      {previewLogoSource ? (
+                        <Image source={{ uri: previewLogoSource }} style={styles.logoImg} />
+                      ) : (
+                        <View style={styles.logoPlaceholder}>
+                          <Ionicons name="image-outline" size={16} color={COLORS.textTertiary} />
+                        </View>
+                      )}
                     </Pressable>
+                    <Pressable onPress={() => requireProForQr(handlePickLogo)}>
+                      <Text style={styles.logoActionText}>{previewLogoSource ? 'Change Logo' : 'Add Logo'}</Text>
+                    </Pressable>
+                    {previewLogoSource && (
+                      <Pressable onPress={() => { setLogoUri(null); setRemoveLogo(true); }}>
+                        <Text style={styles.logoActionTextRemove}>Remove</Text>
+                      </Pressable>
+                    )}
+                  </View>
+
+                  <Text style={styles.swatchLabel}>Color</Text>
+                  <View style={styles.swatchRow}>
+                    <Pressable
+                      style={[styles.swatchDot, styles.swatchPickerDot]}
+                      onPress={() => { setHexDraft(qrColor); setShowColorHex((v) => (v === 'color' ? null : 'color')); }}
+                    >
+                      <Ionicons name="color-palette-outline" size={14} color="rgba(255,255,255,0.6)" />
+                    </Pressable>
+                    {QR_COLORS.map((c) => (
+                      <Pressable
+                        key={c}
+                        style={[styles.swatchDot, { backgroundColor: c }, qrColor === c && styles.swatchDotActive]}
+                        onPress={() => requireProForQr(() => { setQrColor(c); setShowColorHex(null); })}
+                      >
+                        {qrColor === c && <Ionicons name="checkmark" size={12} color="#fff" />}
+                      </Pressable>
+                    ))}
+                  </View>
+
+                  <Text style={styles.swatchLabel}>Background</Text>
+                  <View style={styles.swatchRow}>
+                    <Pressable
+                      style={[styles.swatchDot, styles.swatchPickerDot]}
+                      onPress={() => { setHexDraft(qrBgColor); setShowColorHex((v) => (v === 'bg' ? null : 'bg')); }}
+                    >
+                      <Ionicons name="color-palette-outline" size={14} color="rgba(255,255,255,0.6)" />
+                    </Pressable>
+                    {QR_BG_COLORS.map((c) => (
+                      <Pressable
+                        key={c}
+                        style={[
+                          styles.swatchDot, { backgroundColor: c }, qrBgColor === c && styles.swatchDotActive,
+                          c === '#FFFFFF' && { borderWidth: 1, borderColor: COLORS.border },
+                        ]}
+                        onPress={() => requireProForQr(() => { setQrBgColor(c); setShowColorHex(null); })}
+                      >
+                        {qrBgColor === c && <Ionicons name="checkmark" size={12} color={c === '#FFFFFF' ? '#0C0C0E' : '#fff'} />}
+                      </Pressable>
+                    ))}
+                  </View>
+
+                  {showColorHex && (
+                    <>
+                      <View style={styles.quickBwRow}>
+                        <Pressable
+                          style={styles.quickBwBtn}
+                          onPress={() => requireProForQr(() => {
+                            const setColor = showColorHex === 'color' ? setQrColor : setQrBgColor;
+                            setColor('#000000');
+                            setHexDraft('#000000');
+                            setShowColorHex(null);
+                          })}
+                        >
+                          <View style={[styles.quickBwSwatch, { backgroundColor: '#000000' }]} />
+                          <Text style={styles.quickBwText}>Black</Text>
+                        </Pressable>
+                        <Pressable
+                          style={styles.quickBwBtn}
+                          onPress={() => requireProForQr(() => {
+                            const setColor = showColorHex === 'color' ? setQrColor : setQrBgColor;
+                            setColor('#FFFFFF');
+                            setHexDraft('#FFFFFF');
+                            setShowColorHex(null);
+                          })}
+                        >
+                          <View style={[styles.quickBwSwatch, { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: COLORS.border }]} />
+                          <Text style={styles.quickBwText}>White</Text>
+                        </Pressable>
+                      </View>
+                      <View style={styles.hexRow}>
+                        <View style={[styles.hexPreview, { backgroundColor: /^#[0-9A-Fa-f]{6}$/.test(hexDraft) ? hexDraft : COLORS.border }]} />
+                        <TextInput
+                          style={styles.hexInput}
+                          value={hexDraft}
+                          onChangeText={(v) => {
+                            const clean = v.startsWith('#') ? v : '#' + v;
+                            setHexDraft(clean);
+                            if (/^#[0-9A-Fa-f]{6}$/.test(clean)) {
+                              requireProForQr(() => {
+                                if (showColorHex === 'color') setQrColor(clean); else setQrBgColor(clean);
+                              });
+                            }
+                          }}
+                          placeholder="#000000"
+                          placeholderTextColor={COLORS.textTertiary}
+                          autoCapitalize="characters"
+                          maxLength={7}
+                        />
+                      </View>
+                    </>
                   )}
                 </View>
 
-                <Text style={styles.swatchLabel}>Color</Text>
-                <View style={styles.swatchRow}>
-                  <Pressable
-                    style={[styles.swatchDot, styles.swatchPickerDot]}
-                    onPress={() => { setHexDraft(qrColor); setShowColorHex((v) => (v === 'color' ? null : 'color')); }}
-                  >
-                    <Ionicons name="color-palette-outline" size={14} color="rgba(255,255,255,0.6)" />
-                  </Pressable>
-                  {QR_COLORS.map((c) => (
-                    <Pressable
-                      key={c}
-                      style={[styles.swatchDot, { backgroundColor: c }, qrColor === c && styles.swatchDotActive]}
-                      onPress={() => { setQrColor(c); setShowColorHex(null); }}
-                    >
-                      {qrColor === c && <Ionicons name="checkmark" size={12} color="#fff" />}
-                    </Pressable>
-                  ))}
-                </View>
-                <View style={styles.swatchRowSecond}>
-                  {SWATCH_SECOND_ROW.map((c) => (
-                    <Pressable
-                      key={c}
-                      style={[
-                        styles.swatchDot, { backgroundColor: c }, qrColor === c && styles.swatchDotActive,
-                        c === '#FFFFFF' && { borderWidth: 1, borderColor: COLORS.border },
-                      ]}
-                      onPress={() => { setQrColor(c); setShowColorHex(null); }}
-                    >
-                      {qrColor === c && <Ionicons name="checkmark" size={12} color={c === '#FFFFFF' ? '#0C0C0E' : '#fff'} />}
-                    </Pressable>
-                  ))}
-                </View>
-
-                <Text style={styles.swatchLabel}>Background</Text>
-                <View style={styles.swatchRow}>
-                  <Pressable
-                    style={[styles.swatchDot, styles.swatchPickerDot]}
-                    onPress={() => { setHexDraft(qrBgColor); setShowColorHex((v) => (v === 'bg' ? null : 'bg')); }}
-                  >
-                    <Ionicons name="color-palette-outline" size={14} color="rgba(255,255,255,0.6)" />
-                  </Pressable>
-                  {QR_BG_COLORS.map((c) => (
-                    <Pressable
-                      key={c}
-                      style={[
-                        styles.swatchDot, { backgroundColor: c }, qrBgColor === c && styles.swatchDotActive,
-                        c === '#FFFFFF' && { borderWidth: 1, borderColor: COLORS.border },
-                      ]}
-                      onPress={() => { setQrBgColor(c); setShowColorHex(null); }}
-                    >
-                      {qrBgColor === c && <Ionicons name="checkmark" size={12} color={c === '#FFFFFF' ? '#0C0C0E' : '#fff'} />}
-                    </Pressable>
-                  ))}
-                </View>
-                <View style={styles.swatchRowSecond}>
-                  {SWATCH_SECOND_ROW.map((c) => (
-                    <Pressable
-                      key={c}
-                      style={[
-                        styles.swatchDot, { backgroundColor: c }, qrBgColor === c && styles.swatchDotActive,
-                        c === '#FFFFFF' && { borderWidth: 1, borderColor: COLORS.border },
-                      ]}
-                      onPress={() => { setQrBgColor(c); setShowColorHex(null); }}
-                    >
-                      {qrBgColor === c && <Ionicons name="checkmark" size={12} color={c === '#FFFFFF' ? '#0C0C0E' : '#fff'} />}
-                    </Pressable>
-                  ))}
-                </View>
-
-                {showColorHex && (
-                  <View style={styles.hexRow}>
-                    <View style={[styles.hexPreview, { backgroundColor: /^#[0-9A-Fa-f]{6}$/.test(hexDraft) ? hexDraft : COLORS.border }]} />
-                    <TextInput
-                      style={styles.hexInput}
-                      value={hexDraft}
-                      onChangeText={(v) => {
-                        const clean = v.startsWith('#') ? v : '#' + v;
-                        setHexDraft(clean);
-                        if (/^#[0-9A-Fa-f]{6}$/.test(clean)) {
-                          if (showColorHex === 'color') setQrColor(clean); else setQrBgColor(clean);
-                        }
-                      }}
-                      placeholder="#000000"
-                      placeholderTextColor={COLORS.textTertiary}
-                      autoCapitalize="characters"
-                      maxLength={7}
-                    />
-                  </View>
+                {!isPro && (
+                  <Text style={styles.freeLimitText}>
+                    {savedQrs.length >= FREE_QR_LIMIT && !editingId
+                      ? `Free plan limit reached (${FREE_QR_LIMIT}/${FREE_QR_LIMIT}) — upgrade to save more`
+                      : `${savedQrs.length}/${FREE_QR_LIMIT} free QR codes saved`}
+                  </Text>
                 )}
 
                 <View style={styles.saveRow}>
@@ -514,6 +542,7 @@ export function QrGeneratorSheet({ visible, onClose }: Props) {
           </ScrollView>
         </Animated.View>
       </KeyboardAvoidingView>
+      <PaywallSheet visible={showPaywall} onClose={() => setShowPaywall(false)} />
     </Modal>
   );
 }
@@ -565,6 +594,8 @@ const styles = StyleSheet.create({
     fontSize: 13, fontFamily: FONTS.regular, color: COLORS.text,
   },
 
+  customizeSection: { alignSelf: 'stretch', gap: 10 },
+  freeLimitText: { fontSize: 11, fontFamily: FONTS.regular, color: COLORS.textTertiary, textAlign: 'center' },
   logoRow: { flexDirection: 'row', alignItems: 'center', gap: 10, alignSelf: 'stretch' },
   logoWrap: { width: 36, height: 36, borderRadius: 10, overflow: 'hidden' },
   logoImg: { width: 36, height: 36, borderRadius: 10 },
@@ -580,7 +611,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.6, textTransform: 'uppercase', alignSelf: 'flex-start', marginTop: 4,
   },
   swatchRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, alignSelf: 'flex-start' },
-  swatchRowSecond: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, alignSelf: 'flex-start', marginTop: 6 },
   swatchDot: {
     width: 28, height: 28, borderRadius: 14,
     alignItems: 'center', justifyContent: 'center',
@@ -588,6 +618,14 @@ const styles = StyleSheet.create({
   },
   swatchPickerDot: { backgroundColor: 'rgba(255,255,255,0.08)' },
   swatchDotActive: { borderColor: '#fff' },
+  quickBwRow: { flexDirection: 'row', gap: 8, alignSelf: 'stretch', marginBottom: 4 },
+  quickBwBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10,
+    backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border,
+  },
+  quickBwSwatch: { width: 14, height: 14, borderRadius: 7 },
+  quickBwText: { fontSize: 12, fontFamily: FONTS.medium, color: COLORS.text },
   hexRow: { flexDirection: 'row', alignItems: 'center', gap: 10, alignSelf: 'stretch' },
   hexPreview: { width: 26, height: 26, borderRadius: 13 },
   hexInput: {

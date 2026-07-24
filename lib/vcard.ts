@@ -57,7 +57,7 @@ export function buildVcard(card: Card, user: User | null, publicUrl: string, opt
   const { compact = false } = opts;
   const lines: string[] = ['BEGIN:VCARD', 'VERSION:3.0'];
 
-  const fullName = user?.displayName ?? user?.username ?? card.name;
+  const fullName = card.displayName ?? user?.displayName ?? user?.username ?? card.name;
   const nameParts = fullName.trim().split(/\s+/);
   const first = nameParts[0] ?? '';
   const last = nameParts.slice(1).join(' ');
@@ -130,7 +130,7 @@ export function buildVcard(card: Card, user: User | null, publicUrl: string, opt
 
 /** Maps a card to an expo-contacts Contact shape for the native contact-form preview. */
 export function contactFromCard(card: Card, user: User | null, publicUrl: string): any {
-  const fullName = user?.displayName ?? user?.username ?? card.name;
+  const fullName = card.displayName ?? user?.displayName ?? user?.username ?? card.name;
   const nameParts = fullName.trim().split(/\s+/);
 
   const emails: any[] = [];

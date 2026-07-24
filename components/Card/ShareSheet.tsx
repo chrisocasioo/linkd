@@ -105,7 +105,7 @@ export function ShareSheet({ visible, username, user, card, onClose }: Props) {
     if (!card) return;
     try {
       const vcf = buildVcard(card, user ?? null, url);
-      const safe = (user?.displayName ?? username ?? 'card').replace(/[^a-z0-9]/gi, '_') || 'card';
+      const safe = (card.displayName ?? user?.displayName ?? username ?? 'card').replace(/[^a-z0-9]/gi, '_') || 'card';
       const path = `${FileSystem.cacheDirectory}${safe}.vcf`;
       await FileSystem.writeAsStringAsync(path, vcf);
       await Sharing.shareAsync(path, {

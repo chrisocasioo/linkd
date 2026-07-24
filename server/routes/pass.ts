@@ -121,7 +121,7 @@ router.get('/pass/:cardId', async (req, res) => {
       .where(eq(cardFields.cardId, card.id))
       .orderBy(asc(cardFields.displayOrder));
 
-    const displayName = user.displayName ?? user.username;
+    const displayName = card.displayName ?? user.displayName ?? user.username;
     const title = fields.find((f) => f.type === 'title')?.value;
     const company = fields.find((f) => f.type === 'company')?.value;
     const publicUrl = card.slug

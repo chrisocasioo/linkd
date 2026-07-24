@@ -215,5 +215,8 @@ export async function runMigrations() {
   await db.execute(sql`
     ALTER TABLE contacts ADD COLUMN IF NOT EXISTS photo TEXT;
   `);
+  await db.execute(sql`
+    ALTER TABLE cards ADD COLUMN IF NOT EXISTS display_name TEXT;
+  `);
   console.log('✓ Database tables ready');
 }

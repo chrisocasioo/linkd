@@ -180,9 +180,11 @@ export function CardPreview({ card, user, analytics, maxHeight, onPreview, onPul
         }
       }}
     >
-      {/* No photo — the name label and analytics button float above the
-          card's own rounded box instead of living inside it, so the card's
-          height is just the identity/fields content, not padded to fit them. */}
+      {/* No photo — the name label and analytics button sit in a row above
+          the card's own rounded box instead of living inside it, so the
+          card's height is just the identity/fields content. Kept in normal
+          flow (not absolutely overlaid) so it isn't clipped by the parent
+          ScrollView/FlatList bounds. */}
       {!card.photo && (
         <View style={styles.floatingHeader} pointerEvents="box-none">
           <View style={styles.floatingHeaderSide} />
@@ -202,10 +204,18 @@ export function CardPreview({ card, user, analytics, maxHeight, onPreview, onPul
       )}
 
     <View style={styles.card}>
-      {/* ── Front face ── */}
+      {/* ── Front face ──
+          Whichever face is showing is the one left in normal flow, so it's
+          the one that sizes styles.card (up to capH); the other is pulled
+          out with absoluteFill so it doesn't also compete for that size.
+          Previously the back face was *always* absoluteFill, so flipping to
+          analytics never grew the card past whatever height the front's
+          (often much shorter) content happened to need — analytics content
+          just got clipped by the card's own overflow:hidden instead of
+          growing/scrolling like the front does. */}
       <Animated.View
         pointerEvents={isFlipped ? 'none' : 'auto'}
-        style={[styles.face, { transform: [{ rotateY: frontRotate }] }]}
+        style={[styles.face, isFlipped && StyleSheet.absoluteFill, { transform: [{ rotateY: frontRotate }] }]}
       >
         <ScrollView
           style={{ maxHeight: capH, borderRadius: 22 }}
@@ -230,7 +240,7 @@ export function CardPreview({ card, user, analytics, maxHeight, onPreview, onPul
 
           {/* Identity — tapping opens the public card */}
           <Pressable style={styles.identity} onPress={onPreview}>
-            <Text style={[styles.name, { fontFamily: fonts.semiBold }]}>{user.displayName ?? user.username ?? ''}</Text>
+            <Text style={[styles.name, { fontFamily: fonts.semiBold }]}>{card.displayName ?? user.displayName ?? user.username ?? ''}</Text>
             {(() => {
               const title      = card.fields.find(f => f.type === 'title')?.value;
               const department = card.fields.find(f => f.type === 'department')?.value;
@@ -272,13 +282,14 @@ export function CardPreview({ card, user, analytics, maxHeight, onPreview, onPul
       {/* ── Back face ── */}
       <Animated.View
         pointerEvents={isFlipped ? 'auto' : 'none'}
-        style={[styles.face, styles.backFace, StyleSheet.absoluteFill, { transform: [{ rotateY: backRotate }] }]}
+        style={[styles.face, styles.backFace, !isFlipped && StyleSheet.absoluteFill, { transform: [{ rotateY: backRotate }] }]}
       >
         <View style={[styles.backHeader, { backgroundColor: accent + '22', borderBottomColor: accent + '33' }]}>
           <Text style={[styles.backCardName, { color: accent }]}>{card.name.toUpperCase()}</Text>
         </View>
 
         <ScrollView
+          style={{ maxHeight: capH }}
           showsVerticalScrollIndicator={false}
           bounces={false}
           onScroll={(e) => {
@@ -286,13 +297,19 @@ export function CardPreview({ card, user, analytics, maxHeight, onPreview, onPul
           }}
           scrollEventThrottle={16}
         >
-          {/* Views summary */}
+          {/* Views summary — the 30-day count itself is a Pro feature */}
           <View style={styles.backViewsSection}>
             <Text style={styles.backPeriod}>LAST 30 DAYS</Text>
-            <Text style={styles.backViews}>
-              {analytics ? analytics.views.toLocaleString() : '—'}
-            </Text>
-            <Text style={styles.backViewsLabel}>card views</Text>
+            {analyticsLocked ? (
+              <Pressable style={styles.backViewsLockBadge} onPress={onUnlockAnalytics}>
+                <Ionicons name="lock-closed" size={22} color="#0C0C0E" />
+              </Pressable>
+            ) : (
+              <Text style={styles.backViews}>
+                {analytics ? analytics.views.toLocaleString() : '—'}
+              </Text>
+            )}
+            <Text style={styles.backViewsLabel}>{analyticsLocked ? 'Unlock with Pro' : 'card views'}</Text>
             {!analyticsLocked && analytics && analytics.prevViews > 0 && (
               <View style={[styles.backDeltaPill, { backgroundColor: accent + '22' }]}>
                 <Text style={[styles.backDelta, { color: accent }]}>
@@ -323,7 +340,7 @@ export function CardPreview({ card, user, analytics, maxHeight, onPreview, onPul
                       <Ionicons name={(fc.fieldIcon as keyof typeof Ionicons.glyphMap) || FIELD_ICONS[fc.fieldType] || FIELD_ICONS.custom} size={13} color={accent} />
                     </View>
                     <Text style={styles.backFieldName} numberOfLines={1}>
-                      {fc.label ?? (fc.fieldType === 'app' ? APP_FIELD_DISPLAY : fc.fieldValue)}
+                      {fc.label ?? (fc.fieldType === 'app' ? APP_FIELD_DISPLAY : fc.fieldType === 'phone' ? formatPhone(fc.fieldValue) : fc.fieldValue)}
                     </Text>
                     {analyticsLocked ? (
                       <View style={styles.backFieldLock}>
@@ -412,13 +429,10 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   floatingHeader: {
-    position: 'absolute',
-    top: -14,
-    left: 12,
-    right: 12,
     flexDirection: 'row',
     alignItems: 'center',
-    zIndex: 10,
+    paddingHorizontal: 12,
+    marginBottom: 10,
   },
   floatingHeaderSide: { flex: 1 },
   floatingHeaderSideRight: { alignItems: 'flex-end' },
@@ -536,6 +550,15 @@ const styles = StyleSheet.create({
     letterSpacing: -2,
     lineHeight: 68,
   },
+  backViewsLockBadge: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: COLORS.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 6,
+  },
   backViewsLabel: {
     fontSize: 14,
     fontFamily: FONTS.regular,
@@ -571,10 +594,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   backFieldsSection: {
-    paddingHorizontal: 18,
     paddingTop: 10,
     paddingBottom: 8,
-    gap: 4,
   },
   backSectionLabel: {
     fontSize: 10,
@@ -582,12 +603,16 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.35)',
     letterSpacing: 1,
     marginBottom: 10,
+    paddingHorizontal: 18,
   },
   backFieldRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
+    paddingHorizontal: 18,
     paddingVertical: 7,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.06)',
   },
   backFieldIcon: {
     width: 28,

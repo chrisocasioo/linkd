@@ -101,8 +101,9 @@ router.patch('/:id', async (req, res) => {
   try {
     const userId = (req as any).userId as string;
     const { id } = req.params;
-    const { name, accentColor, font, photo, slug, qrColor, qrLogo, qrBgColor } = req.body as {
+    const { name, displayName, accentColor, font, photo, slug, qrColor, qrLogo, qrBgColor } = req.body as {
       name?: string;
+      displayName?: string | null;
       accentColor?: string;
       font?: string;
       photo?: string | null;
@@ -113,6 +114,7 @@ router.patch('/:id', async (req, res) => {
     };
     const update: Partial<typeof cards.$inferInsert> = {};
     if (name !== undefined) update.name = name;
+    if (displayName !== undefined) update.displayName = displayName;
     if (accentColor !== undefined) update.accentColor = accentColor;
     if (font !== undefined) update.font = font;
     if (photo !== undefined) update.photo = photo;

@@ -2,7 +2,7 @@ import { useAuth } from '@clerk/clerk-expo';
 import { useClerk } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Alert,
   Animated,
@@ -17,6 +17,7 @@ import {
 
 import { useApi } from '../../lib/api';
 import { clearAllCaches } from '../../lib/cache';
+import { useRevenueCat } from '../../lib/RevenueCatContext';
 import { COLORS, FONTS } from '../../constants/colors';
 
 interface Props {
@@ -39,6 +40,8 @@ export function SettingsSheet({ visible, onClose, onShowPaywall }: Props) {
   const { user } = useClerk();
   const api = useApi();
   const router = useRouter();
+  const { restorePurchases } = useRevenueCat();
+  const [restoring, setRestoring] = useState(false);
   const translateY = useRef(new Animated.Value(500)).current;
 
   useEffect(() => {
@@ -81,6 +84,22 @@ export function SettingsSheet({ visible, onClose, onShowPaywall }: Props) {
         },
       ]
     );
+  };
+
+  const handleRestore = async () => {
+    if (restoring) return;
+    setRestoring(true);
+    try {
+      const restored = await restorePurchases();
+      Alert.alert(
+        restored ? 'Restored' : 'Nothing to Restore',
+        restored ? 'Your Pro subscription has been restored.' : 'No active purchases were found for this Apple ID.'
+      );
+    } catch (err: any) {
+      Alert.alert('Restore Failed', err.message ?? 'Please try again later.');
+    } finally {
+      setRestoring(false);
+    }
   };
 
   const emailDisplay = user?.primaryEmailAddress?.emailAddress ?? user?.emailAddresses?.[0]?.emailAddress ?? '';
@@ -169,6 +188,14 @@ export function SettingsSheet({ visible, onClose, onShowPaywall }: Props) {
                 );
               }}
             />
+          </View>
+
+          {/* Subscription */}
+          <View style={styles.group}>
+            <Pressable style={styles.row} onPress={handleRestore} disabled={restoring}>
+              <Text style={styles.rowLabel}>Restore Purchases</Text>
+              {restoring && <Text style={styles.rowValue}>Restoring…</Text>}
+            </Pressable>
           </View>
 
           {/* Support */}

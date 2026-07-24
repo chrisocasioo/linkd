@@ -2,8 +2,8 @@
   "expo": {
     "name": "Linkd",
     "slug": "linkd",
-    "owner": "goagettersupport",
-    "version": "1.1.0",
+    "owner": "chrisocasio.pr",
+    "version": "2.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "linkd",
@@ -16,8 +16,9 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.santrico.linkd",
+      "appleTeamId": "GQ725BQR6F",
       "minimumOsVersion": "16.4",
-      "buildNumber": "77",
+      "buildNumber": "95",
       "usesAppleSignIn": true,
       "entitlements": {
         "com.apple.developer.pass-type-identifiers": [
@@ -28,6 +29,7 @@
         ]
       },
       "infoPlist": {
+        "NSCameraUsageDescription": "Linkd uses your camera to scan business cards and QR codes.",
         "NSPhotoLibraryUsageDescription": "Linkd needs access to your photos to set your profile picture.",
         "NSPhotoLibraryAddUsageDescription": "Linkd saves content to your photo library.",
         "NSContactsUsageDescription": "Linkd adds card details to your address book.",
@@ -84,7 +86,24 @@
         "origin": false
       },
       "eas": {
-        "projectId": "0941d540-d29b-4849-8658-b6c7a405f76c"
+        "build": {
+          "experimental": {
+            "ios": {
+              "appExtensions": [
+                {
+                  "bundleIdentifier": "com.santrico.linkd.widget",
+                  "targetName": "LinkdWidget",
+                  "entitlements": {
+                    "com.apple.security.application-groups": [
+                      "group.com.santrico.linkd"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "projectId": "87c8d6f5-b81d-462c-9127-fb801b45f501"
       }
     }
   }

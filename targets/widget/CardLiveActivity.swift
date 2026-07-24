@@ -1,15 +1,31 @@
 import ActivityKit
+import Foundation
 import SwiftUI
 import WidgetKit
 
-private func currentQrValue(for state: CardActivityAttributes.ContentState) -> String {
-    state.mode == "offline" ? state.offlineValue : state.onlineUrl
+private let qrAppGroup = "group.com.santrico.linkd"
+
+private func qrFileURL(mode: String) -> URL? {
+    FileManager.default
+        .containerURL(forSecurityApplicationGroupIdentifier: qrAppGroup)?
+        .appendingPathComponent("live-activity-qr-\(mode).png")
 }
 
-// Falls back to the online QR if the offline vCard fails to encode, so a
-// bad/oversized vCard never leaves the Live Activity blank.
+private func loadQrImage(mode: String) -> UIImage? {
+    guard let url = qrFileURL(mode: mode), let data = try? Data(contentsOf: url) else { return nil }
+    return UIImage(data: data)
+}
+
+// Reads the PNG the main app already rendered and wrote to the shared App
+// Group container at Activity start time, rather than generating a fresh
+// CIImage here — the widget extension has been observed to fail to
+// rasterize a QR while the device is genuinely locked, even with a software
+// CIContext, and embedding image Data directly in ContentState made the
+// Live Activity fail to start at all. Falls back to the online QR if the
+// offline vCard's file is somehow missing, so a bad/oversized vCard never
+// leaves the Live Activity blank.
 private func currentQrImage(for state: CardActivityAttributes.ContentState) -> UIImage? {
-    qrImage(from: currentQrValue(for: state)) ?? (state.mode == "offline" ? qrImage(from: state.onlineUrl) : nil)
+    loadQrImage(mode: state.mode) ?? (state.mode == "offline" ? loadQrImage(mode: "online") : nil)
 }
 
 struct CardLiveActivity: Widget {
@@ -36,17 +52,19 @@ struct CardLiveActivity: Widget {
                     }
                 }
             } compactLeading: {
-                Image(systemName: "qrcode")
+                qrView(for: context.state, size: 20)
             } compactTrailing: {
                 Text(context.state.name)
                     .font(.caption2)
                     .lineLimit(1)
             } minimal: {
-                Image(systemName: "qrcode")
+                qrView(for: context.state, size: 20)
             }
         }
     }
 
+    // Falls back to the generic SF Symbol if the QR image failed to render,
+    // so the Dynamic Island never shows a blank space.
     @ViewBuilder
     private func qrView(for state: CardActivityAttributes.ContentState, size: CGFloat) -> some View {
         if let qr = currentQrImage(for: state) {
@@ -54,6 +72,8 @@ struct CardLiveActivity: Widget {
                 .interpolation(.none)
                 .resizable()
                 .frame(width: size, height: size)
+        } else {
+            Image(systemName: "qrcode")
         }
     }
 }
@@ -67,10 +87,24 @@ private struct LockScreenView: View {
     var body: some View {
         HStack(spacing: 14) {
             if let qr = currentQrImage(for: state) {
+                // Subtle grey bezel around the QR, not a solid fill — a
+                // white backing looked fine for competitors' plain
+                // black-on-white QRs, but clashed hard against ours once a
+                // custom qrColor/qrBgColor is in play (e.g. this card's
+                // black background butting straight against solid white).
+                // A thin translucent stroke reads as a soft frame against
+                // the black Live Activity regardless of the QR's own
+                // colors, same "rgba(255,255,255,0.07)"-style subtle border
+                // convention the rest of the app already uses for cards.
                 Image(uiImage: qr)
                     .interpolation(.none)
                     .resizable()
-                    .frame(width: 64, height: 64)
+                    .frame(width: 110, height: 110)
+                    .padding(8)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .stroke(Color.white.opacity(0.18), lineWidth: 1)
+                    )
             }
             VStack(alignment: .leading, spacing: 2) {
                 Text(state.name)

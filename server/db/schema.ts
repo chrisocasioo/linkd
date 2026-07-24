@@ -54,6 +54,12 @@ export const cards = pgTable('cards', {
     .notNull()
     .references(() => users.id, { onDelete: 'cascade' }),
   name: text('name').notNull().default('Card'),
+  // Who the card belongs to — independent of `name` above, which is the
+  // card's own organizational label (e.g. "Work") shown only to the owner,
+  // never to visitors. Null means "use the account's default name"
+  // (users.displayName), so a card set up before this field existed keeps
+  // showing the account name until someone edits it here.
+  displayName: text('display_name'),
   accentColor: text('accent_color').notNull().default('#C9973A'),
   font: text('font').default('dm-sans'),
   photo: text('photo'),

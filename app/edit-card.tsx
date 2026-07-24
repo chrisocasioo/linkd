@@ -26,9 +26,9 @@ import { syncWidgetData } from '../lib/widgetSync';
 import { COLORS, FONTS } from '../constants/colors';
 
 const ACCENT_COLORS = ['#C9973A', '#7C3AED', '#22C55E', '#F43F5E', '#0EA5E9', '#EC4899'];
-// Second row shown under every swatch picker (accent, QR color, QR background)
-const SECOND_ROW_COLORS = ['#FFFFFF', '#000000', '#808080', '#A52A2A', '#800020', '#FFA500', '#4169E1'];
-const ALL_SWATCH_COLORS = [...ACCENT_COLORS, ...SECOND_ROW_COLORS];
+// QR Color/Background also offer black & white as one-tap quick picks inside
+// the custom-color panel (not shown as swatches), so they count as "known".
+const QR_SWATCH_COLORS = [...ACCENT_COLORS, '#000000', '#FFFFFF'];
 
 const FONT_OPTIONS = [
   { id: 'dm-sans',        label: 'Modern',   preview: 'Aa', family: 'DMSans-SemiBold' },
@@ -186,7 +186,6 @@ export default function EditCardScreen() {
   const [cardName, setCardName] = useState('');
   const [accent, setAccent] = useState('');
   const [cardFont, setCardFont] = useState('dm-sans');
-  const [slug, setSlug] = useState('');
   const [showPaywall, setShowPaywall] = useState(false);
   const { isPro } = useRevenueCat();
 
@@ -229,8 +228,7 @@ export default function EditCardScreen() {
         setCardFont(found.font ?? 'dm-sans');
         setQrColor(found.qrColor ?? '#000000');
         setQrBgColor(found.qrBgColor ?? '#FFFFFF');
-        setSlug(found.slug ?? '');
-        const nameParts = (u.displayName ?? '').split(' ');
+        const nameParts = (found.displayName ?? u.displayName ?? '').split(' ');
         setFirstName(nameParts[0] ?? '');
         if (nameParts.length === 2) { setLastName(nameParts[1]); }
         else if (nameParts.length >= 3) { setMiddleName(nameParts[1]); setLastName(nameParts.slice(2).join(' ')); }
@@ -256,12 +254,24 @@ export default function EditCardScreen() {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'] as any,
       allowsEditing: true,
-      aspect: [1, 1],
+      // Matches the card banner's actual rendered shape (full card width x
+      // 190pt tall, ~9:5) — a square crop here didn't match what the banner
+      // actually shows, since resizeMode: 'cover' would silently crop the
+      // top/bottom of the square again to fit the wide banner, with no way
+      // for the user to see or control that second crop.
+      aspect: [9, 5],
       quality: 0.85,
     });
     if (!result.canceled && result.assets[0]) {
       setPhotoUri(result.assets[0].uri);
     }
+  };
+
+  // QR logo/color/background are all Pro-only — free users see the fully
+  // interactive controls (no dimming) but every tap opens the paywall.
+  const requireProForQr = (fn: () => void) => {
+    if (!isPro) { setShowPaywall(true); return; }
+    fn();
   };
 
   const handlePickQrLogo = async () => {
@@ -297,13 +307,6 @@ export default function EditCardScreen() {
       Alert.alert('Add a field', 'Add at least one field (phone, email, etc.) on the Fields tab before saving.');
       return;
     }
-    // Empty slug means "keep the current URL"
-    const newSlug = slug.trim();
-    const slugChanged = isPro && newSlug !== '' && newSlug !== (card?.slug ?? '');
-    if (slugChanged && !/^[a-z0-9-]{3,30}$/.test(newSlug)) {
-      Alert.alert('Invalid URL', 'Card URL must be 3–30 lowercase letters, numbers, or dashes.');
-      return;
-    }
     setSaving(true);
     try {
       const displayName = [firstName.trim(), middleName.trim(), lastName.trim()].filter(Boolean).join(' ');
@@ -318,11 +321,11 @@ export default function EditCardScreen() {
       const ops: Promise<unknown>[] = [
         api.updateCard(cardId, {
           name: cardName.trim() || 'Card',
+          displayName,
           accentColor: accent,
           font: cardFont,
           qrColor,
           qrBgColor,
-          ...(slugChanged ? { slug: newSlug } : {}),
           ...(removeQrLogo ? { qrLogo: null } : {}),
         }),
         ...infoFieldDefs.map(async ({ type, value }) => {
@@ -334,7 +337,6 @@ export default function EditCardScreen() {
       ];
       if (photoUri) ops.push(api.uploadCardPhoto(cardId, photoUri));
       if (qrLogoUri) ops.push(api.uploadCardQrLogo(cardId, qrLogoUri));
-      if (displayName) ops.push(api.updateMe({ displayName }));
       await Promise.all(ops);
 
       if (user?.username) {
@@ -436,7 +438,9 @@ export default function EditCardScreen() {
   const suggestedCategories = FIELD_CATEGORIES;
   const photoSource = photoUri ?? card.photo ?? null;
   const qrLogoSource = qrLogoUri ?? (removeQrLogo ? null : card.qrLogo ?? null);
-  const initial = ((user.displayName ?? user.username ?? '?')[0]).toUpperCase();
+  // Live per-card name being edited, not the account default — this page
+  // edits one card's own name now, not the shared account name.
+  const initial = ((firstName || user.displayName || user.username || '?')[0]).toUpperCase();
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -502,49 +506,25 @@ export default function EditCardScreen() {
                   maxLength={30}
                 />
 
-                <Text style={[styles.label, { marginTop: 20 }]}>Card URL</Text>
-                {isPro ? (
-                  <View style={styles.slugRow}>
-                    <Text style={styles.slugPrefix} numberOfLines={1}>{user.username}/</Text>
-                    <TextInput
-                      style={styles.slugInput}
-                      value={slug}
-                      onChangeText={(v) => setSlug(v.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
-                      placeholder="your-card"
-                      placeholderTextColor={COLORS.textTertiary}
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                      maxLength={30}
-                    />
-                  </View>
-                ) : (
-                  <Pressable style={styles.slugRow} onPress={() => setShowPaywall(true)}>
-                    <Text style={[styles.slugPrefix, { flex: 1 }]} numberOfLines={1}>
-                      {user.username}/{card.slug}
-                    </Text>
-                    <View style={styles.slugLockBadge}>
-                      <Ionicons name="lock-closed" size={9} color={COLORS.textTertiary} />
-                      <Text style={styles.slugLockText}>Pro</Text>
-                    </View>
-                  </Pressable>
-                )}
-                <Text style={styles.slugHint}>Format: username/card-name</Text>
-
                 <Text style={[styles.label, { marginTop: 20 }]}>Accent Color</Text>
                 <View style={styles.colorRow}>
-                  {/* Color picker swatch */}
+                  {/* Color picker swatch — custom accent color is a Pro feature */}
                   <Pressable
                     style={[
                       styles.colorDot, styles.colorPickerDot,
-                      !ALL_SWATCH_COLORS.includes(accent) && styles.colorDotActive,
-                      !ALL_SWATCH_COLORS.includes(accent) && { borderColor: accent },
+                      !ACCENT_COLORS.includes(accent) && styles.colorDotActive,
+                      !ACCENT_COLORS.includes(accent) && { borderColor: accent },
                     ]}
                     onPress={() => {
                       setHexDraft(accent);
                       setShowHexInput((v) => !v);
                     }}
                   >
-                    <Ionicons name="color-palette-outline" size={16} color={!ALL_SWATCH_COLORS.includes(accent) ? accent : 'rgba(255,255,255,0.6)'} />
+                    <Ionicons
+                      name="color-palette-outline"
+                      size={16}
+                      color={!ACCENT_COLORS.includes(accent) ? accent : 'rgba(255,255,255,0.6)'}
+                    />
                   </Pressable>
 
                   {ACCENT_COLORS.map((c) => (
@@ -557,22 +537,6 @@ export default function EditCardScreen() {
                     </Pressable>
                   ))}
                 </View>
-                <View style={styles.colorRowSecond}>
-                  {SECOND_ROW_COLORS.map((c) => (
-                    <Pressable
-                      key={c}
-                      style={[
-                        styles.colorDot, { backgroundColor: c }, accent === c && styles.colorDotActive,
-                        c === '#FFFFFF' && { borderWidth: 1, borderColor: COLORS.border },
-                      ]}
-                      onPress={() => { setAccent(c); setShowHexInput(false); }}
-                    >
-                      {accent === c && (
-                        <Ionicons name="checkmark" size={14} color={c === '#FFFFFF' ? '#0C0C0E' : '#fff'} />
-                      )}
-                    </Pressable>
-                  ))}
-                </View>
 
                 {showHexInput && (
                   <>
@@ -580,6 +544,7 @@ export default function EditCardScreen() {
                       <ColorPicker
                         color={accent}
                         onColorChangeComplete={(c: string) => {
+                          if (!isPro) { setShowPaywall(true); return; }
                           setAccent(c);
                           setHexDraft(c);
                         }}
@@ -597,7 +562,10 @@ export default function EditCardScreen() {
                         onChangeText={(v) => {
                           const clean = v.startsWith('#') ? v : '#' + v;
                           setHexDraft(clean);
-                          if (/^#[0-9A-Fa-f]{6}$/.test(clean)) setAccent(clean);
+                          if (/^#[0-9A-Fa-f]{6}$/.test(clean)) {
+                            if (!isPro) { setShowPaywall(true); return; }
+                            setAccent(clean);
+                          }
                         }}
                         placeholder="#C9973A"
                         placeholderTextColor={COLORS.textTertiary}
@@ -611,16 +579,25 @@ export default function EditCardScreen() {
                 <Text style={[styles.label, { marginTop: 20 }]}>Font</Text>
                 {FONT_ROWS.map((row, rowIdx) => (
                   <View key={rowIdx} style={[styles.fontRow, rowIdx > 0 && { marginTop: 8 }]}>
-                    {row.map((f) => (
-                      <Pressable
-                        key={f.id}
-                        style={[styles.fontOption, cardFont === f.id && { borderColor: accent, backgroundColor: accent + '18' }]}
-                        onPress={() => setCardFont(f.id)}
-                      >
-                        <Text style={[styles.fontPreview, { fontFamily: f.family }]}>{f.preview}</Text>
-                        <Text style={[styles.fontLabel, cardFont === f.id && { color: accent }]}>{f.label}</Text>
-                      </Pressable>
-                    ))}
+                    {row.map((f) => {
+                      const locked = !isPro && f.id !== 'dm-sans';
+                      return (
+                        <Pressable
+                          key={f.id}
+                          style={[styles.fontOption, cardFont === f.id && { borderColor: accent, backgroundColor: accent + '18' }]}
+                          onPress={() => {
+                            if (locked) { setShowPaywall(true); return; }
+                            setCardFont(f.id);
+                          }}
+                        >
+                          <Text style={[styles.fontPreview, { fontFamily: f.family }]}>{f.preview}</Text>
+                          <View style={styles.fontLabelRow}>
+                            {locked && <Ionicons name="lock-closed" size={8} color={COLORS.textTertiary} />}
+                            <Text style={[styles.fontLabel, cardFont === f.id && { color: accent }]}>{f.label}</Text>
+                          </View>
+                        </Pressable>
+                      );
+                    })}
                   </View>
                 ))}
               </View>
@@ -629,7 +606,7 @@ export default function EditCardScreen() {
               <View style={styles.card}>
                 <Text style={styles.label}>Logo</Text>
                 <View style={styles.qrLogoRow}>
-                  <Pressable onPress={handlePickQrLogo} style={styles.qrLogoWrap}>
+                  <Pressable onPress={() => requireProForQr(handlePickQrLogo)} style={styles.qrLogoWrap}>
                     {qrLogoSource ? (
                       <Image source={{ uri: qrLogoSource }} style={styles.qrLogoImg} />
                     ) : (
@@ -643,7 +620,7 @@ export default function EditCardScreen() {
                       Shown in the center of this card's QR code — independent from the card's own photo.
                     </Text>
                     <View style={styles.qrLogoActions}>
-                      <Pressable onPress={handlePickQrLogo}>
+                      <Pressable onPress={() => requireProForQr(handlePickQrLogo)}>
                         <Text style={[styles.qrLogoActionText, { color: accent }]}>
                           {qrLogoSource ? 'Change' : 'Add Logo'}
                         </Text>
@@ -662,8 +639,8 @@ export default function EditCardScreen() {
                   <Pressable
                     style={[
                       styles.colorDot, styles.colorPickerDot,
-                      !ALL_SWATCH_COLORS.includes(qrColor) && styles.colorDotActive,
-                      !ALL_SWATCH_COLORS.includes(qrColor) && { borderColor: qrColor },
+                      !QR_SWATCH_COLORS.includes(qrColor) && styles.colorDotActive,
+                      !QR_SWATCH_COLORS.includes(qrColor) && { borderColor: qrColor },
                     ]}
                     onPress={() => {
                       setQrHexDraft(qrColor);
@@ -673,7 +650,7 @@ export default function EditCardScreen() {
                     <Ionicons
                       name="color-palette-outline"
                       size={16}
-                      color={!ALL_SWATCH_COLORS.includes(qrColor) ? qrColor : 'rgba(255,255,255,0.6)'}
+                      color={!QR_SWATCH_COLORS.includes(qrColor) ? qrColor : 'rgba(255,255,255,0.6)'}
                     />
                   </Pressable>
 
@@ -681,38 +658,38 @@ export default function EditCardScreen() {
                     <Pressable
                       key={c}
                       style={[styles.colorDot, { backgroundColor: c }, qrColor === c && styles.colorDotActive]}
-                      onPress={() => { setQrColor(c); setShowQrHexInput(false); }}
+                      onPress={() => requireProForQr(() => { setQrColor(c); setShowQrHexInput(false); })}
                     >
                       {qrColor === c && <Ionicons name="checkmark" size={14} color="#fff" />}
-                    </Pressable>
-                  ))}
-                </View>
-                <View style={styles.colorRowSecond}>
-                  {SECOND_ROW_COLORS.map((c) => (
-                    <Pressable
-                      key={c}
-                      style={[
-                        styles.colorDot, { backgroundColor: c }, qrColor === c && styles.colorDotActive,
-                        c === '#FFFFFF' && { borderWidth: 1, borderColor: COLORS.border },
-                      ]}
-                      onPress={() => { setQrColor(c); setShowQrHexInput(false); }}
-                    >
-                      {qrColor === c && (
-                        <Ionicons name="checkmark" size={14} color={c === '#FFFFFF' ? '#0C0C0E' : '#fff'} />
-                      )}
                     </Pressable>
                   ))}
                 </View>
 
                 {showQrHexInput && (
                   <>
+                    <View style={styles.quickBwRow}>
+                      <Pressable
+                        style={styles.quickBwBtn}
+                        onPress={() => requireProForQr(() => { setQrColor('#000000'); setQrHexDraft('#000000'); setShowQrHexInput(false); })}
+                      >
+                        <View style={[styles.quickBwSwatch, { backgroundColor: '#000000' }]} />
+                        <Text style={styles.quickBwText}>Black</Text>
+                      </Pressable>
+                      <Pressable
+                        style={styles.quickBwBtn}
+                        onPress={() => requireProForQr(() => { setQrColor('#FFFFFF'); setQrHexDraft('#FFFFFF'); setShowQrHexInput(false); })}
+                      >
+                        <View style={[styles.quickBwSwatch, { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: COLORS.border }]} />
+                        <Text style={styles.quickBwText}>White</Text>
+                      </Pressable>
+                    </View>
                     <View style={styles.wheelWrap}>
                       <ColorPicker
                         color={qrColor}
-                        onColorChangeComplete={(c: string) => {
+                        onColorChangeComplete={(c: string) => requireProForQr(() => {
                           setQrColor(c);
                           setQrHexDraft(c);
-                        }}
+                        })}
                         thumbSize={26}
                         sliderSize={26}
                         gapSize={20}
@@ -727,7 +704,7 @@ export default function EditCardScreen() {
                         onChangeText={(v) => {
                           const clean = v.startsWith('#') ? v : '#' + v;
                           setQrHexDraft(clean);
-                          if (/^#[0-9A-Fa-f]{6}$/.test(clean)) setQrColor(clean);
+                          if (/^#[0-9A-Fa-f]{6}$/.test(clean)) requireProForQr(() => setQrColor(clean));
                         }}
                         placeholder="#000000"
                         placeholderTextColor={COLORS.textTertiary}
@@ -743,8 +720,8 @@ export default function EditCardScreen() {
                   <Pressable
                     style={[
                       styles.colorDot, styles.colorPickerDot,
-                      !ALL_SWATCH_COLORS.includes(qrBgColor) && styles.colorDotActive,
-                      !ALL_SWATCH_COLORS.includes(qrBgColor) && { borderColor: qrBgColor },
+                      !QR_SWATCH_COLORS.includes(qrBgColor) && styles.colorDotActive,
+                      !QR_SWATCH_COLORS.includes(qrBgColor) && { borderColor: qrBgColor },
                     ]}
                     onPress={() => {
                       setQrBgHexDraft(qrBgColor);
@@ -754,7 +731,7 @@ export default function EditCardScreen() {
                     <Ionicons
                       name="color-palette-outline"
                       size={16}
-                      color={!ALL_SWATCH_COLORS.includes(qrBgColor) ? qrBgColor : 'rgba(255,255,255,0.6)'}
+                      color={!QR_SWATCH_COLORS.includes(qrBgColor) ? qrBgColor : 'rgba(255,255,255,0.6)'}
                     />
                   </Pressable>
 
@@ -762,41 +739,38 @@ export default function EditCardScreen() {
                     <Pressable
                       key={c}
                       style={[styles.colorDot, { backgroundColor: c }, qrBgColor === c && styles.colorDotActive]}
-                      onPress={() => { setQrBgColor(c); setShowQrBgHexInput(false); }}
+                      onPress={() => requireProForQr(() => { setQrBgColor(c); setShowQrBgHexInput(false); })}
                     >
                       {qrBgColor === c && <Ionicons name="checkmark" size={14} color="#fff" />}
-                    </Pressable>
-                  ))}
-                </View>
-                <View style={styles.colorRowSecond}>
-                  {/* Black + white lead this row, matching how they used to
-                      lead the row above before it was trimmed to just accents */}
-                  {SECOND_ROW_COLORS.map((c) => (
-                    <Pressable
-                      key={c}
-                      style={[
-                        styles.colorDot, { backgroundColor: c },
-                        qrBgColor === c && styles.colorDotActive,
-                        c === '#FFFFFF' && { borderWidth: 1, borderColor: COLORS.border },
-                      ]}
-                      onPress={() => { setQrBgColor(c); setShowQrBgHexInput(false); }}
-                    >
-                      {qrBgColor === c && (
-                        <Ionicons name="checkmark" size={14} color={c === '#FFFFFF' ? '#0C0C0E' : '#fff'} />
-                      )}
                     </Pressable>
                   ))}
                 </View>
 
                 {showQrBgHexInput && (
                   <>
+                    <View style={styles.quickBwRow}>
+                      <Pressable
+                        style={styles.quickBwBtn}
+                        onPress={() => requireProForQr(() => { setQrBgColor('#000000'); setQrBgHexDraft('#000000'); setShowQrBgHexInput(false); })}
+                      >
+                        <View style={[styles.quickBwSwatch, { backgroundColor: '#000000' }]} />
+                        <Text style={styles.quickBwText}>Black</Text>
+                      </Pressable>
+                      <Pressable
+                        style={styles.quickBwBtn}
+                        onPress={() => requireProForQr(() => { setQrBgColor('#FFFFFF'); setQrBgHexDraft('#FFFFFF'); setShowQrBgHexInput(false); })}
+                      >
+                        <View style={[styles.quickBwSwatch, { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: COLORS.border }]} />
+                        <Text style={styles.quickBwText}>White</Text>
+                      </Pressable>
+                    </View>
                     <View style={styles.wheelWrap}>
                       <ColorPicker
                         color={qrBgColor}
-                        onColorChangeComplete={(c: string) => {
+                        onColorChangeComplete={(c: string) => requireProForQr(() => {
                           setQrBgColor(c);
                           setQrBgHexDraft(c);
-                        }}
+                        })}
                         thumbSize={26}
                         sliderSize={26}
                         gapSize={20}
@@ -811,7 +785,7 @@ export default function EditCardScreen() {
                         onChangeText={(v) => {
                           const clean = v.startsWith('#') ? v : '#' + v;
                           setQrBgHexDraft(clean);
-                          if (/^#[0-9A-Fa-f]{6}$/.test(clean)) setQrBgColor(clean);
+                          if (/^#[0-9A-Fa-f]{6}$/.test(clean)) requireProForQr(() => setQrBgColor(clean));
                         }}
                         placeholder="#FFFFFF"
                         placeholderTextColor={COLORS.textTertiary}
@@ -1083,24 +1057,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14, fontSize: 15, fontFamily: FONTS.regular, color: COLORS.text,
   },
   inputMultiline: { height: 72, paddingTop: 14 },
-  slugRow: {
-    height: 48, backgroundColor: COLORS.surface2, borderRadius: 12,
-    borderWidth: 1, borderColor: COLORS.border,
-    paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center',
-  },
-  slugPrefix: { fontSize: 15, fontFamily: FONTS.regular, color: COLORS.textSecondary },
-  slugInput: { flex: 1, fontSize: 15, fontFamily: FONTS.regular, color: COLORS.text, paddingVertical: 0 },
-  slugLockBadge: {
-    flexDirection: 'row', alignItems: 'center', gap: 4,
-    backgroundColor: COLORS.surface, borderRadius: 6,
-    paddingHorizontal: 7, paddingVertical: 3,
-    borderWidth: 1, borderColor: COLORS.border,
-  },
-  slugLockText: { fontSize: 9, fontFamily: FONTS.medium, color: COLORS.textTertiary },
-  slugHint: { fontSize: 11, fontFamily: FONTS.regular, color: COLORS.textTertiary, marginTop: 6 },
 
   colorRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  colorRowSecond: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 8 },
   colorDot: {
     width: 36, height: 36, borderRadius: 18,
     alignItems: 'center', justifyContent: 'center',
@@ -1109,6 +1067,14 @@ const styles = StyleSheet.create({
   colorPickerDot: { backgroundColor: 'rgba(255,255,255,0.08)' },
   colorDotActive: { borderColor: '#fff' },
   wheelWrap: { height: 280, marginTop: 16, paddingHorizontal: 8 },
+  quickBwRow: { flexDirection: 'row', gap: 10, marginTop: 16 },
+  quickBwBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    paddingHorizontal: 14, paddingVertical: 9, borderRadius: 12,
+    backgroundColor: COLORS.surface2, borderWidth: 1, borderColor: COLORS.border,
+  },
+  quickBwSwatch: { width: 16, height: 16, borderRadius: 8 },
+  quickBwText: { fontSize: 13, fontFamily: FONTS.medium, color: COLORS.text },
   hexRow: {
     flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 20,
   },
@@ -1128,6 +1094,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   fontPreview: { fontSize: 20, color: COLORS.text },
+  fontLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 3 },
   fontLabel: { fontSize: 10, fontFamily: FONTS.medium, color: COLORS.textSecondary, letterSpacing: 0.4 },
 
   sectionHeader: {

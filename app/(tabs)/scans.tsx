@@ -11,10 +11,11 @@ import {
   Text,
   View,
 } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Camera, useCameraDevice, useCameraPermission, useCodeScanner } from 'react-native-vision-camera';
 import TextRecognition from '@react-native-ml-kit/text-recognition';
 import DocumentScanner from '../../modules/document-scanner';
+import { PaywallSheet } from '../../components/Card/PaywallSheet';
 import { ContactReviewSheet } from '../../components/Contacts/ContactReviewSheet';
 import { QrGeneratorSheet } from '../../components/Scan/QrGeneratorSheet';
 import { QrScanResultSheet } from '../../components/Scan/QrScanResultSheet';
@@ -22,7 +23,16 @@ import { ScanHistorySheet } from '../../components/Scan/ScanHistorySheet';
 import { useApi, ScanResult } from '../../lib/api';
 import { markSyncedToPhone, saveContactToPhone } from '../../lib/nativeContacts';
 import { inferQrFormat, parseWifiQr } from '../../lib/qrFormat';
+import { useRevenueCat } from '../../lib/RevenueCatContext';
 import { COLORS, FONTS } from '../../constants/colors';
+
+// Temporarily hidden from the top controls — flip back to true to restore
+// the button. Left in place (not deleted) so it's a one-line re-enable.
+const SHOW_QR_GENERATOR_BUTTON = false;
+
+// Card scans (business-card OCR → contact) are capped for free users; QR
+// code scanning stays unlimited regardless of plan.
+const FREE_CARD_SCAN_LIMIT = 100;
 
 function extractLargeTextLines(result: any): Set<string> {
   const lineSizes: Array<{ text: string; height: number }> = [];
@@ -191,8 +201,8 @@ const QR_BRACKET_PADDING = 16;
 export default function ScansScreen() {
   const api = useApi();
   const router = useRouter();
+  const { isPro } = useRevenueCat();
   const { hasPermission, requestPermission } = useCameraPermission();
-  const insets = useSafeAreaInsets();
   const device = useCameraDevice('back');
   const cameraRef = useRef<Camera>(null);
   const detectingRef = useRef(false);
@@ -206,6 +216,15 @@ export default function ScansScreen() {
   const [showReview, setShowReview] = useState(false);
   // Best-effort cropped photo of the scanned card, attached to the contact on save
   const [pendingCardPhotoUri, setPendingCardPhotoUri] = useState<string | null>(null);
+  const [cardScanCount, setCardScanCount] = useState(0);
+  const [showPaywall, setShowPaywall] = useState(false);
+  const atCardScanLimit = !isPro && cardScanCount >= FREE_CARD_SCAN_LIMIT;
+
+  useEffect(() => {
+    api.getScanHistory()
+      .then((entries) => setCardScanCount(entries.filter((e) => e.type === 'contact').length))
+      .catch(() => {});
+  }, []);
 
   const [showQrGenerator, setShowQrGenerator] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
@@ -263,9 +282,10 @@ export default function ScansScreen() {
     return () => loop.stop();
   }, []);
 
-  // Live scan loop
+  // Live scan loop — pauses at the free card-scan cap (QR scanning is a
+  // separate code path via useCodeScanner and is never limited).
   useEffect(() => {
-    if (!hasPermission || !device || showReview || showQrResult || showQrGenerator || showHistory) {
+    if (!hasPermission || !device || showReview || showQrResult || showQrGenerator || showHistory || atCardScanLimit) {
       clearInterval(intervalRef.current);
       return;
     }
@@ -311,12 +331,13 @@ export default function ScansScreen() {
     }, 1200);
 
     return () => clearInterval(intervalRef.current);
-  }, [hasPermission, device, showReview, showQrResult, showQrGenerator, showHistory]);
+  }, [hasPermission, device, showReview, showQrResult, showQrGenerator, showHistory, atCardScanLimit]);
 
   // Manual capture — for cards the auto-detect loop can't read. Always opens
   // the review sheet with whatever OCR found (even nothing) so the user can
   // finish the contact by hand.
   const captureManually = async () => {
+    if (atCardScanLimit) { setShowPaywall(true); return; }
     if (capturing || !cameraRef.current) return;
     setCapturing(true);
     detectingRef.current = true; // pause the live-scan loop while we capture
@@ -336,6 +357,7 @@ export default function ScansScreen() {
   };
 
   const pickFromLibrary = async () => {
+    if (atCardScanLimit) { setShowPaywall(true); return; }
     clearInterval(intervalRef.current);
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'] as any,
@@ -369,6 +391,7 @@ export default function ScansScreen() {
     });
     const label = [created.firstName, created.lastName].filter(Boolean).join(' ') || 'Unknown';
     api.addScanHistory({ type: 'contact', contactId: created.id, label }).catch(() => {});
+    setCardScanCount((c) => c + 1);
     setScanResult(null);
     setPendingCardPhotoUri(null);
     router.push('/(tabs)/contacts');
@@ -407,15 +430,35 @@ export default function ScansScreen() {
           codeScanner={codeScanner}
         />
 
-        {/* Top controls — QR generator/browser (left), scan history (right) */}
+        {/* Top controls — QR generator/browser (left, currently hidden),
+            scan history (right). A same-size invisible spacer stands in for
+            the hidden button so scan history stays anchored to the right. */}
         <View style={styles.topControls}>
-          <Pressable style={styles.secondaryBtn} onPress={() => setShowQrGenerator(true)}>
-            <Ionicons name="qr-code-outline" size={20} color="#fff" />
-          </Pressable>
+          {SHOW_QR_GENERATOR_BUTTON ? (
+            <Pressable style={styles.secondaryBtn} onPress={() => setShowQrGenerator(true)}>
+              <Ionicons name="qr-code-outline" size={20} color="#fff" />
+            </Pressable>
+          ) : (
+            <View style={[styles.secondaryBtn, { opacity: 0 }]} />
+          )}
           <Pressable style={styles.secondaryBtn} onPress={() => setShowHistory(true)}>
             <Ionicons name="time-outline" size={20} color="#fff" />
           </Pressable>
         </View>
+
+        {/* Free-tier card scan countdown — QR scanning has no limit, so this
+            only ever concerns business-card scans. Tapping it opens the
+            paywall, same as hitting the actual limit does elsewhere. */}
+        {!isPro && (
+          <Pressable style={styles.scanCountPill} onPress={() => setShowPaywall(true)}>
+            <Ionicons name="scan-outline" size={12} color="rgba(255,255,255,0.75)" />
+            <Text style={styles.scanCountText}>
+              {atCardScanLimit
+                ? 'Card scan limit reached — upgrade for more'
+                : `${FREE_CARD_SCAN_LIMIT - cardScanCount} card scans left`}
+            </Text>
+          </Pressable>
+        )}
 
         {/* Viewfinder — snaps onto a detected QR code's actual bounds; falls
             back to a fixed centered guide for framing a business card */}
@@ -450,11 +493,9 @@ export default function ScansScreen() {
           <Text style={styles.scanningText}>Scanning…</Text>
         </View>
 
-        {/* Controls — float over the camera preview. bottom:0 here sits at
-            the true screen edge (this SafeAreaView only insets edges=['top']),
-            so the home indicator's height has to be added explicitly to
-            actually match the top controls' gap below the notch. */}
-        <View style={[styles.controls, { paddingBottom: 20 + insets.bottom }]}>
+        {/* Controls — float over the camera preview, anchored to the true
+            screen bottom edge (this SafeAreaView only insets edges=['top']). */}
+        <View style={styles.controls}>
           <Pressable style={styles.secondaryBtn} onPress={pickFromLibrary}>
             <Ionicons name="images-outline" size={22} color="#fff" />
           </Pressable>
@@ -488,6 +529,7 @@ export default function ScansScreen() {
       <QrScanResultSheet visible={showQrResult} value={scannedQrValue} onClose={handleCloseQrResult} />
       <QrGeneratorSheet visible={showQrGenerator} onClose={() => setShowQrGenerator(false)} />
       <ScanHistorySheet visible={showHistory} onClose={() => setShowHistory(false)} />
+      <PaywallSheet visible={showPaywall} onClose={() => setShowPaywall(false)} />
     </SafeAreaView>
   );
 }
@@ -546,13 +588,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingHorizontal: 48,
-    paddingVertical: 20,
+    paddingTop: 34,
   },
   secondaryBtn: {
     width: 48, height: 48, borderRadius: 24,
     backgroundColor: 'rgba(0,0,0,0.35)',
     alignItems: 'center', justifyContent: 'center',
   },
+  scanCountPill: {
+    position: 'absolute', top: 92, alignSelf: 'center',
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20,
+  },
+  scanCountText: { fontSize: 11, fontFamily: FONTS.medium, color: 'rgba(255,255,255,0.75)' },
   scanningPill: {
     position: 'absolute', bottom: 122, alignSelf: 'center',
     flexDirection: 'row', alignItems: 'center', gap: 8,

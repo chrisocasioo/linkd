@@ -1,16 +1,23 @@
+import { Ionicons } from '@expo/vector-icons';
+import * as WebBrowser from 'expo-web-browser';
 import React, { useEffect, useRef, useState } from 'react';
-import { Alert, Animated, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Animated, PanResponder, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRevenueCat } from '../../lib/RevenueCatContext';
 import { getProPricing, ProPricing } from '../../lib/revenuecat';
 import { COLORS, FONTS } from '../../constants/colors';
 
+const SERIF_SEMIBOLD = 'PlayfairDisplay-SemiBold';
+// Illustrative, not the viewer's own data — keeps the stat card compelling
+// regardless of how new/active this particular account is.
+const GENERIC_VIEWS = 247;
+
 const PRO_FEATURES = [
-  { emoji: '📊', title: 'Analytics', sub: 'Views, trends, and which links get clicked' },
-  { emoji: '🔗', title: 'Custom Card URL', sub: 'Pick your own link instead of a random code' },
-  { emoji: '🚫', title: 'No Linkd Branding', sub: 'Remove the footer from your public card' },
-  { emoji: '♾️', title: 'Unlimited Cards', sub: 'Free includes 5 — Pro removes the cap' },
-  { emoji: '📇', title: 'Export Contacts', sub: 'Download your contact list as a CSV' },
-  { emoji: '🌐', title: 'Custom Domain', sub: 'Coming soon to Pro' },
+  { title: 'Unlimited Cards', sub: 'No 5-card limit' },
+  { title: 'Custom Colors', sub: 'Any accent, not presets' },
+  { title: 'Custom Fonts', sub: 'Every font, unlocked' },
+  { title: 'Branded QR', sub: 'Logo + custom colors' },
+  { title: 'Analytics', sub: 'Views, trends, clicks' },
+  { title: 'Unlimited Scans', sub: 'No 100-scan limit' },
 ];
 
 interface Props {
@@ -23,11 +30,13 @@ export function PaywallSheet({ visible, onClose }: Props) {
   const slideAnim = useRef(new Animated.Value(600)).current;
   const [loading, setLoading] = useState(false);
   const [pricing, setPricing] = useState<ProPricing | null>(null);
+  const [plan, setPlan] = useState<'monthly' | 'annual'>('monthly');
 
   useEffect(() => {
     if (visible) {
       // Live App Store prices so price changes never need an app update
       getProPricing().then(setPricing).catch(() => {});
+      setPlan('monthly');
       Animated.spring(slideAnim, { toValue: 0, useNativeDriver: true, damping: 20, stiffness: 200 }).start();
     } else {
       Animated.timing(slideAnim, { toValue: 600, duration: 250, useNativeDriver: true }).start();
@@ -39,21 +48,14 @@ export function PaywallSheet({ visible, onClose }: Props) {
   const monthly = pricing?.monthly ?? null;
   const annual = pricing?.annual ?? null;
   const trialDays = monthly?.trialDays ?? annual?.trialDays ?? (pricing ? null : 7);
-  const monthlyLabel = monthly ? `${monthly.priceString} / month` : '$7.99 / month';
-  const savePct = monthly && annual && monthly.price > 0
-    ? Math.max(0, Math.round((1 - annual.price / (monthly.price * 12)) * 100))
-    : 37;
-  const annualLabel = annual
-    ? `${annual.priceString} / year · Save ${savePct}%`
-    : '$59.99 / year · Save 37%';
-  const ctaLabel = trialDays
-    ? `Try ${trialDays} days free — then ${monthlyLabel}`
-    : `Start Pro — ${monthlyLabel}`;
+  const monthlyPrice = monthly ? monthly.priceString : '$7.99';
+  const annualPrice = annual ? annual.priceString : '$59.99';
+  const ctaLabel = trialDays ? `Try ${trialDays} days free` : 'Start Pro';
 
-  const handleMonthly = async () => {
+  const handleStart = async () => {
     setLoading(true);
     try {
-      const success = await purchasePro('monthly');
+      const success = await purchasePro(plan);
       if (success) { Alert.alert('Welcome to Pro!', 'All features unlocked.'); onClose(); }
     } catch (err: any) {
       Alert.alert('Purchase failed', err.message);
@@ -62,17 +64,26 @@ export function PaywallSheet({ visible, onClose }: Props) {
     }
   };
 
-  const handleAnnual = async () => {
-    setLoading(true);
-    try {
-      const success = await purchasePro('annual');
-      if (success) { Alert.alert('Welcome to Pro!', 'All features unlocked.'); onClose(); }
-    } catch (err: any) {
-      Alert.alert('Purchase failed', err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Swipe-down-to-dismiss on the handle zone (the body ScrollView keeps its
+  // own vertical gesture). onCloseRef avoids a stale onClose in the responder.
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, g) => g.dy > 6 && Math.abs(g.dy) > Math.abs(g.dx),
+      onPanResponderMove: (_, g) => { if (g.dy > 0) slideAnim.setValue(g.dy); },
+      onPanResponderRelease: (_, g) => {
+        if (g.dy > 120 || g.vy > 0.8) {
+          onCloseRef.current();
+        } else {
+          Animated.spring(slideAnim, { toValue: 0, useNativeDriver: true, damping: 20, stiffness: 200 }).start();
+        }
+      },
+      onPanResponderTerminate: () => {
+        Animated.spring(slideAnim, { toValue: 0, useNativeDriver: true, damping: 20, stiffness: 200 }).start();
+      },
+    })
+  ).current;
 
   if (!visible) return null;
 
@@ -80,50 +91,82 @@ export function PaywallSheet({ visible, onClose }: Props) {
     <View style={StyleSheet.absoluteFill}>
       <Pressable style={styles.backdrop} onPress={onClose} />
       <Animated.View style={[styles.sheet, { transform: [{ translateY: slideAnim }] }]}>
-        <View style={styles.handle} />
-        <View style={styles.content}>
-          {/* Header */}
-          <View style={styles.headerBlock}>
-            <View style={styles.iconBox}>
-              <Text style={styles.iconText}>✦</Text>
+        <View {...panResponder.panHandlers}>
+          <View style={styles.handle} />
+        </View>
+        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} bounces={false}>
+          <View style={styles.statCard}>
+            <View>
+              <Text style={styles.statNumber}>{GENERIC_VIEWS.toLocaleString()}</Text>
+              <Text style={styles.statLabel}>card views this month</Text>
             </View>
-            <Text style={styles.heading}>Upgrade to Pro</Text>
-            <Text style={styles.sub}>See who's viewing your card and make every link yours.</Text>
+            <Ionicons name="bar-chart" size={34} color={COLORS.accent} />
           </View>
 
-          {/* Features */}
-          <View style={styles.features}>
+          <Text style={styles.headline}>Know who's looking{'\n'}at your card</Text>
+          <Text style={styles.sub}>Pro unlocks the numbers behind every share.</Text>
+
+          <View style={styles.grid}>
             {PRO_FEATURES.map((f) => (
-              <View key={f.title} style={styles.featureRow}>
-                <View style={styles.featureIcon}>
-                  <Text style={styles.featureEmoji}>{f.emoji}</Text>
-                </View>
-                <View style={styles.featureText}>
-                  <Text style={styles.featureTitle}>{f.title}</Text>
-                  <Text style={styles.featureSub}>{f.sub}</Text>
-                </View>
+              <View key={f.title} style={styles.gridCard}>
+                <Text style={styles.gridTitle}>{f.title}</Text>
+                <Text style={styles.gridSub}>{f.sub}</Text>
               </View>
             ))}
           </View>
 
-          {/* CTAs */}
-          <View style={styles.ctaBlock}>
+          <View style={styles.planRow}>
             <Pressable
-              style={[styles.startBtn, loading && styles.startBtnDisabled]}
-              onPress={handleMonthly}
+              style={[styles.planBtn, plan === 'monthly' && styles.planBtnActive]}
+              onPress={() => setPlan('monthly')}
               disabled={loading}
             >
-              <Text style={styles.startBtnText}>{loading ? 'Loading…' : ctaLabel}</Text>
+              <Text style={[styles.planText, plan === 'monthly' && styles.planTextActive]}>
+                Monthly · {monthlyPrice}
+              </Text>
             </Pressable>
-            <Pressable onPress={handleAnnual} disabled={loading}>
-              <Text style={styles.annualText}>{annualLabel}</Text>
+            <Pressable
+              style={[styles.planBtn, plan === 'annual' && styles.planBtnActive]}
+              onPress={() => setPlan('annual')}
+              disabled={loading}
+            >
+              <Text style={[styles.planText, plan === 'annual' && styles.planTextActive]}>
+                Yearly · {annualPrice}
+              </Text>
             </Pressable>
           </View>
 
-          <Pressable onPress={onClose}>
-            <Text style={styles.later}>Maybe Later</Text>
+          <Pressable
+            style={[styles.startBtn, loading && styles.startBtnDisabled]}
+            onPress={handleStart}
+            disabled={loading}
+          >
+            <Text style={styles.startBtnText}>{loading ? 'Loading…' : ctaLabel}</Text>
           </Pressable>
-        </View>
+
+          <Pressable onPress={onClose} disabled={loading}>
+            <Text style={styles.later}>Maybe later</Text>
+          </Pressable>
+
+          {/* Required by App Store Review Guideline 3.1.2 — auto-renewal
+              terms plus Privacy Policy / Terms of Use, both reachable from
+              the purchase screen itself. No custom Terms of Use exists, so
+              this links Apple's standard EULA, which Apple explicitly
+              accepts in place of one. */}
+          <Text style={styles.disclosure}>
+            {trialDays ? `${trialDays}-day free trial, then ` : ''}
+            {plan === 'annual' ? `${annualPrice}/year` : `${monthlyPrice}/month`}. Auto-renews unless canceled at least 24 hours before the current period ends. Manage or cancel anytime in Settings &gt; Apple ID &gt; Subscriptions.
+          </Text>
+          <View style={styles.legalRow}>
+            <Pressable onPress={() => WebBrowser.openBrowserAsync('https://chrisocasioo.github.io/Linkd-Legal/privacy.html')}>
+              <Text style={styles.legalLink}>Privacy Policy</Text>
+            </Pressable>
+            <Text style={styles.legalDot}>·</Text>
+            <Pressable onPress={() => WebBrowser.openBrowserAsync('https://www.apple.com/legal/internet-services/itunes/dev/stdeula/')}>
+              <Text style={styles.legalLink}>Terms of Use</Text>
+            </Pressable>
+          </View>
+        </ScrollView>
       </Animated.View>
     </View>
   );
@@ -133,36 +176,58 @@ const styles = StyleSheet.create({
   backdrop: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(0,0,0,0.7)' },
   sheet: {
     position: 'absolute', bottom: 0, left: 0, right: 0,
-    backgroundColor: '#161618',
+    maxHeight: '92%',
+    backgroundColor: '#0C0C0E',
     borderTopLeftRadius: 26, borderTopRightRadius: 26,
     borderTopWidth: 1, borderColor: 'rgba(255,255,255,0.08)',
   },
-  handle: { width: 36, height: 4, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 2, alignSelf: 'center', marginTop: 16 },
-  content: { padding: 18, paddingBottom: 44, gap: 16 },
-  headerBlock: { alignItems: 'center', gap: 10 },
-  iconBox: {
-    width: 52, height: 52, borderRadius: 18,
-    backgroundColor: COLORS.accentDim, borderWidth: 1.5, borderColor: 'rgba(201,151,58,0.4)',
+  handle: { width: 36, height: 4, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 2, alignSelf: 'center', marginTop: 14, marginBottom: 4 },
+  content: { padding: 18, paddingBottom: 36, gap: 16 },
+
+  statCard: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    backgroundColor: COLORS.accentDim,
+    borderWidth: 1, borderColor: 'rgba(201,151,58,0.35)',
+    borderRadius: 20, paddingHorizontal: 20, paddingVertical: 18,
+  },
+  statNumber: { fontSize: 42, fontFamily: SERIF_SEMIBOLD, color: COLORS.accent, letterSpacing: -0.5 },
+  statLabel: { fontSize: 13, fontFamily: FONTS.regular, color: COLORS.textSecondary, marginTop: 2 },
+
+  headline: { fontSize: 28, fontFamily: SERIF_SEMIBOLD, color: COLORS.text, lineHeight: 34, letterSpacing: -0.3 },
+  sub: { fontSize: 14, fontFamily: FONTS.regular, color: COLORS.textSecondary, marginTop: -8 },
+
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  gridCard: {
+    width: '48%',
+    backgroundColor: COLORS.surface2, borderWidth: 1, borderColor: COLORS.border,
+    borderRadius: 14, padding: 14, gap: 3,
+  },
+  gridTitle: { fontSize: 14, fontFamily: FONTS.semiBold, color: COLORS.text },
+  gridSub: { fontSize: 11, fontFamily: FONTS.regular, color: COLORS.textSecondary, lineHeight: 15 },
+
+  planRow: { flexDirection: 'row', gap: 10 },
+  planBtn: {
+    flex: 1, height: 52, borderRadius: 14,
+    backgroundColor: COLORS.surface2, borderWidth: 1, borderColor: COLORS.border,
     alignItems: 'center', justifyContent: 'center',
   },
-  iconText: { fontSize: 22, color: COLORS.accent },
-  heading: { fontSize: 18, fontFamily: FONTS.semiBold, color: COLORS.text, letterSpacing: -0.3 },
-  sub: { fontSize: 12, fontFamily: FONTS.regular, color: COLORS.textSecondary, textAlign: 'center', lineHeight: 18, maxWidth: 210 },
-  features: { gap: 9 },
-  featureRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  featureIcon: {
-    width: 28, height: 28, borderRadius: 8,
-    backgroundColor: COLORS.accentDim, borderWidth: 1, borderColor: 'rgba(201,151,58,0.25)',
+  planBtnActive: { backgroundColor: COLORS.accent, borderColor: COLORS.accent },
+  planText: { fontSize: 14, fontFamily: FONTS.medium, color: COLORS.textSecondary },
+  planTextActive: { color: '#0C0C0E', fontFamily: FONTS.semiBold },
+
+  startBtn: {
+    height: 54, backgroundColor: COLORS.accent, borderRadius: 16,
     alignItems: 'center', justifyContent: 'center',
+    shadowColor: COLORS.accent, shadowOpacity: 0.35, shadowRadius: 16, shadowOffset: { width: 0, height: 6 },
+    elevation: 6,
   },
-  featureEmoji: { fontSize: 13 },
-  featureText: { flex: 1 },
-  featureTitle: { fontSize: 13, fontFamily: FONTS.medium, color: COLORS.text },
-  featureSub: { fontSize: 10, fontFamily: FONTS.regular, color: COLORS.textSecondary, marginTop: 1 },
-  ctaBlock: { gap: 7 },
-  startBtn: { height: 46, backgroundColor: COLORS.accent, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
   startBtnDisabled: { opacity: 0.6 },
-  startBtnText: { fontSize: 13, fontFamily: FONTS.semiBold, color: '#0C0C0E' },
-  annualText: { fontSize: 12, fontFamily: FONTS.regular, color: COLORS.textSecondary, textAlign: 'center', paddingVertical: 4 },
-  later: { fontSize: 12, fontFamily: FONTS.regular, color: COLORS.textSecondary, textAlign: 'center' },
+  startBtnText: { fontSize: 15, fontFamily: FONTS.semiBold, color: '#0C0C0E' },
+
+  later: { fontSize: 13, fontFamily: FONTS.regular, color: COLORS.textSecondary, textAlign: 'center', textDecorationLine: 'underline' },
+
+  disclosure: { fontSize: 10, fontFamily: FONTS.regular, color: COLORS.textTertiary, textAlign: 'center', lineHeight: 14, marginTop: 4 },
+  legalRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6 },
+  legalLink: { fontSize: 11, fontFamily: FONTS.regular, color: COLORS.textTertiary, textDecorationLine: 'underline' },
+  legalDot: { fontSize: 11, color: COLORS.textTertiary },
 });

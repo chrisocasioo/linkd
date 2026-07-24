@@ -16,6 +16,17 @@ export async function getEntitlements(): Promise<{ isPro: boolean }> {
   }
 }
 
+/**
+ * Re-links an existing purchase to this install — a reinstall, a new
+ * device, or the same Apple ID signed in elsewhere. Not a purchase itself
+ * (no charge either way); Apple requires every app selling subscriptions
+ * to offer this (App Store Review Guideline 3.1.1).
+ */
+export async function restorePurchases(): Promise<boolean> {
+  const customerInfo = await Purchases.restorePurchases();
+  return !!customerInfo.entitlements.active['Linkd Pro'];
+}
+
 export interface ProPackagePricing {
   priceString: string;
   price: number;
@@ -62,9 +73,14 @@ export async function purchasePro(type: 'monthly' | 'annual'): Promise<boolean> 
   try {
     const offerings = await Purchases.getOfferings();
     const current = offerings.current;
-    if (!current) return false;
+    // These used to silently `return false`, indistinguishable from a user
+    // backing out of the purchase sheet below — the paywall's "if (success)"
+    // check treated a genuine RevenueCat/App Store Connect misconfiguration
+    // exactly like a cancel, so the button just stopped loading with zero
+    // feedback. Throwing here instead surfaces it as a real error alert.
+    if (!current) throw new Error('No subscription plans are available right now. Please try again later.');
     const pkg = type === 'annual' ? current.annual : current.monthly;
-    if (!pkg) return false;
+    if (!pkg) throw new Error(`The ${type} plan isn't available right now. Please try again later.`);
     const { customerInfo } = await Purchases.purchasePackage(pkg);
     return !!customerInfo.entitlements.active['Linkd Pro'];
   } catch (err: any) {
