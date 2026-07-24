@@ -1025,9 +1025,12 @@ const styles = StyleSheet.create({
 
   photoRow: { alignItems: 'center', paddingVertical: 24 },
   photoWrap: { position: 'relative' },
-  photoImg: { width: 100, height: 100, borderRadius: 50 },
+  // Matches the banner's actual ~9:5 shape (was a 100x100 circle) — that
+  // mismatch is exactly why the crop tool's own square selection never
+  // matched what actually showed up on the card.
+  photoImg: { width: 180, height: 100, borderRadius: 16 },
   photoPlaceholder: {
-    width: 100, height: 100, borderRadius: 50,
+    width: 180, height: 100, borderRadius: 16,
     alignItems: 'center', justifyContent: 'center',
   },
   photoInitial: { fontSize: 40, fontFamily: FONTS.semiBold },
