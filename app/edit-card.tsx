@@ -183,6 +183,7 @@ export default function EditCardScreen() {
   const [loading, setLoading] = useState(true);
 
   const [photoUri, setPhotoUri] = useState<string | null>(null);
+  const [removePhoto, setRemovePhoto] = useState(false);
   const [cardName, setCardName] = useState('');
   const [accent, setAccent] = useState('');
   const [cardFont, setCardFont] = useState('dm-sans');
@@ -297,6 +298,11 @@ export default function EditCardScreen() {
     setRemoveQrLogo(true);
   };
 
+  const handleRemovePhoto = () => {
+    setPhotoUri(null);
+    setRemovePhoto(true);
+  };
+
   const handleSave = async () => {
     if (!firstName.trim()) {
       Alert.alert('Add your name', 'Enter at least a first name before saving.');
@@ -327,6 +333,7 @@ export default function EditCardScreen() {
           qrColor,
           qrBgColor,
           ...(removeQrLogo ? { qrLogo: null } : {}),
+          ...(removePhoto ? { photo: null } : {}),
         }),
         ...infoFieldDefs.map(async ({ type, value }) => {
           const existing = card!.fields.find((f) => f.type === type);
@@ -436,7 +443,7 @@ export default function EditCardScreen() {
   // Every type stays tappable even once added — users can add multiple
   // phone numbers, emails, social handles, etc. instead of just one each.
   const suggestedCategories = FIELD_CATEGORIES;
-  const photoSource = photoUri ?? card.photo ?? null;
+  const photoSource = photoUri ?? (removePhoto ? null : card.photo ?? null);
   const qrLogoSource = qrLogoUri ?? (removeQrLogo ? null : card.qrLogo ?? null);
   // Live per-card name being edited, not the account default — this page
   // edits one card's own name now, not the shared account name.
@@ -493,6 +500,11 @@ export default function EditCardScreen() {
                     <Ionicons name="pencil" size={11} color="#fff" />
                   </View>
                 </Pressable>
+                {photoSource && (
+                  <Pressable onPress={handleRemovePhoto} hitSlop={8}>
+                    <Text style={styles.photoRemoveText}>Remove Photo</Text>
+                  </Pressable>
+                )}
               </View>
 
               <View style={styles.card}>
@@ -1025,6 +1037,7 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
     borderWidth: 2, borderColor: COLORS.bg,
   },
+  photoRemoveText: { fontSize: 13, fontFamily: FONTS.semiBold, color: '#EF4444', marginTop: 10 },
 
   qrLogoRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   qrLogoWrap: {
