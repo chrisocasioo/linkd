@@ -57,6 +57,11 @@ export function SocialAuthButtons({ onSuccess }: Props) {
       });
       if (createdSessionId && setActive) {
         onSuccess(createdSessionId, setActive);
+      } else {
+        // Resolved without throwing but also without a session — e.g. Clerk
+        // needs an extra step we don't otherwise surface. Don't leave the
+        // screen looking unresponsive; tell the user something happened.
+        Alert.alert('Couldn’t finish signing in', 'Please try again, or continue with email instead.');
       }
     } catch (err: any) {
       Alert.alert('Google sign-in failed', err.message);
@@ -71,9 +76,17 @@ export function SocialAuthButtons({ onSuccess }: Props) {
       const { createdSessionId, setActive } = await startAppleAuthenticationFlow();
       if (createdSessionId && setActive) {
         onSuccess(createdSessionId, setActive);
+      } else {
+        // Same rationale as the Google branch above — never let the button
+        // tap silently do nothing after Apple's own sheet resolves.
+        Alert.alert('Couldn’t finish signing in', 'Please try again, or continue with email instead.');
       }
     } catch (err: any) {
-      Alert.alert('Apple sign-in failed', err.message);
+      // A user-initiated cancel from Apple's sheet throws here too — don't
+      // show an alarming error alert for someone just backing out.
+      if (err.code !== 'ERR_REQUEST_CANCELED') {
+        Alert.alert('Apple sign-in failed', err.message);
+      }
     } finally {
       setLoadingApple(false);
     }
