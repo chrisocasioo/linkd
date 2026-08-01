@@ -44,6 +44,12 @@ export default function OnboardingScreen() {
         setFirstName(parts[0] ?? '');
         if (parts.length === 2) { setLastName(parts[1]); }
         else if (parts.length >= 3) { setMiddleName(parts[1]); setLastName(parts.slice(2).join(' ')); }
+        // Sign in with Apple (or Google) already supplied a name — Apple's
+        // Sign in with Apple guidelines prohibit re-requiring info the
+        // provider already gave, so skip straight past the name step
+        // instead of just pre-filling it. Still reachable via the back
+        // arrow on step 1 if someone wants to edit it.
+        setStep(1);
       }
       if (u.email) setEmail(u.email);
     }).catch(() => {}).finally(() => setLoadingUser(false));

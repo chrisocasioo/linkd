@@ -32,6 +32,11 @@ export default function SignInScreen() {
       if (result.status === 'complete') {
         await setActive({ session: result.createdSessionId });
         router.replace('/');
+      } else {
+        // Clerk returned without erroring but also without completing the
+        // sign-in (e.g. an unexpected required step) — surface that instead
+        // of leaving the screen looking like the tap did nothing.
+        Alert.alert('Sign in incomplete', 'Something interrupted sign-in. Please try again.');
       }
     } catch (err: any) {
       Alert.alert('Sign in failed', err.errors?.[0]?.message ?? err.message);
