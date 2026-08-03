@@ -112,8 +112,10 @@ export default function CardScreen() {
       const created = await api.addCard({ name: 'New Card', accentColor: ACCENT_COLORS[0] });
       setCards((cs) => [...cs, created]);
       router.push({ pathname: '/edit-card', params: { cardId: created.id, isNew: 'true' } });
-    } catch {
-      Alert.alert('No connection', 'Creating a card needs an internet connection.');
+    } catch (err: any) {
+      // Was unconditionally blamed on connectivity, which hid the real cause
+      // (auth, server error, etc.) behind a misleading message.
+      Alert.alert('Couldn’t create card', err?.message ?? 'Please try again.');
     }
   };
 
