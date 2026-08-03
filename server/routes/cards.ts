@@ -3,6 +3,7 @@ import { and, asc, eq } from 'drizzle-orm';
 import { Router } from 'express';
 import { db } from '../db';
 import { cards, cardFields, users } from '../db/schema';
+import { isEntitledLive } from '../util/revenuecat';
 import { slugify, uniqueSlug } from '../util/slugify';
 
 // Icon is embedded unescaped into an <ion-icon name="..."> attribute on the
@@ -60,7 +61,15 @@ router.post('/', async (req, res) => {
     const user = await db.query.users.findFirst({ where: eq(users.id, userId) });
     const existing = await db.select().from(cards).where(eq(cards.userId, userId));
     if (!user?.isPro && existing.length >= 5) {
-      return res.status(403).json({ error: 'Upgrade to Pro for unlimited cards' });
+      // users.isPro only ever gets flipped by the RevenueCat webhook — if
+      // that never fired (misconfigured/unreachable endpoint, or fired
+      // before it was set up), a real subscriber gets stuck here forever.
+      // Check with RevenueCat directly before actually rejecting.
+      if (await isEntitledLive(userId)) {
+        await db.update(users).set({ isPro: true }).where(eq(users.id, userId));
+      } else {
+        return res.status(403).json({ error: 'Upgrade to Pro for unlimited cards' });
+      }
     }
 
     // Readable slug from the card name (e.g. "Work" -> "work"); falls back to
