@@ -34,10 +34,15 @@ export default function SignInScreen() {
     setLoading(true);
     try {
       const result = await signIn.create({ identifier: email, password });
-      if (result.status === 'complete') {
+      // Clerk's Client Trust (new-device verification) reports as
+      // `needs_second_factor` + `client_trust_state: "new"` to this SDK
+      // generation, and as `needs_client_trust` to newer ones; both are
+      // resolved by the same email-code step.
+      const status = result.status as string;
+      if (status === 'complete') {
         await setActive({ session: result.createdSessionId });
         router.replace('/');
-      } else if (result.status === 'needs_second_factor') {
+      } else if (status === 'needs_second_factor' || status === 'needs_client_trust') {
         const emailFactor = result.supportedSecondFactors?.find((f) => f.strategy === 'email_code');
         if (!emailFactor) {
           Alert.alert('Sign in incomplete', 'This account needs a verification method the app doesn’t support yet.');
