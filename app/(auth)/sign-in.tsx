@@ -22,6 +22,11 @@ export default function SignInScreen() {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [code, setCode] = useState('');
+  // Clerk can accept the password but still demand an emailed code — its
+  // new-device (client trust) verification does this for any device it
+  // hasn't seen before. Without this step the screen dead-ended there.
+  const [pendingSecondFactor, setPendingSecondFactor] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const onSignIn = async () => {
@@ -32,14 +37,47 @@ export default function SignInScreen() {
       if (result.status === 'complete') {
         await setActive({ session: result.createdSessionId });
         router.replace('/');
+      } else if (result.status === 'needs_second_factor') {
+        const emailFactor = result.supportedSecondFactors?.find((f) => f.strategy === 'email_code');
+        if (!emailFactor) {
+          Alert.alert('Sign in incomplete', 'This account needs a verification method the app doesn’t support yet.');
+          return;
+        }
+        await signIn.prepareSecondFactor({
+          strategy: 'email_code',
+          emailAddressId: (emailFactor as { emailAddressId?: string }).emailAddressId,
+        });
+        setPendingSecondFactor(true);
+      } else if (result.status === 'needs_new_password') {
+        Alert.alert(
+          'Password reset required',
+          'For security, this password can no longer be used. Please reset it to continue.'
+        );
       } else {
-        // Clerk returned without erroring but also without completing the
-        // sign-in (e.g. an unexpected required step) — surface that instead
-        // of leaving the screen looking like the tap did nothing.
-        Alert.alert('Sign in incomplete', 'Something interrupted sign-in. Please try again.');
+        // Anything else Clerk might want that we don't handle — say so
+        // (with the status, so it's diagnosable) instead of looking frozen.
+        Alert.alert('Sign in incomplete', `Something interrupted sign-in (${result.status ?? 'unknown'}). Please try again.`);
       }
     } catch (err: any) {
       Alert.alert('Sign in failed', err.errors?.[0]?.message ?? err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onVerifyCode = async () => {
+    if (!isLoaded) return;
+    setLoading(true);
+    try {
+      const result = await signIn.attemptSecondFactor({ strategy: 'email_code', code });
+      if (result.status === 'complete') {
+        await setActive({ session: result.createdSessionId });
+        router.replace('/');
+      } else {
+        Alert.alert('Verification incomplete', `Please try again (${result.status ?? 'unknown'}).`);
+      }
+    } catch (err: any) {
+      Alert.alert('Verification failed', err.errors?.[0]?.message ?? err.message);
     } finally {
       setLoading(false);
     }
@@ -57,58 +95,98 @@ export default function SignInScreen() {
             <Text style={styles.logoSub}>Digital Business Cards</Text>
           </View>
 
-          <Text style={styles.heading}>Welcome back</Text>
+          {!pendingSecondFactor ? (
+            <>
+              <Text style={styles.heading}>Welcome back</Text>
 
-          <SocialAuthButtons
-            onSuccess={async (sessionId, setActive) => {
-              await setActive({ session: sessionId });
-              router.replace('/');
-            }}
-          />
+              <SocialAuthButtons
+                onSuccess={async (sessionId, setActive) => {
+                  await setActive({ session: sessionId });
+                  router.replace('/');
+                }}
+              />
 
-          <View style={styles.field}>
-            <Text style={styles.label}>EMAIL</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="you@example.com"
-              placeholderTextColor={COLORS.textTertiary}
-              value={email}
-              onChangeText={setEmail}
-              autoCapitalize="none"
-              keyboardType="email-address"
-              autoComplete="email"
-            />
-          </View>
+              <View style={styles.field}>
+                <Text style={styles.label}>EMAIL</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="you@example.com"
+                  placeholderTextColor={COLORS.textTertiary}
+                  value={email}
+                  onChangeText={setEmail}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                  autoComplete="email"
+                />
+              </View>
 
-          <View style={styles.field}>
-            <Text style={styles.label}>PASSWORD</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Your password"
-              placeholderTextColor={COLORS.textTertiary}
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              autoComplete="current-password"
-            />
-          </View>
+              <View style={styles.field}>
+                <Text style={styles.label}>PASSWORD</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Your password"
+                  placeholderTextColor={COLORS.textTertiary}
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry
+                  autoComplete="current-password"
+                />
+              </View>
 
-          <Pressable
-            style={[styles.btn, loading && styles.btnDisabled]}
-            onPress={onSignIn}
-            disabled={loading}
-          >
-            <Text style={styles.btnText}>{loading ? 'Signing in…' : 'Sign in'}</Text>
-          </Pressable>
-
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>Don't have an account? </Text>
-            <Link href="/(auth)/sign-up" asChild>
-              <Pressable>
-                <Text style={styles.footerLink}>Sign up</Text>
+              <Pressable
+                style={[styles.btn, loading && styles.btnDisabled]}
+                onPress={onSignIn}
+                disabled={loading}
+              >
+                <Text style={styles.btnText}>{loading ? 'Signing in…' : 'Sign in'}</Text>
               </Pressable>
-            </Link>
-          </View>
+
+              <View style={styles.footer}>
+                <Text style={styles.footerText}>Don't have an account? </Text>
+                <Link href="/(auth)/sign-up" asChild>
+                  <Pressable>
+                    <Text style={styles.footerLink}>Sign up</Text>
+                  </Pressable>
+                </Link>
+              </View>
+            </>
+          ) : (
+            <>
+              <Text style={styles.heading}>Check your email</Text>
+              <Text style={styles.bodyText}>
+                This device is new to us — we sent a 6-digit code to {email.trim()}
+              </Text>
+
+              <View style={styles.field}>
+                <Text style={styles.label}>VERIFICATION CODE</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="123456"
+                  placeholderTextColor={COLORS.textTertiary}
+                  value={code}
+                  onChangeText={setCode}
+                  keyboardType="number-pad"
+                  maxLength={6}
+                  autoComplete="one-time-code"
+                  textContentType="oneTimeCode"
+                />
+              </View>
+
+              <Pressable
+                style={[styles.btn, loading && styles.btnDisabled]}
+                onPress={onVerifyCode}
+                disabled={loading}
+              >
+                <Text style={styles.btnText}>{loading ? 'Verifying…' : 'Verify code'}</Text>
+              </Pressable>
+
+              <View style={styles.footer}>
+                <Pressable onPress={() => { setPendingSecondFactor(false); setCode(''); }} disabled={loading}>
+                  <Text style={styles.footerLink}>Back to sign in</Text>
+                </Pressable>
+              </View>
+            </>
+          )}
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -137,6 +215,12 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.semiBold,
     color: COLORS.text,
     letterSpacing: -0.5,
+    marginBottom: 8,
+  },
+  bodyText: {
+    fontSize: 14,
+    fontFamily: FONTS.regular,
+    color: COLORS.textSecondary,
     marginBottom: 8,
   },
   field: { gap: 6 },
