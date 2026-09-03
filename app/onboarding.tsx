@@ -33,6 +33,7 @@ export default function OnboardingScreen() {
   const [company, setCompany] = useState('');
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [email, setEmail] = useState('');
+  const [hasKnownEmail, setHasKnownEmail] = useState(false);
   const [phone, setPhone] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [loadingUser, setLoadingUser] = useState(true);
@@ -51,7 +52,12 @@ export default function OnboardingScreen() {
         // arrow on step 1 if someone wants to edit it.
         setStep(1);
       }
-      if (u.email) setEmail(u.email);
+      // Every sign-up path (Apple, Google, or email/password) already gives
+      // us a real email before onboarding is ever reached — an editable
+      // input here still reads as "asking again" to Apple's reviewers even
+      // pre-filled and skippable, so show it as confirmed text instead of a
+      // field to fill in.
+      if (u.email) { setEmail(u.email); setHasKnownEmail(true); }
     }).catch(() => {}).finally(() => setLoadingUser(false));
   }, []);
 
@@ -257,16 +263,23 @@ export default function OnboardingScreen() {
         <Text style={styles.stepSub}>How can people reach you?</Text>
         <View style={styles.inputGroup}>
           <Text style={styles.inputLabel}>EMAIL</Text>
-          <TextInput
-            style={styles.input}
-            value={email}
-            onChangeText={setEmail}
-            placeholder="you@example.com"
-            placeholderTextColor={COLORS.textTertiary}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
+          {hasKnownEmail ? (
+            <View style={styles.staticField}>
+              <Ionicons name="checkmark-circle" size={16} color={COLORS.textSecondary} />
+              <Text style={styles.staticFieldText}>{email}</Text>
+            </View>
+          ) : (
+            <TextInput
+              style={styles.input}
+              value={email}
+              onChangeText={setEmail}
+              placeholder="you@example.com"
+              placeholderTextColor={COLORS.textTertiary}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+          )}
         </View>
         <View style={styles.inputGroup}>
           <Text style={styles.inputLabel}>PHONE</Text>
@@ -389,6 +402,22 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontFamily: FONTS.regular,
     color: COLORS.text,
+  },
+  staticField: {
+    height: 52,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: COLORS.surface,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    paddingHorizontal: 16,
+  },
+  staticFieldText: {
+    fontSize: 15,
+    fontFamily: FONTS.regular,
+    color: COLORS.textSecondary,
   },
   photoPicker: {
     height: 200,
