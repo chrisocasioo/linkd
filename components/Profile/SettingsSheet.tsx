@@ -40,7 +40,7 @@ export function SettingsSheet({ visible, onClose, onShowPaywall }: Props) {
   const { user } = useClerk();
   const api = useApi();
   const router = useRouter();
-  const { restorePurchases } = useRevenueCat();
+  const { restorePurchases, isPro } = useRevenueCat();
   const [restoring, setRestoring] = useState(false);
   const translateY = useRef(new Animated.Value(500)).current;
 
@@ -192,6 +192,19 @@ export function SettingsSheet({ visible, onClose, onShowPaywall }: Props) {
 
           {/* Subscription */}
           <View style={styles.group}>
+            {/* Until now the paywall was only reachable through feature
+                locks (5-card limit, analytics badges, scan limits) — App
+                Review couldn't find the subscriptions at all. A plain entry
+                point here makes Pro discoverable; hidden once subscribed. */}
+            {!isPro && (
+              <>
+                <SettingsRow
+                  label="Upgrade to Linkd Pro"
+                  onPress={() => { onClose(); onShowPaywall(); }}
+                />
+                <View style={styles.sep} />
+              </>
+            )}
             <Pressable style={styles.row} onPress={handleRestore} disabled={restoring}>
               <Text style={styles.rowLabel}>Restore Purchases</Text>
               {restoring && <Text style={styles.rowValue}>Restoring…</Text>}
