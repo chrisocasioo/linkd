@@ -1,11 +1,14 @@
-import { useSignInWithApple, useSSO } from '@clerk/clerk-expo';
+import { useSignIn, useSignUp, useSSO } from '@clerk/clerk-expo';
 import { Ionicons } from '@expo/vector-icons';
+import * as AppleAuthentication from 'expo-apple-authentication';
+import * as Crypto from 'expo-crypto';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import React, { useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { COLORS, FONTS } from '../constants/colors';
+import { useApi } from '../lib/api';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -39,29 +42,33 @@ function AppleIcon() {
 }
 
 interface Props {
-  onSuccess: (sessionId: string, setActive: any) => void;
+  onSuccess: (sessionId: string, setActive: any) => void | Promise<void>;
 }
+
+const SIGN_IN_INCOMPLETE_MSG = 'Please try again, or continue with email instead.';
 
 export function SocialAuthButtons({ onSuccess }: Props) {
   const { startSSOFlow } = useSSO();
-  const { startAppleAuthenticationFlow } = useSignInWithApple();
+  const { signIn, setActive, isLoaded: isSignInLoaded } = useSignIn();
+  const { signUp, isLoaded: isSignUpLoaded } = useSignUp();
+  const api = useApi();
   const [loadingGoogle, setLoadingGoogle] = useState(false);
   const [loadingApple, setLoadingApple] = useState(false);
 
   const handleGoogle = async () => {
     setLoadingGoogle(true);
     try {
-      const { createdSessionId, setActive } = await startSSOFlow({
+      const { createdSessionId, setActive: ssoSetActive, authSessionResult } = await startSSOFlow({
         strategy: 'oauth_google',
         redirectUrl: Linking.createURL('/oauth-native-callback', { scheme: 'linkd' }),
       });
-      if (createdSessionId && setActive) {
-        onSuccess(createdSessionId, setActive);
-      } else {
-        // Resolved without throwing but also without a session — e.g. Clerk
-        // needs an extra step we don't otherwise surface. Don't leave the
-        // screen looking unresponsive; tell the user something happened.
-        Alert.alert('Couldn’t finish signing in', 'Please try again, or continue with email instead.');
+      if (createdSessionId && ssoSetActive) {
+        await onSuccess(createdSessionId, ssoSetActive);
+      } else if (authSessionResult?.type === 'success') {
+        // The browser flow completed but Clerk produced no session (e.g. an
+        // extra step we don't otherwise surface). A user backing out of the
+        // browser comes back as 'cancel'/'dismiss' — stay quiet for those.
+        Alert.alert('Couldn’t finish signing in', SIGN_IN_INCOMPLETE_MSG);
       }
     } catch (err: any) {
       Alert.alert('Google sign-in failed', err.message);
@@ -70,23 +77,75 @@ export function SocialAuthButtons({ onSuccess }: Props) {
     }
   };
 
+  // Deliberately NOT Clerk's useSignInWithApple() hook. That hook requests
+  // Apple's FULL_NAME scope but then forwards only the identity token to
+  // Clerk — and Apple never puts the name inside the token — so the name
+  // the user just shared on Apple's sheet was silently dropped, our account
+  // ended up nameless, and onboarding had to ask for it again. App Review
+  // rejected that twice (Guideline 4: requiring info Sign in with Apple
+  // already provided). Doing the exchange here lets us capture the name and
+  // attach it to the Clerk account, so onboarding can genuinely skip it.
   const handleApple = async () => {
+    if (!isSignInLoaded || !isSignUpLoaded || !signIn || !signUp) return;
     setLoadingApple(true);
     try {
-      const { createdSessionId, setActive } = await startAppleAuthenticationFlow();
-      if (createdSessionId && setActive) {
-        onSuccess(createdSessionId, setActive);
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+        nonce: Crypto.randomUUID(),
+      });
+      const { identityToken, fullName } = credential;
+      if (!identityToken) throw new Error('No identity token received from Apple.');
+
+      // Apple only supplies the name on the very first authorization for
+      // this Apple ID; on later sign-ins fullName is null and there's
+      // nothing to carry over (the account already has it).
+      const firstName = fullName?.givenName?.trim() || undefined;
+      const lastName = fullName?.familyName?.trim() || undefined;
+      const displayName = [fullName?.givenName, fullName?.middleName, fullName?.familyName]
+        .map((p) => p?.trim())
+        .filter(Boolean)
+        .join(' ');
+
+      await signIn.create({ strategy: 'oauth_token_apple', token: identityToken });
+
+      let createdSessionId: string | null;
+      if (signIn.firstFactorVerification.status === 'transferable') {
+        // Brand-new user: transfer the verified Apple identity into a
+        // sign-up, carrying the name along so the Clerk user has it.
+        try {
+          await signUp.create({ transfer: true, firstName, lastName });
+        } catch (err: any) {
+          // If the Clerk instance has name attributes disabled it rejects
+          // the extra params — fall back to a plain transfer rather than
+          // failing the whole sign-up; the updateMe below still sets our
+          // own displayName.
+          if (err?.errors?.[0]?.code !== 'form_param_unknown') throw err;
+          await signUp.create({ transfer: true });
+        }
+        createdSessionId = signUp.createdSessionId;
       } else {
-        // Same rationale as the Google branch above — never let the button
-        // tap silently do nothing after Apple's own sheet resolves.
-        Alert.alert('Couldn’t finish signing in', 'Please try again, or continue with email instead.');
+        createdSessionId = signIn.createdSessionId;
       }
+
+      if (!createdSessionId) {
+        Alert.alert('Couldn’t finish signing in', SIGN_IN_INCOMPLETE_MSG);
+        return;
+      }
+
+      await onSuccess(createdSessionId, setActive);
+
+      // Belt-and-braces: the server also mirrors Clerk's first/last name
+      // into displayName on the first authenticated request, but write it
+      // directly too so it can't be lost to that sync's once-per-process
+      // cache. Same value either way, so ordering doesn't matter.
+      if (displayName) api.updateMe({ displayName }).catch(() => {});
     } catch (err: any) {
-      // A user-initiated cancel from Apple's sheet throws here too — don't
-      // show an alarming error alert for someone just backing out.
-      if (err.code !== 'ERR_REQUEST_CANCELED') {
-        Alert.alert('Apple sign-in failed', err.message);
-      }
+      // Backing out of Apple's sheet is not an error worth an alert
+      if (err?.code === 'ERR_REQUEST_CANCELED') return;
+      Alert.alert('Apple sign-in failed', err?.errors?.[0]?.message ?? err?.message ?? 'Please try again.');
     } finally {
       setLoadingApple(false);
     }
