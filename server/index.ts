@@ -6,7 +6,7 @@ import { Webhook } from 'svix';
 import { db } from './db';
 import { users } from './db/schema';
 import { runMigrations } from './db/migrate';
-import { clerk, requireAuth } from './middleware/auth';
+import { clerk, evictSyncedUser, requireAuth } from './middleware/auth';
 import analyticsRouter from './routes/analytics';
 import cardsRouter from './routes/cards';
 import contactsRouter from './routes/contacts';
@@ -19,6 +19,7 @@ import qrsRouter from './routes/qrs';
 import revenuecatRouter from './routes/revenuecat';
 import scanHistoryRouter from './routes/scanHistory';
 import usersRouter from './routes/users';
+import { purgeUserAssets } from './util/purgeUserAssets';
 
 process.on('unhandledRejection', (reason: any) => {
   console.error('Unhandled rejection:', reason?.message ?? reason);
@@ -37,6 +38,10 @@ app.post(
   express.raw({ type: 'application/json' }),
   async (req, res) => {
     const webhookSecret = process.env.CLERK_WEBHOOK_SECRET ?? '';
+    if (!webhookSecret) {
+      console.error('Clerk webhook rejected: CLERK_WEBHOOK_SECRET is not set');
+      return res.status(503).json({ error: 'Webhook not configured' });
+    }
     const wh = new Webhook(webhookSecret);
     const headers = {
       'svix-id': req.headers['svix-id'] as string,
@@ -50,26 +55,40 @@ app.post(
       return res.status(400).json({ error: 'Invalid webhook signature' });
     }
 
-    if (event.type === 'user.created') {
-      const { id, email_addresses, first_name, last_name } = event.data;
-      const email = email_addresses?.[0]?.email_address ?? '';
-      const displayName = [first_name, last_name].filter(Boolean).join(' ') || null;
-      await db.insert(users).values({ id, email, displayName }).onConflictDoNothing();
-    }
+    // Express 4 doesn't catch async throws — without this a DB/S3 error left
+    // the request hanging and Clerk saw a timeout instead of a retryable 5xx.
+    try {
+      if (event.type === 'user.created') {
+        const { id, email_addresses, first_name, last_name } = event.data;
+        const email = email_addresses?.[0]?.email_address ?? '';
+        const displayName = [first_name, last_name].filter(Boolean).join(' ') || null;
+        await db.insert(users).values({ id, email, displayName }).onConflictDoNothing();
+      }
 
-    if (event.type === 'user.updated') {
-      const { id, email_addresses, first_name, last_name } = event.data;
-      const email = email_addresses?.[0]?.email_address ?? '';
-      const displayName = [first_name, last_name].filter(Boolean).join(' ') || null;
-      await db.update(users).set({ email, displayName, updatedAt: new Date() }).where(eq(users.id, id));
-    }
+      if (event.type === 'user.updated') {
+        const { id, email_addresses, first_name, last_name } = event.data;
+        const email = email_addresses?.[0]?.email_address ?? '';
+        const displayName = [first_name, last_name].filter(Boolean).join(' ') || null;
+        await db.update(users).set({ email, displayName, updatedAt: new Date() }).where(eq(users.id, id));
+      }
 
-    if (event.type === 'user.deleted') {
-      const { id } = event.data;
-      await db.delete(users).where(eq(users.id, id));
-    }
+      if (event.type === 'user.deleted') {
+        const { id } = event.data;
+        // Deleting from the Clerk dashboard/API lands here rather than in
+        // DELETE /api/users/me — purge the bucket too (before the row goes,
+        // since the keys are derived from it) or every photo is orphaned.
+        if (id) {
+          await purgeUserAssets(id);
+          await db.delete(users).where(eq(users.id, id));
+          evictSyncedUser(id);
+        }
+      }
 
-    res.json({ success: true });
+      res.json({ success: true });
+    } catch (err: any) {
+      console.error(`Clerk webhook ${event?.type} failed:`, err?.message ?? err);
+      res.status(500).json({ error: 'Webhook processing failed' });
+    }
   }
 );
 

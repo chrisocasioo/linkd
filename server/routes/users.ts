@@ -1,20 +1,12 @@
-import { DeleteObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { eq, ne, and } from 'drizzle-orm';
 import { Router } from 'express';
 import { db } from '../db';
-import { cards, contacts, savedQrs, users } from '../db/schema';
+import { clerk, evictSyncedUser } from '../middleware/auth';
+import { users } from '../db/schema';
+import { purgeUserAssets } from '../util/purgeUserAssets';
+import { isHexColor } from '../util/validate';
 
 const router = Router();
-
-const s3 = new S3Client({
-  region: process.env.AWS_REGION ?? 'auto',
-  endpoint: process.env.AWS_ENDPOINT_URL_S3 ?? process.env.ENDPOINT,
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID ?? process.env.ACCESS_KEY_ID ?? '',
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY ?? process.env.SECRET_ACCESS_KEY ?? '',
-  },
-  forcePathStyle: true,
-});
 
 const USERNAME_RE = /^[a-z0-9_-]{3,30}$/;
 
@@ -46,6 +38,10 @@ router.patch('/me', async (req, res) => {
     const userId = (req as any).userId as string;
     const { displayName, username, bio, theme, accentColor, buttonStyle, font, customDomain, revenueCatId } =
       req.body as Record<string, string | undefined>;
+
+    if (accentColor !== undefined && !isHexColor(accentColor)) {
+      return res.status(400).json({ error: 'accentColor must be a #RRGGBB hex color' });
+    }
 
     const update: Partial<typeof users.$inferInsert> = { updatedAt: new Date() };
 
@@ -82,32 +78,36 @@ router.patch('/me', async (req, res) => {
 // touches. Nothing here is retained: Linkd doesn't hold payment records at
 // all (Apple/RevenueCat process and retain those independently, under
 // their own policies), so there's nothing of that kind to carve out.
+//
+// Order matters and every step is idempotent, so a client can simply retry:
+//   1. purge bucket objects (keys come from rows that step 2 destroys)
+//   2. delete the user row (cascades to cards/contacts/etc.)
+//   3. delete the Clerk identity — only when the client opts in with
+//      `x-linkd-delete-identity: server`. Older builds delete the Clerk user
+//      themselves right after this call; deleting it here first would make
+//      that call fail and show them an error for an account that is gone.
 router.delete('/me', async (req, res) => {
+  const userId = (req as any).userId as string;
   try {
-    const userId = (req as any).userId as string;
-    const bucket = process.env.BUCKET_NAME ?? process.env.BUCKET ?? '';
-
-    // Gathered before the cascade delete removes our ability to look them up.
-    const [userCards, userContacts, userSavedQrs] = await Promise.all([
-      db.select({ id: cards.id }).from(cards).where(eq(cards.userId, userId)),
-      db.select({ id: contacts.id }).from(contacts).where(eq(contacts.userId, userId)),
-      db.select({ id: savedQrs.id }).from(savedQrs).where(eq(savedQrs.userId, userId)),
-    ]);
-
-    const keys = [
-      `profiles/${userId}.jpg`,
-      ...userCards.flatMap((c) => [`cards/${c.id}.jpg`, `cards/${c.id}-qr-logo.jpg`]),
-      ...userContacts.map((c) => `contacts/${c.id}.jpg`),
-      ...userSavedQrs.map((q) => `qrs/${q.id}-logo.jpg`),
-    ];
-    await Promise.all(
-      keys.map((Key) => s3.send(new DeleteObjectCommand({ Bucket: bucket, Key })).catch(() => {}))
-    );
-
+    await purgeUserAssets(userId);
     await db.delete(users).where(eq(users.id, userId));
+    evictSyncedUser(userId);
+
+    if (req.headers['x-linkd-delete-identity'] === 'server') {
+      try {
+        await clerk.users.deleteUser(userId);
+      } catch (err: any) {
+        // Already gone is fine (retry after a partial run)
+        if (err?.status !== 404) {
+          console.error(`Clerk deleteUser(${userId}) failed:`, err?.message ?? err);
+          return res.status(502).json({ error: 'Could not finish deleting your sign-in. Please try again.' });
+        }
+      }
+    }
     res.json({ success: true });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    console.error(`Account deletion failed for ${userId}:`, err?.message ?? err);
+    res.status(500).json({ error: 'Could not delete your account right now. Please try again.' });
   }
 });
 

@@ -3,8 +3,26 @@ import { Router } from 'express';
 import { db } from '../db';
 import { cardFields, cards, cardViews, contacts, users } from '../db/schema';
 import { formatPhone } from '../util/format';
+import { isSafeLink, safeHexColor } from '../util/validate';
 
 const router = Router();
+
+// Defense in depth for the public card page. The page relies on inline
+// styles/handlers and the ionicons module from unpkg, so 'unsafe-inline' is
+// unavoidable today — the real protection is the input validation on writes
+// (hex-only colors, https-only app links). This still blocks framing, form
+// hijacking, plugin content, and third-party script hosts other than unpkg.
+const CARD_PAGE_CSP = [
+  "default-src 'none'",
+  "script-src 'unsafe-inline' https://unpkg.com",
+  "style-src 'unsafe-inline'",
+  "img-src https: data:",
+  "font-src https: data:",
+  "connect-src 'self'",
+  "form-action 'self'",
+  "base-uri 'none'",
+  "frame-ancestors 'none'",
+].join('; ');
 
 const APP_STORE_URL = 'https://apps.apple.com/us/app/linkd-qr-code-generator/id6785300260';
 
@@ -13,7 +31,7 @@ type CardRow = typeof cards.$inferSelect;
 type FieldRow = typeof cardFields.$inferSelect;
 
 const esc = (s: string) =>
-  s.replace(/[<>&"]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c] ?? c));
+  s.replace(/[<>&"']/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&#39;' }[c] ?? c));
 
 const ICON_NAME: Record<string, string> = {
   email: 'mail', phone: 'call', website: 'globe-outline',
@@ -34,9 +52,10 @@ const ICON_NAME: Record<string, string> = {
 function parseAppLinks(value: string): { ios: string; android: string } {
   try {
     const o = JSON.parse(value);
+    // Scheme allowlist: these end up in <a href>, and `javascript:` executes
     return {
-      ios: typeof o.ios === 'string' ? o.ios : '',
-      android: typeof o.android === 'string' ? o.android : '',
+      ios: isSafeLink(o.ios) ? o.ios : '',
+      android: isSafeLink(o.android) ? o.android : '',
     };
   } catch {
     return { ios: '', android: '' };
@@ -82,7 +101,7 @@ function fieldUrl(type: string, value: string): string {
 
 function buildCardHtml(user: UserRow, card: CardRow, fields: FieldRow[], username: string): string {
   const name = esc(card.displayName ?? user.displayName ?? username);
-  const accent = card.accentColor ?? '#C9973A';
+  const accent = safeHexColor(card.accentColor, '#C9973A');
 
   const titleVal   = fields.find(f => f.type === 'title')?.value;
   const companyVal = fields.find(f => f.type === 'company')?.value;
@@ -424,6 +443,7 @@ router.get('/:username/:slug', async (req, res) => {
       db.insert(cardViews).values({ userId: user.id, linkId: null, cardId: card.id }).catch(() => {});
     }
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.setHeader('Content-Security-Policy', CARD_PAGE_CSP);
     res.send(buildCardHtml(user, card, fields, username));
   } catch {
     res.status(500).send('<!DOCTYPE html><html><body><h1>Server error</h1></body></html>');
@@ -451,6 +471,7 @@ router.get('/:username', async (req, res) => {
       db.insert(cardViews).values({ userId: user.id, linkId: null, cardId: firstCard.id }).catch(() => {});
     }
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.setHeader('Content-Security-Policy', CARD_PAGE_CSP);
     res.send(buildCardHtml(user, firstCard, fields, username));
   } catch (err: any) {
     res.status(500).send('<!DOCTYPE html><html><body><h1>Server error</h1></body></html>');

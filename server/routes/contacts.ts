@@ -56,10 +56,17 @@ router.patch('/:id', async (req, res) => {
   try {
     const userId = (req as any).userId as string;
     const { id } = req.params;
-    const { firstName, lastName, email, phone, fax, company, jobTitle, website, address, notes } = req.body;
+    const body = req.body as Record<string, string | null | undefined>;
+    // Only touch fields the client actually sent — destructuring all of them
+    // straight into .set() wrote NULL over every field omitted from the body.
+    const update: Partial<typeof contacts.$inferInsert> = {};
+    for (const key of ['firstName', 'lastName', 'email', 'phone', 'fax', 'company', 'jobTitle', 'website', 'address', 'notes'] as const) {
+      if (body[key] !== undefined) update[key] = body[key];
+    }
+    if (Object.keys(update).length === 0) return res.status(400).json({ error: 'No fields to update' });
     const [updated] = await db
       .update(contacts)
-      .set({ firstName, lastName, email, phone, fax, company, jobTitle, website, address, notes })
+      .set(update)
       .where(and(eq(contacts.id, id), eq(contacts.userId, userId)))
       .returning();
     if (!updated) return res.status(404).json({ error: 'Not found' });
@@ -107,11 +114,13 @@ router.delete('/:id', async (req, res) => {
   try {
     const userId = (req as any).userId as string;
     const { id } = req.params;
+    // Ownership is part of the WHERE — the old version deleted by id alone and
+    // checked the owner afterwards, so any user could delete anyone's contact.
     const [deleted] = await db
       .delete(contacts)
-      .where(eq(contacts.id, id))
+      .where(and(eq(contacts.id, id), eq(contacts.userId, userId)))
       .returning();
-    if (!deleted || deleted.userId !== userId) return res.status(404).json({ error: 'Not found' });
+    if (!deleted) return res.status(404).json({ error: 'Not found' });
     res.json({ success: true });
   } catch (err: any) {
     res.status(500).json({ error: err.message });

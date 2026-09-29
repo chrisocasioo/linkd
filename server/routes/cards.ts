@@ -3,8 +3,9 @@ import { and, asc, eq } from 'drizzle-orm';
 import { Router } from 'express';
 import { db } from '../db';
 import { cards, cardFields, users } from '../db/schema';
-import { isEntitledLive } from '../util/revenuecat';
+import { ensurePro } from '../util/revenuecat';
 import { slugify, uniqueSlug } from '../util/slugify';
+import { isHexColor } from '../util/validate';
 
 // Icon is embedded unescaped into an <ion-icon name="..."> attribute on the
 // public page, so constrain it to a safe charset regardless of whether the
@@ -57,19 +58,17 @@ router.post('/', async (req, res) => {
     const userId = (req as any).userId as string;
     const { name, accentColor } = req.body as { name?: string; accentColor?: string };
     if (!name) return res.status(400).json({ error: 'name required' });
+    if (accentColor !== undefined && !isHexColor(accentColor)) {
+      return res.status(400).json({ error: 'accentColor must be a #RRGGBB hex color' });
+    }
 
     const user = await db.query.users.findFirst({ where: eq(users.id, userId) });
     const existing = await db.select().from(cards).where(eq(cards.userId, userId));
-    if (!user?.isPro && existing.length >= 5) {
-      // users.isPro only ever gets flipped by the RevenueCat webhook — if
-      // that never fired (misconfigured/unreachable endpoint, or fired
-      // before it was set up), a real subscriber gets stuck here forever.
-      // Check with RevenueCat directly before actually rejecting.
-      if (await isEntitledLive(userId)) {
-        await db.update(users).set({ isPro: true }).where(eq(users.id, userId));
-      } else {
-        return res.status(403).json({ error: 'Upgrade to Pro for unlimited cards' });
-      }
+    // ensurePro double-checks RevenueCat (and self-heals the DB flag) when the
+    // cached flag says free — the webhook that normally keeps it in sync may
+    // have missed an event.
+    if (existing.length >= 5 && !(await ensurePro(userId, user?.isPro))) {
+      return res.status(403).json({ error: 'Upgrade to Pro for unlimited cards' });
     }
 
     // Readable slug from the card name (e.g. "Work" -> "work"); falls back to
@@ -121,6 +120,11 @@ router.patch('/:id', async (req, res) => {
       qrLogo?: string | null;
       qrBgColor?: string | null;
     };
+    // These land in HTML/CSS on the public card page — hex only (null clears QR colors)
+    for (const [field, value] of [['accentColor', accentColor], ['qrColor', qrColor], ['qrBgColor', qrBgColor]] as const) {
+      if (value === undefined || (value === null && field !== 'accentColor')) continue;
+      if (!isHexColor(value)) return res.status(400).json({ error: `${field} must be a #RRGGBB hex color` });
+    }
     const update: Partial<typeof cards.$inferInsert> = {};
     if (name !== undefined) update.name = name;
     if (displayName !== undefined) update.displayName = displayName;
@@ -132,7 +136,7 @@ router.patch('/:id', async (req, res) => {
     if (qrBgColor !== undefined) update.qrBgColor = qrBgColor;
     if (slug !== undefined) {
       const user = await db.query.users.findFirst({ where: eq(users.id, userId) });
-      if (!user?.isPro) return res.status(403).json({ error: 'Custom card URLs are a Pro feature' });
+      if (!(await ensurePro(userId, user?.isPro))) return res.status(403).json({ error: 'Custom card URLs are a Pro feature' });
       const clean = String(slug).toLowerCase().trim();
       if (!/^[a-z0-9-]{3,30}$/.test(clean)) {
         return res.status(400).json({ error: 'URL can use 3–30 lowercase letters, numbers, and dashes' });
