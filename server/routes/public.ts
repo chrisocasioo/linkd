@@ -18,7 +18,7 @@ const CARD_PAGE_CSP = [
   "style-src 'unsafe-inline'",
   "img-src https: data:",
   "font-src https: data:",
-  "connect-src 'self'",
+  "connect-src 'self' https://unpkg.com", // ion-icon fetches each icon SVG from unpkg
   "form-action 'self'",
   "base-uri 'none'",
   "frame-ancestors 'none'",
