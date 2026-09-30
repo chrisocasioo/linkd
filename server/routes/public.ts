@@ -190,7 +190,7 @@ function buildCardHtml(user: UserRow, card: CardRow, fields: FieldRow[], usernam
       display: flex; align-items: center; justify-content: center;
       flex-shrink: 0;
     }
-    .field-icon ion-icon { font-size: 16px; color: #fff; }
+    .field-icon ion-icon { font-size: 16px; color: #0C0C0E; }
     .field-value { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .footer {
       width: 100%;
