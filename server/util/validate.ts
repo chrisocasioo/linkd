@@ -19,3 +19,16 @@ const SAFE_LINK_RE = /^(https:\/\/|itms-apps:\/\/|market:\/\/)/i;
 export function isSafeLink(value: unknown): value is string {
   return typeof value === 'string' && SAFE_LINK_RE.test(value.trim());
 }
+
+// Top-level paths the server itself answers (or may later) — a username equal
+// to one of these would be shadowed by, or shadow, a real route.
+const RESERVED_USERNAMES = new Set([
+  'api', 'health', 'privacy', 'support', 'terms', 'icon', 'favicon', 'robots', 'sitemap',
+  'pass', 'exchange', 'vcard', 'www', 'admin', 'app', 'linkd', 'static', 'assets', 'login',
+  'signin', 'signup', 'sign-in', 'sign-up', 'settings', 'about', 'help', 'contact', 'home',
+  'download', 'pricing', 'legal', 'status', 'blog', 'null', 'undefined',
+]);
+
+export function isReservedUsername(value: string): boolean {
+  return RESERVED_USERNAMES.has(value.toLowerCase());
+}

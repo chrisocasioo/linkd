@@ -24,6 +24,8 @@ interface Props {
   visible: boolean;
   onClose: () => void;
   onShowPaywall: () => void;
+  /** Called after the username changes so the caller can refresh its copy of the user */
+  onUsernameChanged?: () => void;
 }
 
 function SettingsRow({ label, onPress }: { label: string; onPress: () => void }) {
@@ -35,13 +37,47 @@ function SettingsRow({ label, onPress }: { label: string; onPress: () => void })
   );
 }
 
-export function SettingsSheet({ visible, onClose, onShowPaywall }: Props) {
+export function SettingsSheet({ visible, onClose, onShowPaywall, onUsernameChanged }: Props) {
   const { signOut } = useAuth();
   const { user } = useClerk();
   const api = useApi();
   const router = useRouter();
   const { restorePurchases, isPro } = useRevenueCat();
   const [restoring, setRestoring] = useState(false);
+  const [username, setUsername] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (visible) api.getMe().then((u) => setUsername(u.username ?? null)).catch(() => {});
+  }, [visible]);
+
+  const handleChangeUsername = () => {
+    Alert.prompt(
+      'Change Username',
+      `Your links look like linkd.biz/${username ?? 'username'}/card-name. Changing it breaks links and QR codes you've already shared.`,
+      async (raw) => {
+        const next = (raw ?? '').trim().toLowerCase();
+        if (!next || next === username) return;
+        if (!/^[a-z0-9_-]{3,30}$/.test(next)) {
+          Alert.alert('Invalid username', '3–30 characters: letters, numbers, _ or -');
+          return;
+        }
+        try {
+          const { available, error } = await api.checkUsername(next);
+          if (!available) {
+            Alert.alert('Not available', error ?? 'That username is taken.');
+            return;
+          }
+          const updated = await api.updateMe({ username: next });
+          setUsername(updated.username ?? next);
+          onUsernameChanged?.();
+        } catch (err: any) {
+          Alert.alert('Couldn’t change username', err?.message ?? 'Please try again.');
+        }
+      },
+      'plain-text',
+      username ?? '',
+    );
+  };
   const translateY = useRef(new Animated.Value(500)).current;
 
   useEffect(() => {
@@ -154,6 +190,14 @@ export function SettingsSheet({ visible, onClose, onShowPaywall }: Props) {
               <Text style={styles.rowLabel}>Email</Text>
               <View style={styles.rowRight}>
                 <Text style={styles.rowValue}>{emailShort}</Text>
+                <Text style={styles.chevron}>›</Text>
+              </View>
+            </Pressable>
+            <View style={styles.sep} />
+            <Pressable style={styles.row} onPress={handleChangeUsername}>
+              <Text style={styles.rowLabel}>Username</Text>
+              <View style={styles.rowRight}>
+                <Text style={styles.rowValue}>{username ? `@${username}` : ''}</Text>
                 <Text style={styles.chevron}>›</Text>
               </View>
             </Pressable>

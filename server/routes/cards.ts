@@ -5,7 +5,7 @@ import { db } from '../db';
 import { cards, cardFields, users } from '../db/schema';
 import { ensurePro } from '../util/revenuecat';
 import { normalizeQrLogo } from '../util/logoImage';
-import { slugify, uniqueSlug } from '../util/slugify';
+import { isReservedSlug, slugify, uniqueSlug } from '../util/slugify';
 import { isHexColor } from '../util/validate';
 
 // Icon is embedded unescaped into an <ion-icon name="..."> attribute on the
@@ -58,7 +58,7 @@ router.post('/', async (req, res) => {
   try {
     const userId = (req as any).userId as string;
     const { name, accentColor } = req.body as { name?: string; accentColor?: string };
-    if (!name) return res.status(400).json({ error: 'name required' });
+    if (!name?.trim()) return res.status(400).json({ error: 'Card name is required' });
     if (accentColor !== undefined && !isHexColor(accentColor)) {
       return res.status(400).json({ error: 'accentColor must be a #RRGGBB hex color' });
     }
@@ -81,7 +81,7 @@ router.post('/', async (req, res) => {
     const maxOrder = existing.reduce((m, c) => Math.max(m, c.displayOrder ?? 0), -1);
     const [created] = await db
       .insert(cards)
-      .values({ userId, name, accentColor: accentColor ?? '#C9973A', slug, displayOrder: maxOrder + 1 })
+      .values({ userId, name: name.trim(), accentColor: accentColor ?? '#C9973A', slug, displayOrder: maxOrder + 1 })
       .returning();
     res.status(201).json({ ...created, fields: [] });
   } catch (err: any) {
@@ -127,7 +127,23 @@ router.patch('/:id', async (req, res) => {
       if (!isHexColor(value)) return res.status(400).json({ error: `${field} must be a #RRGGBB hex color` });
     }
     const update: Partial<typeof cards.$inferInsert> = {};
-    if (name !== undefined) update.name = name;
+    if (name !== undefined) {
+      const trimmed = String(name).trim();
+      if (!trimmed) return res.status(400).json({ error: 'Card name is required' });
+      update.name = trimmed;
+      // The card's link is /username/<name>, so renaming re-derives the slug —
+      // unless the owner set a custom one (Pro), which a rename must not undo.
+      const current = await db.query.cards.findFirst({ where: and(eq(cards.id, id), eq(cards.userId, userId)) });
+      if (current && trimmed !== current.name && slug === undefined) {
+        const oldBase = slugify(current.name);
+        const wasAuto = !current.slug || (!!oldBase && (current.slug === oldBase || current.slug.startsWith(`${oldBase}-`)));
+        if (wasAuto) {
+          const siblings = await db.select().from(cards).where(eq(cards.userId, userId));
+          const taken = new Set(siblings.filter((c) => c.id !== id).map((c) => c.slug).filter((x): x is string => !!x));
+          update.slug = uniqueSlug(slugify(trimmed) || Math.random().toString(36).slice(2, 8), taken);
+        }
+      }
+    }
     if (displayName !== undefined) update.displayName = displayName;
     if (accentColor !== undefined) update.accentColor = accentColor;
     if (font !== undefined) update.font = font;
@@ -142,6 +158,7 @@ router.patch('/:id', async (req, res) => {
       if (!/^[a-z0-9-]{3,30}$/.test(clean)) {
         return res.status(400).json({ error: 'URL can use 3–30 lowercase letters, numbers, and dashes' });
       }
+      if (isReservedSlug(clean)) return res.status(400).json({ error: 'That URL is reserved' });
       update.slug = clean;
     }
     const [updated] = await db

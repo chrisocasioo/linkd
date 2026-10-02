@@ -9,12 +9,19 @@ export function slugify(input: string): string {
     .slice(0, 30);
 }
 
+// `/:username/vcard` is a real route, so a card can't claim that slug.
+const RESERVED_SLUGS = new Set(['vcard']);
+
+export function isReservedSlug(slug: string): boolean {
+  return RESERVED_SLUGS.has(slug);
+}
+
 /** Appends -2, -3, ... until `taken` no longer has the candidate */
 export function uniqueSlug(base: string, taken: Set<string>): string {
-  if (!taken.has(base)) return base;
+  if (!taken.has(base) && !isReservedSlug(base)) return base;
   let n = 2;
   let candidate = `${base}-${n}`.slice(0, 30);
-  while (taken.has(candidate)) {
+  while (taken.has(candidate) || isReservedSlug(candidate)) {
     n += 1;
     candidate = `${base}-${n}`.slice(0, 30);
   }

@@ -37,6 +37,9 @@ export default function OnboardingScreen() {
   const [phone, setPhone] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [loadingUser, setLoadingUser] = useState(true);
+  const [username, setUsername] = useState('');
+  const [usernameTouched, setUsernameTouched] = useState(false);
+  const [usernameStatus, setUsernameStatus] = useState<'idle' | 'checking' | 'ok' | 'taken' | 'invalid'>('idle');
 
   useEffect(() => {
     api.getMe().then((u) => {
@@ -50,6 +53,7 @@ export default function OnboardingScreen() {
         // provider already gave, so skip straight past the name step
         // instead of just pre-filling it. Still reachable via the back
         // arrow on step 1 if someone wants to edit it.
+        setUsername((parts[0] ?? '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 20) || 'user');
         setStep(1);
       }
       // Every sign-up path (Apple, Google, or email/password) already gives
@@ -60,6 +64,29 @@ export default function OnboardingScreen() {
       if (u.email) { setEmail(u.email); setHasKnownEmail(true); }
     }).catch(() => {}).finally(() => setLoadingUser(false));
   }, []);
+
+  // Suggest a username from the first name until the person edits it themselves
+  const suggestUsername = () => (firstName.trim().toLowerCase().replace(/[^a-z0-9]/g, '') || 'user').slice(0, 20);
+  const goToUsernameStep = () => {
+    if (!usernameTouched) setUsername(suggestUsername());
+    setStep(1);
+  };
+
+  useEffect(() => {
+    if (step !== 1 || !username) { setUsernameStatus('idle'); return; }
+    if (!/^[a-z0-9_-]{3,30}$/.test(username)) { setUsernameStatus('invalid'); return; }
+    setUsernameStatus('checking');
+    let cancelled = false;
+    const t = setTimeout(async () => {
+      try {
+        const { available } = await api.checkUsername(username);
+        if (!cancelled) setUsernameStatus(available ? 'ok' : 'taken');
+      } catch {
+        if (!cancelled) setUsernameStatus('idle');
+      }
+    }, 400);
+    return () => { cancelled = true; clearTimeout(t); };
+  }, [username, step]);
 
   const pickPhoto = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -93,12 +120,6 @@ export default function OnboardingScreen() {
         await api.uploadPhoto(photoUri);
       }
 
-      const base = (firstName.trim().toLowerCase().replace(/[^a-z0-9]/g, '') || 'user').slice(0, 20);
-      let username = base;
-      try {
-        const { available } = await api.checkUsername(base);
-        if (!available) username = base.slice(0, 16) + Math.floor(1000 + Math.random() * 9000);
-      } catch {}
       await api.updateMe({ username });
 
       const workCard = await api.addCard({ name: 'Work', accentColor: '#C9973A' });
@@ -137,6 +158,7 @@ export default function OnboardingScreen() {
     renderStep1,
     renderStep2,
     renderStep3,
+    renderStep4,
   ];
 
   function renderStep0() {
@@ -179,7 +201,7 @@ export default function OnboardingScreen() {
         </View>
         <Pressable
           style={[styles.continueBtn, !firstName.trim() && styles.continueBtnDim]}
-          onPress={() => firstName.trim() && setStep(1)}
+          onPress={() => firstName.trim() && goToUsernameStep()}
           disabled={!firstName.trim()}
         >
           <Text style={styles.continueBtnText}>Continue</Text>
@@ -189,6 +211,50 @@ export default function OnboardingScreen() {
   }
 
   function renderStep1() {
+    const canContinue = usernameStatus === 'ok' || usernameStatus === 'idle';
+    const statusText =
+      usernameStatus === 'checking' ? 'Checking…'
+      : usernameStatus === 'ok' ? 'Available'
+      : usernameStatus === 'taken' ? 'That username is taken'
+      : usernameStatus === 'invalid' ? '3–30 characters: letters, numbers, _ or -'
+      : '';
+    return (
+      <>
+        <Text style={styles.stepTitle}>Choose your{'\n'}link</Text>
+        <Text style={styles.stepSub}>This is how people find your cards. You can change it later in Settings.</Text>
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputLabel}>USERNAME</Text>
+          <TextInput
+            style={styles.input}
+            value={username}
+            onChangeText={(v) => { setUsernameTouched(true); setUsername(v.toLowerCase().replace(/\s/g, '')); }}
+            placeholder="username"
+            placeholderTextColor={COLORS.textTertiary}
+            autoCapitalize="none"
+            autoCorrect={false}
+            maxLength={30}
+          />
+          <Text style={{ marginTop: 8, fontSize: 13, color: COLORS.textTertiary }}>
+            {`linkd.biz/${username || 'username'}/work`}
+          </Text>
+          {!!statusText && (
+            <Text style={{ marginTop: 4, fontSize: 13, color: usernameStatus === 'ok' ? COLORS.accent : COLORS.textSecondary }}>
+              {statusText}
+            </Text>
+          )}
+        </View>
+        <Pressable
+          style={[styles.continueBtn, (!username || !canContinue) && styles.continueBtnDim]}
+          onPress={() => username && canContinue && setStep(2)}
+          disabled={!username || !canContinue}
+        >
+          <Text style={styles.continueBtnText}>Continue</Text>
+        </Pressable>
+      </>
+    );
+  }
+
+  function renderStep2() {
     return (
       <>
         <Text style={styles.stepTitle}>Tell us about{'\n'}your work</Text>
@@ -215,12 +281,12 @@ export default function OnboardingScreen() {
             autoCorrect={false}
           />
         </View>
-        <Pressable style={styles.continueBtn} onPress={() => setStep(2)}>
+        <Pressable style={styles.continueBtn} onPress={() => setStep(3)}>
           <Text style={styles.continueBtnText}>Continue</Text>
         </Pressable>
         <Pressable
           style={styles.skipBtn}
-          onPress={() => { setJobTitle(''); setCompany(''); setStep(2); }}
+          onPress={() => { setJobTitle(''); setCompany(''); setStep(3); }}
         >
           <Text style={styles.skipBtnText}>Skip</Text>
         </Pressable>
@@ -228,7 +294,7 @@ export default function OnboardingScreen() {
     );
   }
 
-  function renderStep2() {
+  function renderStep3() {
     return (
       <>
         <Text style={styles.stepTitle}>Make your card{'\n'}stand out</Text>
@@ -243,12 +309,12 @@ export default function OnboardingScreen() {
             </View>
           )}
         </Pressable>
-        <Pressable style={styles.continueBtn} onPress={() => setStep(3)}>
+        <Pressable style={styles.continueBtn} onPress={() => setStep(4)}>
           <Text style={styles.continueBtnText}>Continue</Text>
         </Pressable>
         <Pressable
           style={styles.skipBtn}
-          onPress={() => { setPhotoUri(null); setStep(3); }}
+          onPress={() => { setPhotoUri(null); setStep(4); }}
         >
           <Text style={styles.skipBtnText}>Skip</Text>
         </Pressable>
@@ -256,7 +322,7 @@ export default function OnboardingScreen() {
     );
   }
 
-  function renderStep3() {
+  function renderStep4() {
     return (
       <>
         <Text style={styles.stepTitle}>Almost done!</Text>
@@ -316,7 +382,7 @@ export default function OnboardingScreen() {
         <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
           {/* Progress bar */}
           <View style={styles.progressBar}>
-            {[0, 1, 2, 3].map((i) => (
+            {[0, 1, 2, 3, 4].map((i) => (
               <View
                 key={i}
                 style={[styles.progressSegment, i <= step && styles.progressSegmentActive]}

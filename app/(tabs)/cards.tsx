@@ -250,6 +250,7 @@ export default function CardScreen() {
         visible={showSettings}
         onClose={() => setShowSettings(false)}
         onShowPaywall={() => setShowPaywall(true)}
+        onUsernameChanged={fetchFresh}
       />
       <PaywallSheet visible={showPaywall} onClose={() => setShowPaywall(false)} />
     </SafeAreaView>

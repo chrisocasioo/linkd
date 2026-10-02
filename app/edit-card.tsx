@@ -24,6 +24,8 @@ import { APP_FIELD_DISPLAY } from '../lib/appField';
 import { useRevenueCat } from '../lib/RevenueCatContext';
 import { syncWidgetData } from '../lib/widgetSync';
 import { COLORS, FONTS } from '../constants/colors';
+import { SHARE_BASE } from '../constants/config';
+import { slugify } from '../lib/slugify';
 import { QR_DEFAULT_BG_COLOR, QR_DEFAULT_COLOR, QR_DEFAULT_LOGO } from '../constants/qrDefaults';
 
 const ACCENT_COLORS = ['#C9973A', '#7C3AED', '#22C55E', '#F43F5E', '#0EA5E9', '#EC4899'];
@@ -225,7 +227,8 @@ export default function EditCardScreen() {
         if (!found) { router.back(); return; }
         setUser(u);
         setCard(found);
-        setCardName(found.name);
+        // A brand-new card starts blank: its name becomes its link, so it has to be chosen
+        setCardName(isNew === 'true' ? '' : found.name);
         setAccent(found.accentColor);
         setCardFont(found.font ?? 'dm-sans');
         setQrColor(found.qrColor ?? QR_DEFAULT_COLOR);
@@ -309,6 +312,10 @@ export default function EditCardScreen() {
       Alert.alert('Add your name', 'Enter at least a first name before saving.');
       return;
     }
+    if (!cardName.trim()) {
+      Alert.alert('Name your card', 'Your card’s name is part of its link, so it can’t be empty.');
+      return;
+    }
     const contactFieldCount = card!.fields.filter((f) => !INFO_TYPES.has(f.type)).length;
     if (contactFieldCount === 0) {
       Alert.alert('Add a field', 'Add at least one field (phone, email, etc.) on the Fields tab before saving.');
@@ -327,7 +334,7 @@ export default function EditCardScreen() {
       // All independent — run in parallel instead of paying each round trip in sequence
       const ops: Promise<unknown>[] = [
         api.updateCard(cardId, {
-          name: cardName.trim() || 'Card',
+          name: cardName.trim(),
           displayName,
           accentColor: accent,
           font: cardFont,
@@ -518,6 +525,11 @@ export default function EditCardScreen() {
                   placeholderTextColor={COLORS.textTertiary}
                   maxLength={30}
                 />
+                {!!slugify(cardName) && !!user.username && (
+                  <Text style={styles.linkPreview} numberOfLines={1}>
+                    {`${SHARE_BASE}/${user.username}/${slugify(cardName)}`}
+                  </Text>
+                )}
 
                 <Text style={[styles.label, { marginTop: 20 }]}>Accent Color</Text>
                 <View style={styles.colorRow}>
@@ -990,6 +1002,7 @@ export default function EditCardScreen() {
 }
 
 const styles = StyleSheet.create({
+  linkPreview: { marginTop: 8, fontSize: 12, color: COLORS.textTertiary },
   safe: { flex: 1, backgroundColor: COLORS.bg },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 

@@ -4,7 +4,7 @@ import { db } from '../db';
 import { clerk, evictSyncedUser } from '../middleware/auth';
 import { users } from '../db/schema';
 import { purgeUserAssets } from '../util/purgeUserAssets';
-import { isHexColor } from '../util/validate';
+import { isHexColor, isReservedUsername } from '../util/validate';
 
 const router = Router();
 
@@ -24,6 +24,7 @@ router.get('/me/check-username/:username', async (req, res) => {
     if (!USERNAME_RE.test(raw)) {
       return res.json({ available: false, error: 'Invalid format' });
     }
+    if (isReservedUsername(raw)) return res.json({ available: false, error: 'That username is reserved' });
     const existing = await db.query.users.findFirst({
       where: and(eq(users.username, raw), ne(users.id, userId)),
     });
@@ -59,6 +60,7 @@ router.patch('/me', async (req, res) => {
       if (!USERNAME_RE.test(normalized)) {
         return res.status(400).json({ error: 'Username must be 3–30 characters: letters, numbers, _ or -' });
       }
+      if (isReservedUsername(normalized)) return res.status(400).json({ error: 'That username is reserved' });
       const conflict = await db.query.users.findFirst({
         where: and(eq(users.username, normalized), ne(users.id, userId)),
       });
