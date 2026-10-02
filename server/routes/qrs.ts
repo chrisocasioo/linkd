@@ -3,7 +3,6 @@ import { and, eq } from 'drizzle-orm';
 import { Router } from 'express';
 import { db } from '../db';
 import { savedQrs } from '../db/schema';
-import { normalizeQrLogo } from '../util/logoImage';
 
 const s3 = new S3Client({
   region: process.env.AWS_REGION ?? 'auto',
@@ -97,22 +96,17 @@ router.post('/:id/logo', async (req, res) => {
     const qr = await db.query.savedQrs.findFirst({ where: and(eq(savedQrs.id, qrId), eq(savedQrs.userId, userId)) });
     if (!qr) return res.status(404).json({ error: 'QR code not found' });
 
-    const { photo: base64 } = req.body as { photo?: string };
+    const { photo: base64, mimeType = 'image/jpeg' } = req.body as { photo?: string; mimeType?: string };
     if (!base64) return res.status(400).json({ error: 'No photo provided' });
 
-    let buffer: Buffer;
-    try {
-      buffer = await normalizeQrLogo(Buffer.from(base64, 'base64'));
-    } catch {
-      return res.status(400).json({ error: 'That file isn\u2019t a readable image' });
-    }
+    const buffer = Buffer.from(base64, 'base64');
     const bucket = process.env.BUCKET_NAME ?? process.env.BUCKET ?? '';
     await s3.send(
       new PutObjectCommand({
         Bucket: bucket,
         Key: `qrs/${qrId}-logo.jpg`,
         Body: buffer,
-        ContentType: 'image/png',
+        ContentType: mimeType,
       })
     );
 

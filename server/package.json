@@ -19,7 +19,6 @@
     "multer": "^2.2.0",
     "passkit-generator": "^3.5.7",
     "pg": "^8.13.0",
-    "sharp": "^0.35.5",
     "svix": "^1.40.0",
     "tsx": "^4.19.0",
     "typescript": "~5.3.3"
