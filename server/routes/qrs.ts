@@ -3,6 +3,7 @@ import { and, eq } from 'drizzle-orm';
 import { Router } from 'express';
 import { db } from '../db';
 import { savedQrs } from '../db/schema';
+import { normalizeQrLogo } from '../util/logoImage';
 
 const s3 = new S3Client({
   region: process.env.AWS_REGION ?? 'auto',
@@ -99,14 +100,15 @@ router.post('/:id/logo', async (req, res) => {
     const { photo: base64, mimeType = 'image/jpeg' } = req.body as { photo?: string; mimeType?: string };
     if (!base64) return res.status(400).json({ error: 'No photo provided' });
 
-    const buffer = Buffer.from(base64, 'base64');
+    const logo = await normalizeQrLogo(Buffer.from(base64, 'base64'));
+    if (!logo.ok) return res.status(400).json({ error: 'That file isn\u2019t a readable image' });
     const bucket = process.env.BUCKET_NAME ?? process.env.BUCKET ?? '';
     await s3.send(
       new PutObjectCommand({
         Bucket: bucket,
         Key: `qrs/${qrId}-logo.jpg`,
-        Body: buffer,
-        ContentType: mimeType,
+        Body: logo.buffer,
+        ContentType: logo.contentType ?? mimeType,
       })
     );
 

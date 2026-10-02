@@ -4,6 +4,7 @@ import { Router } from 'express';
 import { db } from '../db';
 import { cards, cardFields, users } from '../db/schema';
 import { ensurePro } from '../util/revenuecat';
+import { normalizeQrLogo } from '../util/logoImage';
 import { slugify, uniqueSlug } from '../util/slugify';
 import { isHexColor } from '../util/validate';
 
@@ -200,14 +201,15 @@ router.post('/:id/qr-logo', async (req, res) => {
     const { photo: base64, mimeType = 'image/jpeg' } = req.body as { photo?: string; mimeType?: string };
     if (!base64) return res.status(400).json({ error: 'No photo provided' });
 
-    const buffer = Buffer.from(base64, 'base64');
+    const logo = await normalizeQrLogo(Buffer.from(base64, 'base64'));
+    if (!logo.ok) return res.status(400).json({ error: 'That file isn\u2019t a readable image' });
     const bucket = process.env.BUCKET_NAME ?? process.env.BUCKET ?? '';
     await s3.send(
       new PutObjectCommand({
         Bucket: bucket,
         Key: `cards/${cardId}-qr-logo.jpg`,
-        Body: buffer,
-        ContentType: mimeType,
+        Body: logo.buffer,
+        ContentType: logo.contentType ?? mimeType,
       })
     );
 
