@@ -179,18 +179,18 @@ export default function OnboardingScreen() {
           />
         </View>
         <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>MIDDLE NAME</Text>
+          <Text style={styles.inputLabel}>MIDDLE NAME (OPTIONAL)</Text>
           <TextInput
             style={styles.input}
             value={middleName}
             onChangeText={setMiddleName}
-            placeholder="Middle name (optional)"
+            placeholder="Middle name"
             placeholderTextColor={COLORS.textTertiary}
             autoCorrect={false}
           />
         </View>
         <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>LAST NAME</Text>
+          <Text style={styles.inputLabel}>LAST NAME (OPTIONAL)</Text>
           <TextInput
             style={styles.input}
             value={lastName}
@@ -261,7 +261,7 @@ export default function OnboardingScreen() {
         <Text style={styles.stepTitle}>Tell us about{'\n'}your work</Text>
         <Text style={styles.stepSub}>We'll add this to your Work card.</Text>
         <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>JOB TITLE</Text>
+          <Text style={styles.inputLabel}>JOB TITLE (OPTIONAL)</Text>
           <TextInput
             style={styles.input}
             value={jobTitle}
@@ -272,7 +272,7 @@ export default function OnboardingScreen() {
           />
         </View>
         <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>COMPANY</Text>
+          <Text style={styles.inputLabel}>COMPANY (OPTIONAL)</Text>
           <TextInput
             style={styles.input}
             value={company}
@@ -306,7 +306,7 @@ export default function OnboardingScreen() {
           ) : (
             <View style={styles.photoPlaceholder}>
               <Ionicons name="camera-outline" size={32} color={COLORS.textSecondary} />
-              <Text style={styles.photoPlaceholderText}>Tap to add photo</Text>
+              <Text style={styles.photoPlaceholderText}>Tap to add photo (optional)</Text>
             </View>
           )}
         </Pressable>
@@ -329,7 +329,7 @@ export default function OnboardingScreen() {
         <Text style={styles.stepTitle}>Almost done!</Text>
         <Text style={styles.stepSub}>How can people reach you?</Text>
         <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>EMAIL</Text>
+          <Text style={styles.inputLabel}>{hasKnownEmail ? 'EMAIL' : 'EMAIL (OPTIONAL)'}</Text>
           {hasKnownEmail ? (
             <View style={styles.staticField}>
               <Ionicons name="checkmark-circle" size={16} color={COLORS.textSecondary} />
@@ -349,7 +349,7 @@ export default function OnboardingScreen() {
           )}
         </View>
         <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>PHONE</Text>
+          <Text style={styles.inputLabel}>PHONE (OPTIONAL)</Text>
           <TextInput
             style={styles.input}
             value={phone}
