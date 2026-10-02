@@ -31,7 +31,7 @@ const PORT = process.env.PORT ?? 3000;
 
 app.use(cors());
 
-app.get('/health', (_req, res) => res.json({ status: 'ok' }));
+app.get('/health', (_req, res) => res.json({ status: 'ok', node: process.version }));
 
 // 1. Clerk webhook — raw body, no auth
 app.post(
