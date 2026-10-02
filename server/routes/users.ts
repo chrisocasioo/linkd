@@ -2,13 +2,20 @@ import { eq, ne, and } from 'drizzle-orm';
 import { Router } from 'express';
 import { db } from '../db';
 import { clerk, evictSyncedUser } from '../middleware/auth';
-import { users } from '../db/schema';
+import { usernameAliases, users } from '../db/schema';
 import { purgeUserAssets } from '../util/purgeUserAssets';
 import { isHexColor, isReservedUsername } from '../util/validate';
 
 const router = Router();
 
 const USERNAME_RE = /^[a-z0-9_-]{3,30}$/;
+
+// A retired username keeps redirecting to its old owner, so nobody else may
+// claim it (they'd inherit every old link and QR code).
+async function aliasHeldByOther(username: string, userId: string): Promise<boolean> {
+  const alias = await db.query.usernameAliases.findFirst({ where: eq(usernameAliases.username, username) });
+  return !!alias && alias.userId !== userId;
+}
 
 router.get('/me', async (req, res) => {
   const userId = (req as any).userId as string;
@@ -28,7 +35,7 @@ router.get('/me/check-username/:username', async (req, res) => {
     const existing = await db.query.users.findFirst({
       where: and(eq(users.username, raw), ne(users.id, userId)),
     });
-    res.json({ available: !existing });
+    res.json({ available: !existing && !(await aliasHeldByOther(raw, userId)) });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
@@ -64,8 +71,16 @@ router.patch('/me', async (req, res) => {
       const conflict = await db.query.users.findFirst({
         where: and(eq(users.username, normalized), ne(users.id, userId)),
       });
-      if (conflict) return res.status(409).json({ error: 'Username already taken' });
+      if (conflict || (await aliasHeldByOther(normalized, userId))) {
+        return res.status(409).json({ error: 'Username already taken' });
+      }
       update.username = normalized;
+      const current = await db.query.users.findFirst({ where: eq(users.id, userId) });
+      if (current?.username && current.username !== normalized) {
+        await db.insert(usernameAliases).values({ username: current.username, userId }).onConflictDoNothing();
+      }
+      // Taking an old name back ends its redirect
+      await db.delete(usernameAliases).where(eq(usernameAliases.username, normalized));
     }
 
     const [updated] = await db.update(users).set(update).where(eq(users.id, userId)).returning();

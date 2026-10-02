@@ -2,7 +2,7 @@ import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { and, asc, eq } from 'drizzle-orm';
 import { Router } from 'express';
 import { db } from '../db';
-import { cards, cardFields, users } from '../db/schema';
+import { cards, cardFields, cardSlugAliases, users } from '../db/schema';
 import { ensurePro } from '../util/revenuecat';
 import { normalizeQrLogo } from '../util/logoImage';
 import { isReservedSlug, slugify, uniqueSlug } from '../util/slugify';
@@ -24,6 +24,26 @@ const s3 = new S3Client({
 });
 
 const router = Router();
+
+/** Slugs this user can't hand out: live ones plus retired ones still redirecting. */
+async function takenSlugs(userId: string, exceptCardId?: string): Promise<Set<string>> {
+  const [live, aliases] = await Promise.all([
+    db.select().from(cards).where(eq(cards.userId, userId)),
+    db.select().from(cardSlugAliases).where(eq(cardSlugAliases.userId, userId)),
+  ]);
+  const taken = new Set<string>();
+  for (const c of live) if (c.id !== exceptCardId && c.slug) taken.add(c.slug);
+  for (const a of aliases) if (a.cardId !== exceptCardId) taken.add(a.slug);
+  return taken;
+}
+
+/** Retire a card's old slug as a redirect, and drop any alias for the slug it now holds. */
+async function recordSlugChange(userId: string, cardId: string, oldSlug: string | null, newSlug: string) {
+  if (oldSlug && oldSlug !== newSlug) {
+    await db.insert(cardSlugAliases).values({ userId, slug: oldSlug, cardId }).onConflictDoNothing();
+  }
+  await db.delete(cardSlugAliases).where(and(eq(cardSlugAliases.userId, userId), eq(cardSlugAliases.slug, newSlug)));
+}
 
 async function getCardsWithFields(userId: string) {
   const userCards = await db
@@ -75,8 +95,7 @@ router.post('/', async (req, res) => {
     // Readable slug from the card name (e.g. "Work" -> "work"); falls back to
     // a random code for names with no latin/number characters to slugify
     const base = slugify(name) || Math.random().toString(36).slice(2, 8);
-    const taken = new Set(existing.map((c) => c.slug).filter((s): s is string => !!s));
-    const slug = uniqueSlug(base, taken);
+    const slug = uniqueSlug(base, await takenSlugs(userId));
     // existing.length collides with surviving orders after a delete; always append past the max
     const maxOrder = existing.reduce((m, c) => Math.max(m, c.displayOrder ?? 0), -1);
     const [created] = await db
@@ -138,9 +157,7 @@ router.patch('/:id', async (req, res) => {
         const oldBase = slugify(current.name);
         const wasAuto = !current.slug || (!!oldBase && (current.slug === oldBase || current.slug.startsWith(`${oldBase}-`)));
         if (wasAuto) {
-          const siblings = await db.select().from(cards).where(eq(cards.userId, userId));
-          const taken = new Set(siblings.filter((c) => c.id !== id).map((c) => c.slug).filter((x): x is string => !!x));
-          update.slug = uniqueSlug(slugify(trimmed) || Math.random().toString(36).slice(2, 8), taken);
+          update.slug = uniqueSlug(slugify(trimmed) || Math.random().toString(36).slice(2, 8), await takenSlugs(userId, id));
         }
       }
     }
@@ -159,14 +176,19 @@ router.patch('/:id', async (req, res) => {
         return res.status(400).json({ error: 'URL can use 3–30 lowercase letters, numbers, and dashes' });
       }
       if (isReservedSlug(clean)) return res.status(400).json({ error: 'That URL is reserved' });
+      if ((await takenSlugs(userId, id)).has(clean)) return res.status(409).json({ error: 'That URL is already taken' });
       update.slug = clean;
     }
+    const before = update.slug !== undefined
+      ? await db.query.cards.findFirst({ where: and(eq(cards.id, id), eq(cards.userId, userId)) })
+      : undefined;
     const [updated] = await db
       .update(cards)
       .set(update)
       .where(and(eq(cards.id, id), eq(cards.userId, userId)))
       .returning();
     if (!updated) return res.status(404).json({ error: 'Card not found' });
+    if (typeof update.slug === 'string' && before) await recordSlugChange(userId, id, before.slug, update.slug);
     const fields = await db.select().from(cardFields).where(eq(cardFields.cardId, id)).orderBy(asc(cardFields.displayOrder));
     res.json({ ...updated, fields });
   } catch (err: any) {

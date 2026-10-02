@@ -218,5 +218,22 @@ export async function runMigrations() {
   await db.execute(sql`
     ALTER TABLE cards ADD COLUMN IF NOT EXISTS display_name TEXT;
   `);
+  // Old usernames / card slugs keep redirecting to the current ones after a
+  // rename. They point at the owner (not the new name), so a chain of renames
+  // all resolves to wherever the card/user lives now.
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS username_aliases (
+      username TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      created_at TIMESTAMP DEFAULT NOW()
+    );
+    CREATE TABLE IF NOT EXISTS card_slug_aliases (
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      slug TEXT NOT NULL,
+      card_id UUID NOT NULL REFERENCES cards(id) ON DELETE CASCADE,
+      created_at TIMESTAMP DEFAULT NOW(),
+      PRIMARY KEY (user_id, slug)
+    );
+  `);
   console.log('✓ Database tables ready');
 }

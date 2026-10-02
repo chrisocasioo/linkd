@@ -1,7 +1,7 @@
 import { asc, eq, and } from 'drizzle-orm';
 import { Router } from 'express';
 import { db } from '../db';
-import { cardFields, cards, cardViews, contacts, users } from '../db/schema';
+import { cardFields, cards, cardSlugAliases, cardViews, contacts, usernameAliases, users } from '../db/schema';
 import { formatPhone } from '../util/format';
 import { isSafeLink, safeHexColor } from '../util/validate';
 
@@ -380,11 +380,41 @@ router.post('/exchange/:cardId', async (req, res) => {
   }
 });
 
+// Renamed usernames / card slugs keep working: a live name always wins, and
+// otherwise a retired one resolves to its owner with `moved` set so the route
+// can redirect to the current URL.
+async function findUser(username: string) {
+  const user = await db.query.users.findFirst({ where: eq(users.username, username) });
+  if (user) return { user, moved: false };
+  const alias = await db.query.usernameAliases.findFirst({ where: eq(usernameAliases.username, username) });
+  if (!alias) return { user: null, moved: false };
+  const owner = await db.query.users.findFirst({ where: eq(users.id, alias.userId) });
+  return { user: owner ?? null, moved: !!owner };
+}
+
+async function findCard(userId: string, slug: string) {
+  const card = await db.query.cards.findFirst({ where: and(eq(cards.userId, userId), eq(cards.slug, slug)) });
+  if (card) return { card, moved: false };
+  const alias = await db.query.cardSlugAliases.findFirst({
+    where: and(eq(cardSlugAliases.userId, userId), eq(cardSlugAliases.slug, slug)),
+  });
+  if (!alias) return { card: null, moved: false };
+  const target = await db.query.cards.findFirst({ where: and(eq(cards.id, alias.cardId), eq(cards.userId, userId)) });
+  return { card: target ?? null, moved: !!target };
+}
+
+function redirectTo(req: any, res: any, path: string) {
+  const qs = req.originalUrl.includes('?') ? req.originalUrl.slice(req.originalUrl.indexOf('?')) : '';
+  res.redirect(302, `${path}${qs}`);
+}
+
 router.get('/:username/vcard', async (req, res) => {
   try {
-    const { username } = req.params;
-    const user = await db.query.users.findFirst({ where: eq(users.username, username) });
+    const found = await findUser(req.params.username);
+    const user = found.user;
     if (!user) return res.status(404).send('Not found');
+    const username = user.username!;
+    if (found.moved) return redirectTo(req, res, `/${username}/vcard`);
     const [firstCard] = await db
       .select()
       .from(cards)
@@ -406,11 +436,14 @@ router.get('/:username/vcard', async (req, res) => {
 // Card-specific vCard — the Add to Contacts button on each public card
 router.get('/:username/:slug/vcard', async (req, res) => {
   try {
-    const { username, slug } = req.params;
-    const user = await db.query.users.findFirst({ where: eq(users.username, username) });
+    const foundUser = await findUser(req.params.username);
+    const user = foundUser.user;
     if (!user) return res.status(404).send('Not found');
-    const card = await db.query.cards.findFirst({ where: and(eq(cards.userId, user.id), eq(cards.slug, slug)) });
+    const username = user.username!;
+    const foundCard = await findCard(user.id, req.params.slug);
+    const card = foundCard.card;
     if (!card) return res.status(404).send('Not found');
+    if (foundUser.moved || foundCard.moved) return redirectTo(req, res, `/${username}/${card.slug}/vcard`);
     const fields = await db
       .select()
       .from(cardFields)
@@ -427,11 +460,14 @@ router.get('/:username/:slug/vcard', async (req, res) => {
 
 router.get('/:username/:slug', async (req, res) => {
   try {
-    const { username, slug } = req.params;
-    const user = await db.query.users.findFirst({ where: eq(users.username, username) });
+    const foundUser = await findUser(req.params.username);
+    const user = foundUser.user;
     if (!user) return res.status(404).send('<!DOCTYPE html><html><body><h1>Card not found</h1></body></html>');
-    const card = await db.query.cards.findFirst({ where: and(eq(cards.userId, user.id), eq(cards.slug, slug)) });
+    const username = user.username!;
+    const foundCard = await findCard(user.id, req.params.slug);
+    const card = foundCard.card;
     if (!card) return res.status(404).send('<!DOCTYPE html><html><body><h1>Card not found</h1></body></html>');
+    if (foundUser.moved || foundCard.moved) return redirectTo(req, res, `/${username}/${card.slug}`);
     const fields = await db
       .select()
       .from(cardFields)
@@ -452,9 +488,11 @@ router.get('/:username/:slug', async (req, res) => {
 
 router.get('/:username', async (req, res) => {
   try {
-    const { username } = req.params;
-    const user = await db.query.users.findFirst({ where: eq(users.username, username) });
+    const found = await findUser(req.params.username);
+    const user = found.user;
     if (!user) return res.status(404).send('<!DOCTYPE html><html><body><h1>Card not found</h1></body></html>');
+    const username = user.username!;
+    if (found.moved) return redirectTo(req, res, `/${username}`);
     const [firstCard] = await db
       .select()
       .from(cards)

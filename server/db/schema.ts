@@ -1,4 +1,4 @@
-import { boolean, integer, pgTable, text, timestamp, unique, uuid } from 'drizzle-orm/pg-core';
+import { boolean, integer, pgTable, primaryKey, text, timestamp, unique, uuid } from 'drizzle-orm/pg-core';
 
 export const users = pgTable('users', {
   id: text('id').primaryKey(),
@@ -157,3 +157,18 @@ export type CardField = typeof cardFields.$inferSelect;
 export type FieldClick = typeof fieldClicks.$inferSelect;
 export type Contact = typeof contacts.$inferSelect;
 export type ScanHistoryEntry = typeof scanHistory.$inferSelect;
+
+export const usernameAliases = pgTable('username_aliases', {
+  username: text('username').primaryKey(),
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
+export const cardSlugAliases = pgTable('card_slug_aliases', {
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  slug: text('slug').notNull(),
+  cardId: uuid('card_id').notNull().references(() => cards.id, { onDelete: 'cascade' }),
+  createdAt: timestamp('created_at').defaultNow(),
+}, (table) => ({
+  pk: primaryKey({ columns: [table.userId, table.slug] }),
+}));
