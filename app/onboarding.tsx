@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import { ensurePhotoAccess } from '../lib/photoAccess';
 import { useAuth } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
@@ -89,8 +90,8 @@ export default function OnboardingScreen() {
   }, [username, step]);
 
   const pickPhoto = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
+    const granted = await ensurePhotoAccess();
+    if (!granted) {
       Alert.alert('Permission required', 'Please allow access to your photo library.');
       return;
     }

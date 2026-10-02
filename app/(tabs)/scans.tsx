@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import { ensurePhotoAccess } from '../../lib/photoAccess';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
@@ -359,6 +360,8 @@ export default function ScansScreen() {
   const pickFromLibrary = async () => {
     if (atCardScanLimit) { setShowPaywall(true); return; }
     clearInterval(intervalRef.current);
+    // Picker works without permission; this only surfaces the limited-access prompt up front
+    await ensurePhotoAccess();
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'] as any,
       allowsEditing: false,

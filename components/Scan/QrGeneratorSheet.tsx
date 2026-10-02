@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import { ensurePhotoAccess } from '../../lib/photoAccess';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -105,8 +106,8 @@ export function QrGeneratorSheet({ visible, onClose }: Props) {
   };
 
   const handlePickLogo = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
+    const granted = await ensurePhotoAccess();
+    if (!granted) {
       Alert.alert('Permission required', 'Allow photo library access to set a QR logo.');
       return;
     }

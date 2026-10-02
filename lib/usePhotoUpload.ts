@@ -1,4 +1,5 @@
 import * as ImagePicker from 'expo-image-picker';
+import { ensurePhotoAccess } from './photoAccess';
 import { useCallback, useState } from 'react';
 import { Alert } from 'react-native';
 import { useApi } from './api';
@@ -8,8 +9,8 @@ export function usePhotoUpload(onSuccess: (photoUrl: string) => void) {
   const [uploading, setUploading] = useState(false);
 
   const pick = useCallback(async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') return;
+    const granted = await ensurePhotoAccess();
+    if (!granted) return;
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'] as any,

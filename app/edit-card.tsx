@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import { ensurePhotoAccess } from '../lib/photoAccess';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
@@ -251,8 +252,8 @@ export default function EditCardScreen() {
   }, [cardId]);
 
   const handlePickPhoto = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
+    const granted = await ensurePhotoAccess();
+    if (!granted) {
       Alert.alert('Permission required', 'Allow photo library access to change your photo.');
       return;
     }
@@ -280,8 +281,8 @@ export default function EditCardScreen() {
   };
 
   const handlePickQrLogo = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
+    const granted = await ensurePhotoAccess();
+    if (!granted) {
       Alert.alert('Permission required', 'Allow photo library access to set a QR logo.');
       return;
     }
