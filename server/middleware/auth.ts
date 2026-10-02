@@ -55,12 +55,9 @@ export const requireAuth = async (req: Request, res: Response, next: NextFunctio
       try {
         clerkUser = await tokenClerk.users.getUser(userId);
       } catch (err: any) {
-        if (err?.status === 404) {
-          // Legacy-instance tokens (shipped builds mid-transition) stay
-          // accepted even when the profile lookup misses; log it for diagnosis.
-          if (tokenClerk === clerkLegacy) console.warn(`legacy Clerk getUser 404 for ${userId}; continuing`);
-          else return res.status(401).json({ error: 'Account no longer exists' });
-        }
+        // A 404 here has wrongly rejected real sign-ups, so never block on it:
+        // log for diagnosis and carry on with a placeholder row.
+        if (err?.status === 404) console.warn(`Clerk getUser 404 for ${userId} (iss ${(payload as any).iss}, legacy=${tokenClerk === clerkLegacy})`);
         // Any other failure (Clerk outage, network): carry on with a
         // placeholder row so the app still works, and retry the sync on the
         // next request.
