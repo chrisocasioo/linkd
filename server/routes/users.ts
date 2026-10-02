@@ -95,7 +95,7 @@ router.delete('/me', async (req, res) => {
 
     if (req.headers['x-linkd-delete-identity'] === 'server') {
       try {
-        await clerk.users.deleteUser(userId);
+        await ((req as any).clerkClient ?? clerk).users.deleteUser(userId);
       } catch (err: any) {
         // Already gone is fine (retry after a partial run)
         if (err?.status !== 404) {

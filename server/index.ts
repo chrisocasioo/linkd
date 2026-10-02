@@ -43,18 +43,22 @@ app.post(
       console.error('Clerk webhook rejected: CLERK_WEBHOOK_SECRET is not set');
       return res.status(503).json({ error: 'Webhook not configured' });
     }
-    const wh = new Webhook(webhookSecret);
     const headers = {
       'svix-id': req.headers['svix-id'] as string,
       'svix-timestamp': req.headers['svix-timestamp'] as string,
       'svix-signature': req.headers['svix-signature'] as string,
     };
+    // The old (development) Clerk instance keeps posting here with its own
+    // signing secret until it is retired — accept either.
+    const secrets = [webhookSecret, process.env.CLERK_WEBHOOK_SECRET_LEGACY ?? ''].filter(Boolean);
     let event: any;
-    try {
-      event = wh.verify(req.body, headers);
-    } catch {
-      return res.status(400).json({ error: 'Invalid webhook signature' });
+    for (const secret of secrets) {
+      try {
+        event = new Webhook(secret).verify(req.body, headers);
+        break;
+      } catch {}
     }
+    if (!event) return res.status(400).json({ error: 'Invalid webhook signature' });
 
     // Express 4 doesn't catch async throws — without this a DB/S3 error left
     // the request hanging and Clerk saw a timeout instead of a retryable 5xx.
