@@ -2,6 +2,7 @@ import { eq } from 'drizzle-orm';
 import cors from 'cors';
 import 'dotenv/config';
 import express, { NextFunction, Request, Response } from 'express';
+import path from 'path';
 import { Webhook } from 'svix';
 import { db } from './db';
 import { users } from './db/schema';
@@ -124,6 +125,17 @@ app.use('/api/scan-history', requireAuth, scanHistoryRouter);
 
 // 7. Analytics routes (POST /view is public; GET /me applies requireAuth internally)
 app.use('/api/analytics', analyticsRouter);
+
+// 7b. Marketing + legal pages on the brand domain (Google's OAuth consent screen
+// and Apple require a homepage and privacy policy on a domain we control).
+// Explicit file list only — before the public card catch-all so /privacy etc.
+// can't be read as usernames.
+const STATIC_DIR = path.join(__dirname, 'static');
+const sendPage = (file: string) => (_req: Request, res: Response) => res.sendFile(path.join(STATIC_DIR, file));
+app.get('/', sendPage('index.html'));
+app.get(['/privacy', '/privacy.html'], sendPage('privacy.html'));
+app.get(['/support', '/support.html'], sendPage('support.html'));
+app.get('/icon.png', sendPage('icon.png'));
 
 // 8. Apple Wallet passes — must precede the public catch-all (/:username/:slug)
 app.use('/', passRouter);

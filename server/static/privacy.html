@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Privacy Policy — Linkd</title>
+  <link rel="icon" href="/icon.png" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Pirata+One&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0D0D0F;
+      --bg-card: #141416;
+      --gold: #C9A84C;
+      --gold-dim: #a0832e;
+      --text: #F0EDE6;
+      --muted: #888880;
+      --border: #252525;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      line-height: 1.7;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(13, 13, 15, 0.92);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 5%;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .nav-logo {
+      font-family: 'Pirata One', cursive;
+      font-size: 1.5rem;
+      font-weight: 400;
+      letter-spacing: 0.02em;
+      color: var(--gold);
+      text-decoration: none;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 2rem;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover { color: var(--gold); }
+
+    /* ── CONTENT ── */
+    .page-header {
+      padding: 4rem 5% 2.5rem;
+      max-width: 760px;
+      margin: 0 auto;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .page-header .label {
+      font-size: 0.75rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 0.75rem;
+    }
+
+    .page-header h1 {
+      font-size: clamp(1.8rem, 5vw, 2.6rem);
+      font-weight: 700;
+      line-height: 1.15;
+      margin-bottom: 0.75rem;
+    }
+
+    .page-header .effective {
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+
+    .content {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 3rem 5% 5rem;
+    }
+
+    .content section {
+      margin-bottom: 3rem;
+    }
+
+    .content h2 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--gold);
+      margin-bottom: 0.75rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .content p {
+      color: #C8C5BC;
+      font-size: 0.95rem;
+      margin-bottom: 0.9rem;
+    }
+
+    .content p:last-child { margin-bottom: 0; }
+
+    .content a {
+      color: var(--gold);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    .content a:hover { color: #dfc068; }
+
+    /* ── FOOTER ── */
+    .divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 0 5%;
+    }
+
+    footer {
+      padding: 2.5rem 5%;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .footer-logo {
+      font-family: 'Pirata One', cursive;
+      font-size: 1.25rem;
+      font-weight: 400;
+      letter-spacing: 0.02em;
+      color: var(--gold);
+      text-decoration: none;
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+      list-style: none;
+    }
+
+    .footer-links a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 0.85rem;
+      transition: color 0.2s;
+    }
+
+    .footer-links a:hover { color: var(--gold); }
+
+    .footer-copy {
+      color: var(--muted);
+      font-size: 0.8rem;
+      width: 100%;
+    }
+
+    @media (max-width: 600px) {
+      nav { padding: 0 4%; }
+      .page-header, .content { padding-left: 4%; padding-right: 4%; }
+      footer { padding: 2rem 4%; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <a class="nav-logo" href="/">Linkd</a>
+    <ul class="nav-links">
+      <li><a href="/privacy">Privacy</a></li>
+      <li><a href="/support">Support</a></li>
+    </ul>
+  </nav>
+
+  <!-- HEADER -->
+  <div class="page-header">
+    <p class="label">Legal</p>
+    <h1>Privacy Policy</h1>
+    <p class="effective">Effective date: July 26, 2026 &nbsp;·&nbsp; Replaces all prior versions</p>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <section>
+      <h2>1. Information You Provide Directly</h2>
+
+      <p><strong>Account</strong></p>
+      <p>Your email address, and a password or sign-in via Google or Apple (handled by our authentication provider, Clerk). Your name, username, bio, and any app preferences (theme, accent color, font, button style). A profile photo, if you choose to add one. Linkd also assigns each account an internal user ID used to tie together your cards, contacts, and other data within Linkd's systems; this ID is not shared outside Linkd.</p>
+
+      <p><strong>Cards</strong></p>
+      <p>Linkd lets you build one or more digital business cards. For each card you create, we store whatever you choose to put on it: a display name, job title, company, department, headline, photo, accent color, font, and any contact fields you add (phone, email, website, social media handles, physical address, or custom fields) — plus QR code styling (color, background color, an optional logo) if you customize it.</p>
+      <p>This information is designed to be shared: it is shown on your public card page to anyone you send the link to or who scans your QR code. Don't put anything on a card you don't want a stranger who scans it to see.</p>
+
+      <p><strong>Contacts you save in Linkd</strong></p>
+      <p>Linkd includes its own address book, separate from your device's Contacts app. Entries can come from three places: you add one manually; you scan a physical business card with your camera (text recognition happens on-device, and the cropped card photo is kept with the contact so you can verify the parsed details); or someone viewing your public card page voluntarily fills out a "share your info" form and their submission is saved to your Linkd contacts.</p>
+
+      <p><strong>Scan history</strong></p>
+      <p>A log of business-card scans and QR code scans you perform in the app's Scan tab, so you can review your recent activity. For QR scans, we store the decoded content (a URL, Wi-Fi credentials, or plain text) and its format.</p>
+    </section>
+
+    <section>
+      <h2>2. Device Permissions</h2>
+
+      <p><strong>Camera</strong> — Used to scan physical business cards (text recognition happens on your device) and to scan QR codes. We do not access your camera at any other time.</p>
+
+      <p><strong>Photo Library</strong> — Used when you choose to set a profile photo, a card photo, or a QR code logo, and when you save a QR code image to your device.</p>
+
+      <p><strong>Contacts (your device's address book)</strong> — Used only to add entries to your device contacts when you explicitly choose to (for example, saving someone you scanned, or adding your own card as a contact). Linkd never reads, uploads, or otherwise accesses your existing device contacts.</p>
+    </section>
+
+    <section>
+      <h2>3. Analytics About Your Own Card</h2>
+      <p>If you have a Pro subscription (or are on the free tier's limited preview), Linkd shows you basic statistics about your own card: how many times your public card page was viewed, and how many times each field or link on it was tapped.</p>
+      <p>This is aggregate activity on content you published, not third-party ad tracking, and it is shown only to you about your own card. We do not use it to build advertising profiles, and we do not sell it.</p>
+    </section>
+
+    <section>
+      <h2>4. Payments and Subscriptions</h2>
+      <p>Linkd Pro is sold as an auto-renewing subscription through Apple's App Store. All payment processing is handled by Apple and by our subscription-management provider, <strong>RevenueCat</strong> — Linkd never sees or stores your payment card details. We store only whether your account currently has an active Pro subscription and an internal reference ID used to check that status with RevenueCat.</p>
+      <p>Apple and RevenueCat retain their own transaction and billing records under their own privacy policies and for as long as they are legally required to. These records exist independently of your Linkd account — deleting your Linkd account (see Section 6) does not affect them.</p>
+    </section>
+
+    <section>
+      <h2>5. Who We Share Information With</h2>
+      <p><strong>Clerk</strong> (authentication) — processes your sign-in and stores your account credentials on our behalf.</p>
+      <p><strong>Apple and RevenueCat</strong> (payments) — process subscription purchases, as described in Section 4.</p>
+      <p><strong>Hosting and storage providers</strong> — Railway (database and application server) and S3-compatible object storage (photos and logos) store data on our behalf under our instruction; they do not use it for their own purposes.</p>
+      <p><strong>Anyone you share your card with</strong> — your card's content is public by design once you share its link or QR code.</p>
+      <p>We do not sell your information, and we do not share it with advertisers or data brokers.</p>
+    </section>
+
+    <section>
+      <h2>6. Deleting Your Account</h2>
+      <p>You can delete your account at any time from Settings inside the app. Doing so permanently and immediately deletes:</p>
+      <p>— Your account and profile information.</p>
+      <p>— Every card you created and everything on it.</p>
+      <p>— Your saved contacts and scan history.</p>
+      <p>— Every photo and QR logo you uploaded.</p>
+      <p>This is a real deletion, not a deactivation, and it cannot be undone.</p>
+      <p>The one exception is records Apple and RevenueCat hold as processors of your payments — we do not control those systems. Linkd itself stores no payment or transaction records, so there is nothing of that kind for us to retain or delete.</p>
+    </section>
+
+    <section>
+      <h2>7. Children</h2>
+      <p>Linkd is not directed at children under 13, and we do not knowingly collect information from anyone under 13. If you believe we have inadvertently collected such information, contact us and we will delete it promptly.</p>
+    </section>
+
+    <section>
+      <h2>8. Security</h2>
+      <p>We use industry-standard measures (encrypted connections, access controls on our database and storage) to protect your information. No method of transmission or storage is 100% secure, and we cannot guarantee absolute security.</p>
+    </section>
+
+    <section>
+      <h2>9. Changes to This Policy</h2>
+      <p>If we make material changes to this policy, we'll update the effective date above. Continued use of Linkd after a change means you accept the updated policy.</p>
+    </section>
+
+    <section>
+      <h2>10. Contact Us</h2>
+      <p>Questions about this policy or your data? Email us at <a href="mailto:santrico.support@gmail.com">santrico.support@gmail.com</a>.</p>
+    </section>
+
+  </div>
+
+  <hr class="divider" />
+
+  <!-- FOOTER -->
+  <footer>
+    <a class="footer-logo" href="/">Linkd</a>
+    <ul class="footer-links">
+      <li><a href="/privacy">Privacy Policy</a></li>
+      <li><a href="/support">Support</a></li>
+    </ul>
+    <p class="footer-copy">&copy; 2026 Santrico Apps. All rights reserved.</p>
+  </footer>
+
+</body>
+</html>
