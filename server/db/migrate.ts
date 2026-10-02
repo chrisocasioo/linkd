@@ -136,6 +136,23 @@ export async function runMigrations() {
     await db.execute(sql`INSERT INTO schema_migrations (name) VALUES (${legacySlugMigration});`);
   }
 
+  // One-time, owner-requested: wipe the pre-launch test views/clicks recorded
+  // before owner traffic was excluded, so analytics start clean.
+  const analyticsResetMigration = 'owner_test_analytics_reset_v1';
+  const analyticsResetRan = await db.execute(sql`
+    SELECT 1 FROM schema_migrations WHERE name = ${analyticsResetMigration};
+  `);
+  if ((analyticsResetRan as any).rows.length === 0) {
+    const views = await db.execute(sql`
+      DELETE FROM card_views WHERE user_id IN (SELECT id FROM users WHERE username = 'chris') RETURNING 1;
+    `);
+    const clicks = await db.execute(sql`
+      DELETE FROM field_clicks WHERE user_id IN (SELECT id FROM users WHERE username = 'chris') RETURNING 1;
+    `);
+    console.log(`✓ Analytics reset: removed ${(views as any).rows.length} views, ${(clicks as any).rows.length} clicks`);
+    await db.execute(sql`INSERT INTO schema_migrations (name) VALUES (${analyticsResetMigration});`);
+  }
+
   // The lighter gold (#C9A84C) used to be the default card accent; the app
   // now uses a single gold (#C9973A) everywhere. Update the column default
   // for future inserts, then one-time-backfill cards still on the old shade.
