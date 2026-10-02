@@ -200,7 +200,15 @@ function buildCardHtml(user: UserRow, card: CardRow, fields: FieldRow[], usernam
       display: flex; flex-direction: column; align-items: center; gap: 20px;
     }
     .footer-text { font-size: 12px; color: rgba(255,255,255,0.4); }
-    .footer-badge { height: 42px; width: auto; }
+    .store-btn {
+      display: inline-flex; align-items: center; gap: 9px; height: 42px; padding: 0 16px;
+      background: #000; color: #C9973A; border: 1px solid #C9973A; border-radius: 9px;
+      text-decoration: none; line-height: 1;
+    }
+    .store-btn ion-icon { font-size: 24px; color: #C9973A; }
+    .store-btn span { display: flex; flex-direction: column; gap: 2px; text-align: left; }
+    .store-btn small { font-size: 9px; letter-spacing: 0.2px; }
+    .store-btn b { font-size: 16px; font-weight: 600; }
     .exchange { padding: 14px 18px 18px; border-top: 1px solid rgba(255,255,255,0.06); }
     .save-contact {
       display: block; width: 100%; padding: 13px; border-radius: 13px;
@@ -258,8 +266,9 @@ function buildCardHtml(user: UserRow, card: CardRow, fields: FieldRow[], usernam
   </div>
   <div class="footer">
     <span class="footer-text">Want a card like this? — Get Linkd</span>
-    <a href="${APP_STORE_URL}">
-      <img class="footer-badge" src="https://toolbox.marketingtools.apple.com/api/badges/download-on-the-app-store/black/en-us" alt="Download on the App Store" />
+    <a class="store-btn" href="${APP_STORE_URL}" aria-label="Download on the App Store">
+      <ion-icon name="logo-apple"></ion-icon>
+      <span><small>Download on the</small><b>App Store</b></span>
     </a>
   </div>
 <script>
