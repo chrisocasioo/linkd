@@ -24,7 +24,7 @@ export function isSafeLink(value: unknown): value is string {
 // to one of these would be shadowed by, or shadow, a real route.
 const RESERVED_USERNAMES = new Set([
   'api', 'health', 'privacy', 'support', 'terms', 'icon', 'favicon', 'robots', 'sitemap',
-  'pass', 'exchange', 'vcard', 'www', 'admin', 'app', 'linkd', 'static', 'assets', 'login',
+  'pass', 'exchange', 'vcard', 'www', 'admin', 'linkd', 'static', 'assets', 'login',
   'signin', 'signup', 'sign-in', 'sign-up', 'settings', 'about', 'help', 'contact', 'home',
   'download', 'pricing', 'legal', 'status', 'blog', 'null', 'undefined',
 ]);
