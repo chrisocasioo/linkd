@@ -1,6 +1,8 @@
 import { ExtensionStorage } from '@bacons/apple-targets';
 import * as FileSystem from 'expo-file-system/legacy';
 import { publicCardUrl } from '../constants/config';
+import { QR_DEFAULT_BG_COLOR, QR_DEFAULT_COLOR } from '../constants/qrDefaults';
+import { defaultQrLogoBase64 } from './qrDefaultLogo';
 import { Card, User } from './api';
 import { buildVcard } from './vcard';
 
@@ -57,9 +59,9 @@ export async function syncWidgetData(cards: Card[], user: User | null, username:
         // Applies the card's actual QR branding instead of a hardcoded
         // black-on-white QR — no reason the widget should look different
         // from what the user configured in the app.
-        qrColor: c.qrColor ?? '#000000',
-        qrBgColor: c.qrBgColor ?? '#FFFFFF',
-        qrLogoBase64: c.qrLogo ? await fetchLogoBase64(c.qrLogo) : '',
+        qrColor: c.qrColor ?? QR_DEFAULT_COLOR,
+        qrBgColor: c.qrBgColor ?? QR_DEFAULT_BG_COLOR,
+        qrLogoBase64: c.qrLogo ? await fetchLogoBase64(c.qrLogo) : await defaultQrLogoBase64(),
       };
     }));
     storage.set('cards', payload);

@@ -24,6 +24,7 @@ import { SavedQr, useApi } from '../../lib/api';
 import { buildWifiQr, normalizeUrl, parseWifiQr } from '../../lib/qrFormat';
 import { useRevenueCat } from '../../lib/RevenueCatContext';
 import { COLORS, FONTS } from '../../constants/colors';
+import { QR_DEFAULT_BG_COLOR, QR_DEFAULT_COLOR, QR_DEFAULT_LOGO } from '../../constants/qrDefaults';
 
 const { height: SCREEN_H } = Dimensions.get('window');
 
@@ -56,8 +57,8 @@ export function QrGeneratorSheet({ visible, onClose }: Props) {
   const [generated, setGenerated] = useState<{ data: string; label: string } | null>(null);
   const [customName, setCustomName] = useState('');
   const [saving, setSaving] = useState(false);
-  const [qrColor, setQrColor] = useState('#000000');
-  const [qrBgColor, setQrBgColor] = useState('#FFFFFF');
+  const [qrColor, setQrColor] = useState(QR_DEFAULT_COLOR);
+  const [qrBgColor, setQrBgColor] = useState(QR_DEFAULT_BG_COLOR);
   const [showColorHex, setShowColorHex] = useState<'color' | 'bg' | null>(null);
   const [hexDraft, setHexDraft] = useState('');
   const [logoUri, setLogoUri] = useState<string | null>(null);
@@ -75,7 +76,7 @@ export function QrGeneratorSheet({ visible, onClose }: Props) {
     setEditingId(null);
     setCustomName('');
     setUrl(''); setSsid(''); setPassword(''); setSecurity('WPA');
-    setQrColor('#000000'); setQrBgColor('#FFFFFF'); setShowColorHex(null);
+    setQrColor(QR_DEFAULT_COLOR); setQrBgColor(QR_DEFAULT_BG_COLOR); setShowColorHex(null);
     setLogoUri(null);
     setExistingLogoUrl(null);
     setRemoveLogo(false);
@@ -194,8 +195,8 @@ export function QrGeneratorSheet({ visible, onClose }: Props) {
       setGenerated({ data: q.data, label: q.label ?? q.data });
     }
     setCustomName(q.label ?? '');
-    setQrColor(q.color ?? '#000000');
-    setQrBgColor(q.bgColor ?? '#FFFFFF');
+    setQrColor(q.color ?? QR_DEFAULT_COLOR);
+    setQrBgColor(q.bgColor ?? QR_DEFAULT_BG_COLOR);
     setLogoUri(null);
     setExistingLogoUrl(q.logo ?? null);
     setRemoveLogo(false);
@@ -322,8 +323,8 @@ export function QrGeneratorSheet({ visible, onClose }: Props) {
                     size={160}
                     backgroundColor={qrBgColor}
                     color={qrColor}
-                    ecl={previewLogoSource ? 'H' : 'M'}
-                    logo={previewLogoSource ? { uri: previewLogoSource } : undefined}
+                    ecl="H"
+                    logo={previewLogoSource ? { uri: previewLogoSource } : QR_DEFAULT_LOGO}
                     logoSize={40}
                     logoBackgroundColor={qrBgColor}
                     logoBorderRadius={8}
@@ -509,16 +510,16 @@ export function QrGeneratorSheet({ visible, onClose }: Props) {
 
                     {isExpanded && (
                       <View style={styles.savedExpanded}>
-                        <View style={[styles.qrWrap, { backgroundColor: q.bgColor ?? '#fff' }]}>
+                        <View style={[styles.qrWrap, { backgroundColor: (q.bgColor ?? QR_DEFAULT_BG_COLOR) }]}>
                           <QRCode
                             value={q.data}
                             size={180}
-                            backgroundColor={q.bgColor ?? '#fff'}
-                            color={q.color ?? '#000'}
-                            ecl={q.logo ? 'H' : 'M'}
-                            logo={q.logo ? { uri: q.logo } : undefined}
+                            backgroundColor={(q.bgColor ?? QR_DEFAULT_BG_COLOR)}
+                            color={(q.color ?? QR_DEFAULT_COLOR)}
+                            ecl="H"
+                            logo={q.logo ? { uri: q.logo } : QR_DEFAULT_LOGO}
                             logoSize={44}
-                            logoBackgroundColor={q.bgColor ?? '#fff'}
+                            logoBackgroundColor={(q.bgColor ?? QR_DEFAULT_BG_COLOR)}
                             logoBorderRadius={8}
                             logoMargin={2}
                           />

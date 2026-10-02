@@ -20,6 +20,7 @@ import WalletManager from 'react-native-wallet-manager';
 import { Card, User } from '../../lib/api';
 import { buildVcard, contactFromCard } from '../../lib/vcard';
 import { COLORS, FONTS } from '../../constants/colors';
+import { QR_DEFAULT_BG_COLOR, QR_DEFAULT_COLOR, QR_DEFAULT_LOGO } from '../../constants/qrDefaults';
 import { PASS_TYPE_ID, SHARE_BASE, publicCardUrl } from '../../constants/config';
 
 const SHEET_HEIGHT = Dimensions.get('window').height * 0.64;
@@ -174,16 +175,16 @@ export function ShareSheet({ visible, username, user, card, onClose }: Props) {
 
           {/* QR */}
           <View style={styles.qrOuter}>
-            <View style={[styles.qrInner, { backgroundColor: card?.qrBgColor ?? '#fff' }]}>
+            <View style={[styles.qrInner, { backgroundColor: (card?.qrBgColor ?? QR_DEFAULT_BG_COLOR) }]}>
               <QRCode
                 value={qrValue}
                 size={qrMode === 'offline' ? 180 : 148}
-                backgroundColor={card?.qrBgColor ?? '#fff'}
-                color={card?.qrColor ?? '#000'}
-                ecl={card?.qrLogo ? 'H' : 'M'}
-                logo={card?.qrLogo ? { uri: card.qrLogo } : undefined}
+                backgroundColor={(card?.qrBgColor ?? QR_DEFAULT_BG_COLOR)}
+                color={(card?.qrColor ?? QR_DEFAULT_COLOR)}
+                ecl="H"
+                logo={card?.qrLogo ? { uri: card.qrLogo } : QR_DEFAULT_LOGO}
                 logoSize={qrMode === 'offline' ? 40 : 32}
-                logoBackgroundColor={card?.qrBgColor ?? '#fff'}
+                logoBackgroundColor={(card?.qrBgColor ?? QR_DEFAULT_BG_COLOR)}
                 logoBorderRadius={8}
                 logoMargin={2}
               />

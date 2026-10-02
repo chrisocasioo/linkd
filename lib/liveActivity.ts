@@ -2,6 +2,8 @@ import LiveActivity from '../modules/live-activity';
 import { Card, User } from './api';
 import { publicCardUrl } from '../constants/config';
 import { buildVcard } from './vcard';
+import { defaultQrLogoFileUri } from './qrDefaultLogo';
+import { QR_DEFAULT_BG_COLOR, QR_DEFAULT_COLOR } from '../constants/qrDefaults';
 
 export async function endCardLiveActivity(): Promise<void> {
   try {
@@ -37,9 +39,9 @@ export async function triggerLiveActivityOnShare(card: Card, user: User | null, 
       accentColor: card.accentColor,
       onlineUrl,
       offlineValue,
-      qrColor: card.qrColor ?? '#000000',
-      qrBgColor: card.qrBgColor ?? '#FFFFFF',
-      qrLogoUrl: card.qrLogo ?? '',
+      qrColor: card.qrColor ?? QR_DEFAULT_COLOR,
+      qrBgColor: card.qrBgColor ?? QR_DEFAULT_BG_COLOR,
+      qrLogoUrl: card.qrLogo ?? (await defaultQrLogoFileUri()),
     });
   } catch {
     // Best-effort — a Live Activity failing must never affect sharing itself

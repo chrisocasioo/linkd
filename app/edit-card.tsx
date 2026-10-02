@@ -24,6 +24,7 @@ import { APP_FIELD_DISPLAY } from '../lib/appField';
 import { useRevenueCat } from '../lib/RevenueCatContext';
 import { syncWidgetData } from '../lib/widgetSync';
 import { COLORS, FONTS } from '../constants/colors';
+import { QR_DEFAULT_BG_COLOR, QR_DEFAULT_COLOR, QR_DEFAULT_LOGO } from '../constants/qrDefaults';
 
 const ACCENT_COLORS = ['#C9973A', '#7C3AED', '#22C55E', '#F43F5E', '#0EA5E9', '#EC4899'];
 // QR Color/Background also offer black & white as one-tap quick picks inside
@@ -204,8 +205,8 @@ export default function EditCardScreen() {
   const [hexDraft, setHexDraft] = useState('');
 
   // QR branding — deliberately separate from the card's own accentColor/photo
-  const [qrColor, setQrColor] = useState('#000000');
-  const [qrBgColor, setQrBgColor] = useState('#FFFFFF');
+  const [qrColor, setQrColor] = useState(QR_DEFAULT_COLOR);
+  const [qrBgColor, setQrBgColor] = useState(QR_DEFAULT_BG_COLOR);
   const [qrLogoUri, setQrLogoUri] = useState<string | null>(null);
   const [removeQrLogo, setRemoveQrLogo] = useState(false);
   const [showQrHexInput, setShowQrHexInput] = useState(false);
@@ -227,8 +228,8 @@ export default function EditCardScreen() {
         setCardName(found.name);
         setAccent(found.accentColor);
         setCardFont(found.font ?? 'dm-sans');
-        setQrColor(found.qrColor ?? '#000000');
-        setQrBgColor(found.qrBgColor ?? '#FFFFFF');
+        setQrColor(found.qrColor ?? QR_DEFAULT_COLOR);
+        setQrBgColor(found.qrBgColor ?? QR_DEFAULT_BG_COLOR);
         const nameParts = (found.displayName ?? u.displayName ?? '').split(' ');
         setFirstName(nameParts[0] ?? '');
         if (nameParts.length === 2) { setLastName(nameParts[1]); }
@@ -622,9 +623,7 @@ export default function EditCardScreen() {
                     {qrLogoSource ? (
                       <Image source={{ uri: qrLogoSource }} style={styles.qrLogoImg} />
                     ) : (
-                      <View style={styles.qrLogoPlaceholder}>
-                        <Ionicons name="image-outline" size={20} color={COLORS.textTertiary} />
-                      </View>
+                      <Image source={QR_DEFAULT_LOGO} style={styles.qrLogoImg} />
                     )}
                   </Pressable>
                   <View style={{ flex: 1 }}>
