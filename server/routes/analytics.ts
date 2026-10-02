@@ -2,6 +2,7 @@ import { and, asc, count, eq, gt, inArray, isNotNull, lt } from 'drizzle-orm';
 import { Router } from 'express';
 import { db } from '../db';
 import { requireAuth } from '../middleware/auth';
+import { isOwnerBrowser } from '../util/ownerCookie';
 import { cardFields, cards, cardViews, fieldClicks, users } from '../db/schema';
 
 const router = Router();
@@ -9,6 +10,7 @@ const router = Router();
 // Public — record a field click (called via fetch from the public card page)
 router.post('/field-click/:fieldId', async (req, res) => {
   const { fieldId } = req.params;
+  if (isOwnerBrowser(req)) return res.json({ ok: true });
   try {
     const field = await db.query.cardFields.findFirst({ where: eq(cardFields.id, fieldId) });
     if (field) {
@@ -23,6 +25,7 @@ router.post('/field-click/:fieldId', async (req, res) => {
 
 // Public — record a card page view
 router.post('/view', async (req, res) => {
+  if (isOwnerBrowser(req)) return res.json({ success: true });
   try {
     const { username, cardId } = req.body as { username?: string; cardId?: string };
     if (!username) return res.status(400).json({ error: 'username required' });

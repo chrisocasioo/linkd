@@ -3,6 +3,7 @@ import { Router } from 'express';
 import { db } from '../db';
 import { cardFields, cards, cardSlugAliases, cardViews, contacts, usernameAliases, users } from '../db/schema';
 import { formatPhone } from '../util/format';
+import { isOwnerTraffic } from '../util/ownerCookie';
 import { isSafeLink, safeHexColor } from '../util/validate';
 
 const router = Router();
@@ -99,7 +100,7 @@ function fieldUrl(type: string, value: string): string {
   }
 }
 
-function buildCardHtml(user: UserRow, card: CardRow, fields: FieldRow[], username: string): string {
+function buildCardHtml(user: UserRow, card: CardRow, fields: FieldRow[], username: string, isOwner = false): string {
   const name = esc(card.displayName ?? user.displayName ?? username);
   const accent = safeHexColor(card.accentColor, '#C9973A');
 
@@ -284,7 +285,9 @@ function buildCardHtml(user: UserRow, card: CardRow, fields: FieldRow[], usernam
     if (url) rows[i].setAttribute('href', url);
   }
 })();
+var IS_OWNER = ${isOwner ? 'true' : 'false'};
 function trackField(fieldId) {
+  if (IS_OWNER) return;
   try { fetch('/api/analytics/field-click/' + fieldId, { method: 'POST', keepalive: true }).catch(function(){}); } catch(e) {}
 }
 function toggleExchange() {
@@ -482,14 +485,15 @@ router.get('/:username/:slug', async (req, res) => {
       .from(cardFields)
       .where(eq(cardFields.cardId, card.id))
       .orderBy(asc(cardFields.displayOrder));
-    // The owner previewing their own card from the app tags the URL so it
-    // doesn't inflate their own view count — only real visitors should count.
-    if (req.query.preview !== '1') {
+    // The owner testing their own card (?preview=1 from the app, or a browser
+    // already marked by it) shouldn't inflate their stats — only real visitors count.
+    const isOwner = isOwnerTraffic(req, res);
+    if (!isOwner) {
       db.insert(cardViews).values({ userId: user.id, linkId: null, cardId: card.id }).catch(() => {});
     }
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.setHeader('Content-Security-Policy', CARD_PAGE_CSP);
-    res.send(buildCardHtml(user, card, fields, username));
+    res.send(buildCardHtml(user, card, fields, username, isOwner));
   } catch {
     res.status(500).send('<!DOCTYPE html><html><body><h1>Server error</h1></body></html>');
   }
@@ -514,12 +518,13 @@ router.get('/:username', async (req, res) => {
       .from(cardFields)
       .where(eq(cardFields.cardId, firstCard.id))
       .orderBy(asc(cardFields.displayOrder));
-    if (req.query.preview !== '1') {
+    const isOwner = isOwnerTraffic(req, res);
+    if (!isOwner) {
       db.insert(cardViews).values({ userId: user.id, linkId: null, cardId: firstCard.id }).catch(() => {});
     }
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.setHeader('Content-Security-Policy', CARD_PAGE_CSP);
-    res.send(buildCardHtml(user, firstCard, fields, username));
+    res.send(buildCardHtml(user, firstCard, fields, username, isOwner));
   } catch (err: any) {
     res.status(500).send('<!DOCTYPE html><html><body><h1>Server error</h1></body></html>');
   }
