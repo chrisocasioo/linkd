@@ -4,6 +4,7 @@ import { Router } from 'express';
 import { db } from '../db';
 import { cards, cardFields, users } from '../db/schema';
 import { ensurePro } from '../util/revenuecat';
+import { normalizeQrLogo } from '../util/logoImage';
 import { slugify, uniqueSlug } from '../util/slugify';
 import { isHexColor } from '../util/validate';
 
@@ -197,17 +198,22 @@ router.post('/:id/qr-logo', async (req, res) => {
     const card = await db.query.cards.findFirst({ where: and(eq(cards.id, cardId), eq(cards.userId, userId)) });
     if (!card) return res.status(404).json({ error: 'Card not found' });
 
-    const { photo: base64, mimeType = 'image/jpeg' } = req.body as { photo?: string; mimeType?: string };
+    const { photo: base64 } = req.body as { photo?: string };
     if (!base64) return res.status(400).json({ error: 'No photo provided' });
 
-    const buffer = Buffer.from(base64, 'base64');
+    let buffer: Buffer;
+    try {
+      buffer = await normalizeQrLogo(Buffer.from(base64, 'base64'));
+    } catch {
+      return res.status(400).json({ error: 'That file isn\u2019t a readable image' });
+    }
     const bucket = process.env.BUCKET_NAME ?? process.env.BUCKET ?? '';
     await s3.send(
       new PutObjectCommand({
         Bucket: bucket,
         Key: `cards/${cardId}-qr-logo.jpg`,
         Body: buffer,
-        ContentType: mimeType,
+        ContentType: 'image/png',
       })
     );
 
