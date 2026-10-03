@@ -113,8 +113,8 @@ export function QrGeneratorSheet({ visible, onClose }: Props) {
     }
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'] as any,
-      allowsEditing: true,
-      aspect: [1, 1],
+      // No forced square crop: the whole logo is kept (the server letterboxes it)
+      allowsEditing: false,
       quality: 0.85,
     });
     if (!result.canceled && result.assets[0]) {

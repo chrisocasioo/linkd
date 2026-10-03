@@ -10,7 +10,10 @@ export type LogoResult =
   | { ok: false };                                             // not a readable image
 
 /**
- * Center-crops to a LOGO_PX square PNG (alpha kept, EXIF rotation honoured).
+ * Fits the whole image inside a LOGO_PX square PNG (alpha kept, EXIF rotation
+ * honoured). Nothing is cropped: a non-square logo is letterboxed with
+ * transparent padding, since the QR renderer fills its square slot and would
+ * otherwise slice off the edges.
  *
  * sharp is loaded lazily, inside the function, and any failure to load or run
  * it falls back to storing the upload untouched: an image-library problem can
@@ -29,7 +32,7 @@ export async function normalizeQrLogo(input: Buffer): Promise<LogoResult> {
   try {
     const buffer = await sharp(input, { failOn: 'error', limitInputPixels: 50_000_000 })
       .rotate()
-      .resize(LOGO_PX, LOGO_PX, { fit: 'cover', position: 'centre', kernel: 'lanczos3' })
+      .resize(LOGO_PX, LOGO_PX, { fit: 'contain', position: 'centre', background: { r: 0, g: 0, b: 0, alpha: 0 }, kernel: 'lanczos3' })
       .png({ compressionLevel: 9 })
       .toBuffer();
     return { ok: true, buffer, contentType: 'image/png' };
