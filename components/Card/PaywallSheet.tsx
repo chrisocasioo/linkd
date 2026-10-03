@@ -150,9 +150,8 @@ export function PaywallSheet({ visible, onClose }: Props) {
 
           {/* Required by App Store Review Guideline 3.1.2 — auto-renewal
               terms plus Privacy Policy / Terms of Use, both reachable from
-              the purchase screen itself. No custom Terms of Use exists, so
-              this links Apple's standard EULA, which Apple explicitly
-              accepts in place of one. */}
+              the purchase screen itself. Terms link to our own page, which also
+              incorporates Apple's standard EULA. */}
           <Text style={styles.disclosure}>
             {trialDays ? `${trialDays}-day free trial, then ` : ''}
             {plan === 'annual' ? `${annualPrice}/year` : `${monthlyPrice}/month`}. Auto-renews unless canceled at least 24 hours before the current period ends. Manage or cancel anytime in Settings &gt; Apple ID &gt; Subscriptions.
@@ -162,7 +161,7 @@ export function PaywallSheet({ visible, onClose }: Props) {
               <Text style={styles.legalLink}>Privacy Policy</Text>
             </Pressable>
             <Text style={styles.legalDot}>·</Text>
-            <Pressable onPress={() => WebBrowser.openBrowserAsync('https://www.apple.com/legal/internet-services/itunes/dev/stdeula/')}>
+            <Pressable onPress={() => WebBrowser.openBrowserAsync('https://www.linkd.biz/terms.html')}>
               <Text style={styles.legalLink}>Terms of Use</Text>
             </Pressable>
           </View>
