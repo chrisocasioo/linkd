@@ -158,7 +158,7 @@ export function PaywallSheet({ visible, onClose }: Props) {
             {plan === 'annual' ? `${annualPrice}/year` : `${monthlyPrice}/month`}. Auto-renews unless canceled at least 24 hours before the current period ends. Manage or cancel anytime in Settings &gt; Apple ID &gt; Subscriptions.
           </Text>
           <View style={styles.legalRow}>
-            <Pressable onPress={() => WebBrowser.openBrowserAsync('https://chrisocasioo.github.io/Linkd-Legal/privacy.html')}>
+            <Pressable onPress={() => WebBrowser.openBrowserAsync('https://www.linkd.biz/privacy.html')}>
               <Text style={styles.legalLink}>Privacy Policy</Text>
             </Pressable>
             <Text style={styles.legalDot}>·</Text>

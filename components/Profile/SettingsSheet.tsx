@@ -259,12 +259,17 @@ export function SettingsSheet({ visible, onClose, onShowPaywall, onUsernameChang
           <View style={styles.group}>
             <SettingsRow
               label="Support"
-              onPress={() => WebBrowser.openBrowserAsync('https://chrisocasioo.github.io/Linkd-Legal/support.html')}
+              onPress={() => WebBrowser.openBrowserAsync('https://www.linkd.biz/support.html')}
             />
             <View style={styles.sep} />
             <SettingsRow
               label="Privacy Policy"
-              onPress={() => WebBrowser.openBrowserAsync('https://chrisocasioo.github.io/Linkd-Legal/privacy.html')}
+              onPress={() => WebBrowser.openBrowserAsync('https://www.linkd.biz/privacy.html')}
+            />
+            <View style={styles.sep} />
+            <SettingsRow
+              label="Terms of Use"
+              onPress={() => WebBrowser.openBrowserAsync('https://www.linkd.biz/terms.html')}
             />
           </View>
 

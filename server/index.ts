@@ -2,7 +2,6 @@ import { eq } from 'drizzle-orm';
 import cors from 'cors';
 import 'dotenv/config';
 import express, { NextFunction, Request, Response } from 'express';
-import path from 'path';
 import { Webhook } from 'svix';
 import { db } from './db';
 import { users } from './db/schema';
@@ -130,16 +129,17 @@ app.use('/api/scan-history', requireAuth, scanHistoryRouter);
 // 7. Analytics routes (POST /view is public; GET /me applies requireAuth internally)
 app.use('/api/analytics', analyticsRouter);
 
-// 7b. Marketing + legal pages on the brand domain (Google's OAuth consent screen
-// and Apple require a homepage and privacy policy on a domain we control).
-// Explicit file list only — before the public card catch-all so /privacy etc.
-// can't be read as usernames.
-const STATIC_DIR = path.join(__dirname, 'static');
-const sendPage = (file: string) => (_req: Request, res: Response) => res.sendFile(path.join(STATIC_DIR, file));
-app.get('/', sendPage('index.html'));
-app.get(['/privacy', '/privacy.html'], sendPage('privacy.html'));
-app.get(['/support', '/support.html'], sendPage('support.html'));
-app.get('/icon.png', sendPage('icon.png'));
+// 7b. The marketing + legal site lives on GitHub Pages at www.linkd.biz; keep
+// the old apex paths (Google consent screen, App Store, shared links) working.
+// Explicit list only — before the public card catch-all so these can't be read
+// as usernames (they're also reserved usernames).
+const SITE = 'https://www.linkd.biz';
+const redirectTo = (target: string) => (_req: Request, res: Response) => res.redirect(301, target);
+app.get('/', redirectTo(`${SITE}/`));
+app.get(['/privacy', '/privacy.html'], redirectTo(`${SITE}/privacy.html`));
+app.get(['/support', '/support.html'], redirectTo(`${SITE}/support.html`));
+app.get(['/terms', '/terms.html'], redirectTo(`${SITE}/terms.html`));
+app.get('/icon.png', redirectTo(`${SITE}/assets/icon.png`));
 
 // 8. Apple Wallet passes — must precede the public catch-all (/:username/:slug)
 app.use('/', passRouter);
