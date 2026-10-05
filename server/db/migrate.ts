@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm';
 import { db } from './index';
 import { slugify, uniqueSlug } from '../util/slugify';
+import { copyProfilePhoto } from '../util/purgeUserAssets';
 
 export async function runMigrations() {
   await db.execute(sql`
@@ -151,6 +152,57 @@ export async function runMigrations() {
     `);
     console.log(`✓ Analytics reset: removed ${(views as any).rows.length} views, ${(clicks as any).rows.length} clicks`);
     await db.execute(sql`INSERT INTO schema_migrations (name) VALUES (${analyticsResetMigration});`);
+  }
+
+  // One-time, owner-requested: the owner's cards/contacts/username live under
+  // their old (development) Clerk user id; signing in on the production Clerk
+  // instance created a second, empty account with the same email. Move
+  // everything onto the new id. Only runs when the match is unambiguous
+  // (exactly one 'chris' row and exactly one other, username-less row with the
+  // same email); otherwise it stays unmarked and is retried on the next boot.
+  const mergeOwnerMigration = 'merge_owner_legacy_account_v1';
+  const mergeRan = await db.execute(sql`
+    SELECT 1 FROM schema_migrations WHERE name = ${mergeOwnerMigration};
+  `);
+  if ((mergeRan as any).rows.length === 0) try {
+    const olds: any[] = (await db.execute(sql`SELECT id, email FROM users WHERE username = 'chris';`) as any).rows;
+    if (olds.length === 1) {
+      const old = olds[0];
+      const news: any[] = (await db.execute(sql`
+        SELECT id FROM users WHERE lower(email) = lower(${old.email}) AND id <> ${old.id} AND username IS NULL;
+      `) as any).rows;
+      if (news.length === 1) {
+        const newId: string = news[0].id;
+        const fks: any[] = (await db.execute(sql`
+          SELECT c.conrelid::regclass::text AS tbl, a.attname AS col
+          FROM pg_constraint c
+          JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = ANY(c.conkey)
+          WHERE c.contype = 'f' AND c.confrelid = 'users'::regclass;
+        `) as any).rows;
+        await db.transaction(async (tx) => {
+          // The new account is an empty shell from the failed onboarding; drop it
+          await tx.execute(sql`DELETE FROM users WHERE id = ${newId};`);
+          await tx.execute(sql`
+            INSERT INTO users (id, email, display_name, bio, profile_photo, theme, accent_color, button_style, font, custom_domain, is_pro, revenue_cat_id, created_at, updated_at)
+            SELECT ${newId}, email, display_name, bio, profile_photo, theme, accent_color, button_style, font, custom_domain, is_pro, revenue_cat_id, created_at, NOW()
+            FROM users WHERE id = ${old.id};
+          `);
+          for (const fk of fks) {
+            await tx.execute(sql`UPDATE ${sql.raw(fk.tbl)} SET ${sql.identifier(fk.col)} = ${newId} WHERE ${sql.identifier(fk.col)} = ${old.id};`);
+          }
+          await tx.execute(sql`DELETE FROM users WHERE id = ${old.id};`);
+          await tx.execute(sql`UPDATE users SET username = 'chris' WHERE id = ${newId};`);
+        });
+        const copied = await copyProfilePhoto(old.id, newId);
+        console.log(`✓ Owner account merged ${old.id} -> ${newId} (tables: ${fks.map((f) => f.tbl).join(', ')}; profile photo copied: ${copied})`);
+        await db.execute(sql`INSERT INTO schema_migrations (name) VALUES (${mergeOwnerMigration});`);
+      } else {
+        console.log(`Owner account merge waiting: found ${news.length} candidate new accounts`);
+      }
+    }
+  } catch (err: any) {
+    // Never let this one-off stop the server from booting; the transaction rolled back
+    console.error('Owner account merge failed (will retry on next boot):', err?.message ?? err);
   }
 
   // The lighter gold (#C9A84C) used to be the default card accent; the app

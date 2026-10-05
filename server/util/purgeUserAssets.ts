@@ -1,4 +1,4 @@
-import { DeleteObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { CopyObjectCommand, DeleteObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { eq } from 'drizzle-orm';
 import { db } from '../db';
 import { cards, contacts, savedQrs } from '../db/schema';
@@ -55,4 +55,19 @@ export async function purgeUserAssets(userId: string): Promise<string[]> {
     throw new Error('Could not reach file storage to delete this account’s photos');
   }
   return failures.map((f) => f.key);
+}
+
+/** Copies one user's profile photo object to another user id (best effort). */
+export async function copyProfilePhoto(fromUserId: string, toUserId: string): Promise<boolean> {
+  const bucket = process.env.BUCKET_NAME ?? process.env.BUCKET ?? '';
+  try {
+    await s3.send(new CopyObjectCommand({
+      Bucket: bucket,
+      CopySource: `${bucket}/profiles/${fromUserId}.jpg`,
+      Key: `profiles/${toUserId}.jpg`,
+    }));
+    return true;
+  } catch {
+    return false;
+  }
 }
