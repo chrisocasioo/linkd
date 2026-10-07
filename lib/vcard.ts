@@ -139,8 +139,11 @@ export function buildVcard(card: Card, user: User | null, publicUrl: string, opt
   return lines.join('\r\n');
 }
 
-/** Maps a card to an expo-contacts Contact shape for the native contact-form preview. */
-export function contactFromCard(card: Card, user: User | null, publicUrl: string, photoUri?: string | null): any {
+/**
+ * Maps a card to an expo-contacts Contact shape for the native contact-form preview.
+ * Deliberately no photo: this previews the offline QR, which can't carry one.
+ */
+export function contactFromCard(card: Card, user: User | null, publicUrl: string): any {
   const fullName = card.displayName ?? user?.displayName ?? user?.username ?? card.name;
   const nameParts = fullName.trim().split(/\s+/);
 
@@ -183,6 +186,5 @@ export function contactFromCard(card: Card, user: User | null, publicUrl: string
     phoneNumbers: phones,
     urlAddresses: urls,
     addresses,
-    ...(photoUri ? { image: { uri: photoUri } } : {}),
   };
 }

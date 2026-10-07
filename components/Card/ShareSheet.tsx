@@ -152,8 +152,7 @@ export function ShareSheet({ visible, username, user, card, onClose }: Props) {
       }
       // isNew:false presents the read-style "unknown contact" card — exactly
       // what a scanner of the offline QR sees, without saving anything
-      const photo = await downloadContactPhoto(card, user ?? null);
-      await Contacts.presentFormAsync(null, contactFromCard(card, user ?? null, url, photo?.uri), { isNew: false } as any);
+      await Contacts.presentFormAsync(null, contactFromCard(card, user ?? null, url), { isNew: false } as any);
     } catch (err: any) {
       Alert.alert('Preview unavailable', err.message ?? 'Could not open the contact preview.');
     }
