@@ -1,6 +1,7 @@
 import { createClerkClient, verifyToken } from '@clerk/backend';
 import { eq } from 'drizzle-orm';
 import { NextFunction, Request, Response } from 'express';
+import { linkLegacyAccount } from '../util/linkLegacyAccount';
 import { db } from '../db';
 import { users } from '../db/schema';
 
@@ -61,6 +62,14 @@ export const requireAuth = async (req: Request, res: Response, next: NextFunctio
         // Any other failure (Clerk outage, network): carry on with a
         // placeholder row so the app still works, and retry the sync on the
         // next request.
+      }
+
+      // First sighting of a production-instance user: if they already had an
+      // account on the legacy instance, move it over instead of starting empty.
+      if (clerkUser && tokenClerk === clerk && clerkLegacy) {
+        await linkLegacyAccount(userId, clerkUser as any, clerkLegacy as any).catch((err) =>
+          console.error('linkLegacyAccount failed:', err?.message ?? err)
+        );
       }
 
       const email = clerkUser?.emailAddresses[0]?.emailAddress ?? '';
