@@ -51,10 +51,20 @@ const MAX_QR_SOCIALS = 3; // QR readability degrades past ~1-1.5KB of payload
 export interface VcardOptions {
   /** Compact payload for embedding in a QR: skips PHOTO/NOTE, caps socials */
   compact?: boolean;
+  /** JPEG bytes (base64) to embed as the contact's picture — the card's photo */
+  photoBase64?: string | null;
+}
+
+// vCard 3.0 folds long lines at 75 octets: CRLF + space continues the line
+function fold(line: string): string {
+  if (line.length <= 75) return line;
+  const parts = [line.slice(0, 75)];
+  for (let i = 75; i < line.length; i += 74) parts.push(' ' + line.slice(i, i + 74));
+  return parts.join('\r\n');
 }
 
 export function buildVcard(card: Card, user: User | null, publicUrl: string, opts: VcardOptions = {}): string {
-  const { compact = false } = opts;
+  const { compact = false, photoBase64 = null } = opts;
   const lines: string[] = ['BEGIN:VCARD', 'VERSION:3.0'];
 
   const fullName = card.displayName ?? user?.displayName ?? user?.username ?? card.name;
@@ -120,8 +130,9 @@ export function buildVcard(card: Card, user: User | null, publicUrl: string, opt
   if (!compact && notes.length > 0) {
     lines.push(`NOTE:${esc(notes.join('\n'))}`);
   }
-  if (!compact && user?.profilePhoto) {
-    lines.push(`PHOTO;VALUE=URI:${user.profilePhoto}`);
+  // Contacts apps ignore remote photo URLs, so the card's photo is embedded
+  if (!compact && photoBase64) {
+    lines.push(fold(`PHOTO;ENCODING=b;TYPE=JPEG:${photoBase64}`));
   }
   lines.push(`URL;TYPE=Linkd:${publicUrl}`);
   lines.push('END:VCARD');
@@ -129,7 +140,7 @@ export function buildVcard(card: Card, user: User | null, publicUrl: string, opt
 }
 
 /** Maps a card to an expo-contacts Contact shape for the native contact-form preview. */
-export function contactFromCard(card: Card, user: User | null, publicUrl: string): any {
+export function contactFromCard(card: Card, user: User | null, publicUrl: string, photoUri?: string | null): any {
   const fullName = card.displayName ?? user?.displayName ?? user?.username ?? card.name;
   const nameParts = fullName.trim().split(/\s+/);
 
@@ -172,5 +183,6 @@ export function contactFromCard(card: Card, user: User | null, publicUrl: string
     phoneNumbers: phones,
     urlAddresses: urls,
     addresses,
+    ...(photoUri ? { image: { uri: photoUri } } : {}),
   };
 }

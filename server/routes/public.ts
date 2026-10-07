@@ -3,6 +3,7 @@ import { Router } from 'express';
 import { db } from '../db';
 import { cardFields, cards, cardSlugAliases, cardViews, contacts, usernameAliases, users } from '../db/schema';
 import { formatPhone } from '../util/format';
+import { contactPhotoBase64, foldVcardLine } from '../util/contactPhoto';
 import { isOwnerTraffic } from '../util/ownerCookie';
 import { isSafeLink, safeHexColor } from '../util/validate';
 
@@ -329,6 +330,7 @@ function submitExchange(e) {
 }
 
 async function buildVcard(user: UserRow, fields: FieldRow[], username: string, card?: CardRow): Promise<string> {
+  const photo = await contactPhotoBase64(card?.id, user.id);
   const displayName = card?.displayName ?? user.displayName ?? username;
   const nameParts = displayName.split(' ');
   const firstName = nameParts[0];
@@ -351,7 +353,7 @@ async function buildVcard(user: UserRow, fields: FieldRow[], username: string, c
     email ? `EMAIL;TYPE=WORK:${email}` : null,
     phone ? `TEL;TYPE=CELL:${phone}` : null,
     website ? `URL:${website}` : `URL:https://linkd.tattoo/${username}`,
-    user.profilePhoto ? `PHOTO;VALUE=URI:${user.profilePhoto}` : null,
+    photo ? foldVcardLine(`PHOTO;ENCODING=b;TYPE=JPEG:${photo}`) : null,
     'END:VCARD',
   ];
   return lines.filter(Boolean).join('\r\n');

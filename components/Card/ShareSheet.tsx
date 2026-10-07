@@ -18,6 +18,7 @@ import {
 import QRCode from 'react-native-qrcode-svg';
 import WalletManager from 'react-native-wallet-manager';
 import { Card, User } from '../../lib/api';
+import { downloadContactPhoto } from '../../lib/contactPhoto';
 import { buildVcard, contactFromCard } from '../../lib/vcard';
 import { COLORS, FONTS } from '../../constants/colors';
 import { QR_DEFAULT_BG_COLOR, QR_DEFAULT_COLOR, QR_DEFAULT_LOGO } from '../../constants/qrDefaults';
@@ -105,7 +106,8 @@ export function ShareSheet({ visible, username, user, card, onClose }: Props) {
   const handleShareContact = async () => {
     if (!card) return;
     try {
-      const vcf = buildVcard(card, user ?? null, url);
+      const photo = await downloadContactPhoto(card, user ?? null);
+      const vcf = buildVcard(card, user ?? null, url, { photoBase64: photo?.base64 });
       const safe = (card.displayName ?? user?.displayName ?? username ?? 'card').replace(/[^a-z0-9]/gi, '_') || 'card';
       const path = `${FileSystem.cacheDirectory}${safe}.vcf`;
       await FileSystem.writeAsStringAsync(path, vcf);
@@ -150,7 +152,8 @@ export function ShareSheet({ visible, username, user, card, onClose }: Props) {
       }
       // isNew:false presents the read-style "unknown contact" card — exactly
       // what a scanner of the offline QR sees, without saving anything
-      await Contacts.presentFormAsync(null, contactFromCard(card, user ?? null, url), { isNew: false } as any);
+      const photo = await downloadContactPhoto(card, user ?? null);
+      await Contacts.presentFormAsync(null, contactFromCard(card, user ?? null, url, photo?.uri), { isNew: false } as any);
     } catch (err: any) {
       Alert.alert('Preview unavailable', err.message ?? 'Could not open the contact preview.');
     }

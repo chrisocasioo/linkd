@@ -1,4 +1,4 @@
-import { CopyObjectCommand, DeleteObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { CopyObjectCommand, DeleteObjectCommand, GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { eq } from 'drizzle-orm';
 import { db } from '../db';
 import { cards, contacts, savedQrs } from '../db/schema';
@@ -69,5 +69,17 @@ export async function copyProfilePhoto(fromUserId: string, toUserId: string): Pr
     return true;
   } catch {
     return false;
+  }
+}
+
+/** Reads one bucket object into memory; null if it doesn't exist or can't be read. */
+export async function getObjectBuffer(key: string): Promise<Buffer | null> {
+  const bucket = process.env.BUCKET_NAME ?? process.env.BUCKET ?? '';
+  try {
+    const out = await s3.send(new GetObjectCommand({ Bucket: bucket, Key: key }));
+    const bytes = await out.Body?.transformToByteArray();
+    return bytes ? Buffer.from(bytes) : null;
+  } catch {
+    return null;
   }
 }
