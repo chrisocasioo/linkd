@@ -53,7 +53,7 @@ export function SettingsSheet({ visible, onClose, onShowPaywall, onUsernameChang
   const handleChangeUsername = () => {
     Alert.prompt(
       'Change Username',
-      `Your links look like linkd.biz/${username ?? 'username'}/card-name. Changing it breaks links and QR codes you've already shared.`,
+      `Your links look like linkd.biz/${username ?? 'username'}/card-name. Links and QR codes you've already shared will keep working and redirect to the new one.`,
       async (raw) => {
         const next = (raw ?? '').trim().toLowerCase();
         if (!next || next === username) return;
